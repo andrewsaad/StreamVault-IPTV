@@ -101,6 +101,7 @@ internal fun PlayerControlsOverlayHost(
     val liveTranslationAvailable by viewModel.liveTranslationAvailable.collectAsControlsState(observeControls)
     val currentChannelRecording by viewModel.currentChannelRecording.collectAsControlsState(observeControls)
     val isMuted by viewModel.isMuted.collectAsControlsState(observeControls)
+    val surroundUpmixEnabled by viewModel.surroundUpmixEnabled.collectAsControlsState(observeControls)
     val mediaTitle by viewModel.mediaTitle.collectAsControlsState(observeControls)
     val playbackSpeed by viewModel.playbackSpeed.collectAsControlsState(observeControls)
     val audioVideoSyncEnabled by viewModel.audioVideoSyncEnabled.collectAsControlsState(observeControls)
@@ -214,7 +215,9 @@ internal fun PlayerControlsOverlayHost(
                 isMuted = isMuted,
                 isCastConnected = isCastConnected,
                 onDismiss = onDismissVodSheet,
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier.fillMaxSize(),
+                isSurroundUpmixEnabled = surroundUpmixEnabled,
+                onToggleSurroundUpmix = viewModel::toggleSurroundUpmix
             )
         }
     } else {
@@ -270,6 +273,8 @@ internal fun PlayerControlsOverlayHost(
             onOpenSplitScreen = onOpenSplitScreen,
             onEnterPictureInPicture = onEnterPictureInPicture,
             onToggleMute = viewModel::toggleMute,
+            isSurroundUpmixEnabled = surroundUpmixEnabled,
+            onToggleSurroundUpmix = viewModel::toggleSurroundUpmix,
             isCastConnected = isCastConnected,
             onCast = { viewModel.castCurrentMedia(onOpenCastRouteChooser) },
             onStopCasting = viewModel::stopCasting,

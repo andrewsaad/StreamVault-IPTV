@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="player_recording_exact_alarm_required">Lejo alarmet dhe rikujtuesit për StreamVault te cilësimet e Androidit, pastaj provo të regjistrosh përsëri.</string>
+    <string name="player_surround_upmix_on">Upmix surround: Aktiv</string>
+    <string name="player_surround_upmix_off">Upmix surround: Joaktiv</string>
 </resources>

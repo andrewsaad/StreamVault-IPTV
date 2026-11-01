@@ -1,5 +1,6 @@
 package com.streamvault.feature.playback.player
 
+import com.streamvault.domain.model.AudioOutputPreference
 import com.streamvault.domain.model.ContentType
 import com.streamvault.domain.model.LiveChannelObservedQuality
 import com.streamvault.domain.model.PlayerBackButtonVisibility
@@ -11,6 +12,9 @@ import com.streamvault.domain.settings.ScopedPlaybackQualityPreference
 import com.streamvault.domain.settings.VodTrackPreferenceScope
 import com.streamvault.domain.settings.VodTrackPreferences
 import javax.inject.Inject
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 
 /**
  * Player-facing preferences boundary.
@@ -121,6 +125,21 @@ class PlayerPreferencesCoordinator @Inject constructor(
         preferencesRepository.setPlayerAudioVideoOffsetMs(offsetMs)
     }
 
+    internal val playerSurroundUpmixEnabled: Flow<Boolean>
+        get() = preferencesRepository.playerAudioOutputPreference.map(::isSurroundUpmixEnabled)
+
+    /**
+     * Flips the in-player "Surround upmix" switch. On maps to [AudioOutputPreference.SURROUND_UPMIX];
+     * off (including from any passthrough mode chosen in Settings) maps to [AudioOutputPreference.AUTO].
+     * Writes the same preference Settings edits, so both surfaces stay in sync.
+     */
+    internal suspend fun toggleSurroundUpmix() {
+        val current = preferencesRepository.playerAudioOutputPreference.first()
+        preferencesRepository.setPlayerAudioOutputPreference(
+            surroundUpmixAudioOutputPreference(enabled = !isSurroundUpmixEnabled(current))
+        )
+    }
+
     internal suspend fun setPlayerMuted(muted: Boolean) {
         preferencesRepository.setPlayerMuted(muted)
     }
@@ -167,3 +186,9 @@ class PlayerPreferencesCoordinator @Inject constructor(
         preferencesRepository.setPreferredLiveVariant(providerId, logicalGroupId, rawChannelId)
     }
 }
+
+internal fun isSurroundUpmixEnabled(preference: AudioOutputPreference): Boolean =
+    preference == AudioOutputPreference.SURROUND_UPMIX
+
+internal fun surroundUpmixAudioOutputPreference(enabled: Boolean): AudioOutputPreference =
+    if (enabled) AudioOutputPreference.SURROUND_UPMIX else AudioOutputPreference.AUTO

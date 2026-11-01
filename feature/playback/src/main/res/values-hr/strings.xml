@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="player_recording_exact_alarm_required">Dopustite alarme i podsjetnike za StreamVault u postavkama Androida, a zatim ponovno pokušajte snimati.</string>
+    <string name="player_surround_upmix_on">Surround upmix: Uključeno</string>
+    <string name="player_surround_upmix_off">Surround upmix: Isključeno</string>
 </resources>

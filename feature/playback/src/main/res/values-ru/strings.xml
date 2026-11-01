@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="player_recording_exact_alarm_required">Разрешите будильники и напоминания для StreamVault в настройках Android, затем повторите запись.</string>
+    <string name="player_surround_upmix_on">Объёмный апмикс: Вкл.</string>
+    <string name="player_surround_upmix_off">Объёмный апмикс: Выкл.</string>
 </resources>

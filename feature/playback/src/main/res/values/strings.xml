@@ -10,4 +10,6 @@
     <string name="player_trakt_failed">Trakt tracking failed</string>
     <string name="player_trakt_sent">Sent to Trakt</string>
     <string name="player_recording_exact_alarm_required">Allow alarms and reminders for StreamVault in Android settings, then try recording again.</string>
+    <string name="player_surround_upmix_on">Surround upmix: On</string>
+    <string name="player_surround_upmix_off">Surround upmix: Off</string>
 </resources>

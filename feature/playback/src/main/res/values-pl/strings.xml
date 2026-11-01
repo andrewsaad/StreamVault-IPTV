@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="player_recording_exact_alarm_required">Zezwól aplikacji StreamVault na alarmy i przypomnienia w ustawieniach Androida, a następnie spróbuj nagrać ponownie.</string>
+    <string name="player_surround_upmix_on">Upmix przestrzenny: Wł.</string>
+    <string name="player_surround_upmix_off">Upmix przestrzenny: Wył.</string>
 </resources>

@@ -1116,6 +1116,8 @@ class PlayerViewModel @Inject constructor(
     val playbackSpeed: StateFlow<Float> = activeEngineState(1f) { it.playbackSpeed }
     val audioVideoSyncEnabled: StateFlow<Boolean> = activeEngineState(false) { it.audioVideoSyncEnabled }
     val subtitleOffsetMs: StateFlow<Int> = activeEngineState(0) { it.subtitleOffsetMs }
+    val surroundUpmixEnabled: StateFlow<Boolean> = playerPreferencesCoordinator.playerSurroundUpmixEnabled
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
     internal val subtitleTextScale = playerPreferencesCoordinator.playerSubtitleTextScale
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 1f)
     internal val subtitleBackgroundColor = playerPreferencesCoordinator.playerSubtitleBackgroundColor

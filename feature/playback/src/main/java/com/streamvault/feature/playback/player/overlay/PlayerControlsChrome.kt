@@ -154,6 +154,8 @@ fun PlayerControlsOverlay(
     onOpenSplitScreen: () -> Unit,
     onEnterPictureInPicture: () -> Unit = {},
     onToggleMute: () -> Unit,
+    isSurroundUpmixEnabled: Boolean = false,
+    onToggleSurroundUpmix: (() -> Unit)? = null,
     isCastConnected: Boolean = false,
     onCast: () -> Unit = {},
     onStopCasting: () -> Unit = {},
@@ -250,6 +252,8 @@ fun PlayerControlsOverlay(
                 onOpenSplitScreen = onOpenSplitScreen,
                 onEnterPictureInPicture = onEnterPictureInPicture,
                 onToggleMute = onToggleMute,
+                isSurroundUpmixEnabled = isSurroundUpmixEnabled,
+                onToggleSurroundUpmix = onToggleSurroundUpmix,
                 isCastConnected = isCastConnected,
                 onCast = onCast,
                 onStopCasting = onStopCasting,
@@ -597,6 +601,8 @@ private fun PlayerBottomBar(
     onOpenSplitScreen: () -> Unit,
     onEnterPictureInPicture: () -> Unit,
     onToggleMute: () -> Unit,
+    isSurroundUpmixEnabled: Boolean,
+    onToggleSurroundUpmix: (() -> Unit)?,
     isCastConnected: Boolean,
     onCast: () -> Unit,
     onStopCasting: () -> Unit,
@@ -693,6 +699,8 @@ private fun PlayerBottomBar(
                         onOpenSplitScreen = onOpenSplitScreen,
                         onEnterPictureInPicture = onEnterPictureInPicture,
                         onToggleMute = onToggleMute,
+                        isSurroundUpmixEnabled = isSurroundUpmixEnabled,
+                        onToggleSurroundUpmix = onToggleSurroundUpmix,
                         isCastConnected = isCastConnected,
                         onCast = onCast,
                         onStopCasting = onStopCasting
@@ -793,6 +801,8 @@ private fun PlayerLiveInfo(
     onOpenSplitScreen: () -> Unit,
     onEnterPictureInPicture: () -> Unit,
     onToggleMute: () -> Unit,
+    isSurroundUpmixEnabled: Boolean,
+    onToggleSurroundUpmix: (() -> Unit)?,
     isCastConnected: Boolean,
     onCast: () -> Unit,
     onStopCasting: () -> Unit,
@@ -875,6 +885,15 @@ private fun PlayerLiveInfo(
         }
         if (audioTrackCount > 0) {
             add(PlayerActionSpec("audio", stringResource(R.string.player_audio), onOpenAudioTracks))
+        }
+        if (onToggleSurroundUpmix != null) {
+            add(PlayerActionSpec(
+                "surround_upmix",
+                stringResource(
+                    if (isSurroundUpmixEnabled) R.string.player_surround_upmix_on else R.string.player_surround_upmix_off
+                ),
+                onToggleSurroundUpmix
+            ))
         }
         if (videoQualityCount > 0) {
             add(PlayerActionSpec("video_quality", stringResource(R.string.player_video_quality), onOpenVideoTracks))

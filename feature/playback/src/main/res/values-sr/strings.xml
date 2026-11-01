@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="player_recording_exact_alarm_required">Дозволите аларме и подсетнике за StreamVault у подешавањима Android-а, па покушајте поново да снимате.</string>
+    <string name="player_surround_upmix_on">Сураунд апмикс: Укључено</string>
+    <string name="player_surround_upmix_off">Сураунд апмикс: Искључено</string>
 </resources>

@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="player_recording_exact_alarm_required">Επιτρέψτε τις αφυπνίσεις και τις υπενθυμίσεις για το StreamVault στις ρυθμίσεις Android και δοκιμάστε ξανά την εγγραφή.</string>
+    <string name="player_surround_upmix_on">Μετατροπή σε surround: Ενεργό</string>
+    <string name="player_surround_upmix_off">Μετατροπή σε surround: Ανενεργό</string>
 </resources>

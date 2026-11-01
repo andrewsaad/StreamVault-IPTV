@@ -59,6 +59,18 @@ fun PlayerViewModel.toggleMute() {
     }
 }
 
+/**
+ * Persists the in-player Surround upmix switch. The engine re-prepares at the current
+ * position when the persisted audio output preference changes (see the
+ * playerAudioOutputPreference collector in [PlayerViewModel]).
+ */
+fun PlayerViewModel.toggleSurroundUpmix() {
+    notifyUserActivity()
+    viewModelScope.launch {
+        playerPreferencesCoordinator.toggleSurroundUpmix()
+    }
+}
+
 fun PlayerViewModel.toggleControls() {
     closeChannelInfoOverlay()
     showControlsFlow.value = !showControlsFlow.value

@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="player_recording_exact_alarm_required">Permite alarmele și mementourile pentru StreamVault în setările Android, apoi încearcă să înregistrezi din nou.</string>
+    <string name="player_surround_upmix_on">Upmix surround: Activat</string>
+    <string name="player_surround_upmix_off">Upmix surround: Dezactivat</string>
 </resources>

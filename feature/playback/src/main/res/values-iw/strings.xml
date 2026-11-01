@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="player_recording_exact_alarm_required">יש לאפשר שעונים מעוררים ותזכורות ל־StreamVault בהגדרות Android ולנסות להקליט שוב.</string>
+    <string name="player_surround_upmix_on">המרה לסראונד: פועל</string>
+    <string name="player_surround_upmix_off">המרה לסראונד: כבוי</string>
 </resources>

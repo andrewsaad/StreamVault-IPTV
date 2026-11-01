@@ -72,13 +72,24 @@ internal fun VodPlaybackSettingsSheet(
     isMuted: Boolean,
     isCastConnected: Boolean,
     onDismiss: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isSurroundUpmixEnabled: Boolean = false,
+    onToggleSurroundUpmix: () -> Unit = {}
 ) {
     val closeLabel = stringResource(R.string.player_close_playback_settings)
     val firstActionFocusRequester = remember { FocusRequester() }
     val actions = buildList {
         if (state.showSubtitleAction) add(VodSettingsAction("subtitles", stringResource(R.string.player_subs), onClick = onOpenSubtitleTracks))
         if (state.showAudioAction) add(VodSettingsAction("audio", stringResource(R.string.player_audio), onClick = onOpenAudioTracks))
+        add(
+            VodSettingsAction(
+                id = "surround_upmix",
+                label = stringResource(
+                    if (isSurroundUpmixEnabled) R.string.player_surround_upmix_on else R.string.player_surround_upmix_off
+                ),
+                onClick = onToggleSurroundUpmix
+            )
+        )
         if (state.showVideoQualityAction) add(VodSettingsAction("quality", stringResource(R.string.player_video_quality), onClick = onOpenVideoTracks))
         add(VodSettingsAction("speed", stringResource(R.string.player_playback_speed_title), onClick = onOpenPlaybackSpeed))
         add(VodSettingsAction("stop_timer", stringResource(R.string.player_stop_playback_after), onClick = onOpenStopPlaybackTimer))
@@ -211,6 +222,7 @@ internal fun VodPlaybackSettingsSheet(
 private fun vodSettingsIcon(id: String, isMuted: Boolean): ImageVector = when (id) {
     "subtitles" -> Icons.Default.ClosedCaption
     "audio" -> Icons.Default.Audiotrack
+    "surround_upmix" -> Icons.Default.SurroundSound
     "quality" -> Icons.Default.HighQuality
     "speed" -> Icons.Default.Speed
     "stop_timer" -> Icons.Default.Timer

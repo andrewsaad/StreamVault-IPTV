@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="player_recording_exact_alarm_required">Izinkan alarm dan pengingat untuk StreamVault di pengaturan Android, lalu coba rekam lagi.</string>
+    <string name="player_surround_upmix_on">Upmix surround: Aktif</string>
+    <string name="player_surround_upmix_off">Upmix surround: Nonaktif</string>
 </resources>

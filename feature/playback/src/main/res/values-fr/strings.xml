@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="player_recording_exact_alarm_required">Autorisez les alarmes et rappels pour StreamVault dans les paramètres Android, puis réessayez d’enregistrer.</string>
+    <string name="player_surround_upmix_on">Upmix surround : activé</string>
+    <string name="player_surround_upmix_off">Upmix surround : désactivé</string>
 </resources>

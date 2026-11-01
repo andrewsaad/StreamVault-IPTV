@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="player_recording_exact_alarm_required">Sta alarmen en herinneringen voor StreamVault toe in de Android-instellingen en probeer opnieuw op te nemen.</string>
+    <string name="player_surround_upmix_on">Surround-upmix: Aan</string>
+    <string name="player_surround_upmix_off">Surround-upmix: Uit</string>
 </resources>

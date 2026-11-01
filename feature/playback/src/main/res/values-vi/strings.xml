@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="player_recording_exact_alarm_required">Cho phép báo thức và lời nhắc cho StreamVault trong phần cài đặt Android, rồi thử ghi lại.</string>
+    <string name="player_surround_upmix_on">Upmix âm thanh vòm: Bật</string>
+    <string name="player_surround_upmix_off">Upmix âm thanh vòm: Tắt</string>
 </resources>

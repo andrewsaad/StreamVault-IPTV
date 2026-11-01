@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="player_recording_exact_alarm_required">V nastaveniach Androidu povoľte aplikácii StreamVault budíky a pripomienky a potom skúste nahrávanie znova.</string>
+    <string name="player_surround_upmix_on">Priestorový upmix: Zapnuté</string>
+    <string name="player_surround_upmix_off">Priestorový upmix: Vypnuté</string>
 </resources>

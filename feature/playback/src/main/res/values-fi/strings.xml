@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="player_recording_exact_alarm_required">Salli StreamVaultin hälytykset ja muistutukset Androidin asetuksissa ja yritä tallennusta uudelleen.</string>
+    <string name="player_surround_upmix_on">Surround-ylösmiksaus: Päällä</string>
+    <string name="player_surround_upmix_off">Surround-ylösmiksaus: Pois</string>
 </resources>
