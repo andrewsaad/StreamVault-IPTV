@@ -37,6 +37,7 @@ import androidx.media3.exoplayer.video.VideoRendererEventListener
 import androidx.media3.exoplayer.upstream.DefaultBandwidthMeter
 import androidx.media3.session.MediaSession
 import com.streamvault.domain.model.AudioOutputPreference
+import com.streamvault.surround.UpmixAudioSink
 import com.streamvault.domain.model.DecoderMode
 import com.streamvault.domain.model.PlaybackBufferMode
 import com.streamvault.domain.model.PlaybackContentKind
@@ -241,7 +242,7 @@ class Media3PlayerEngine @Inject constructor(
     private var knownBadSurfaceTypes: Set<String> = emptySet()
     private var selectedVideoDecoderName: String = "Unknown"
     private var selectedAudioDecoderName: String = "Unknown"
-    private var audioOutputPreference: AudioOutputPreference = AudioOutputPreference.AUTO
+    private var audioOutputPreference: AudioOutputPreference = AudioOutputPreference.DEFAULT
     private var compatibilityMemoryEnabled: Boolean = true
     private var fastRetryOnTransientFailures: Boolean = false
     private var audioOutputPath: String = "UNKNOWN"
@@ -1972,9 +1973,12 @@ class Media3PlayerEngine @Inject constructor(
                 enableFloatOutput: Boolean,
                 enableAudioTrackPlaybackParams: Boolean
             ): AudioSink {
-                val audioSink = requireNotNull(
-                    super.buildAudioSink(context, enableFloatOutput, enableAudioTrackPlaybackParams)
-                ) { "DefaultRenderersFactory did not provide an AudioSink." }
+                val audioSink = UpmixAudioSink(
+                    delegate = requireNotNull(
+                        super.buildAudioSink(context, enableFloatOutput, enableAudioTrackPlaybackParams)
+                    ) { "DefaultRenderersFactory did not provide an AudioSink." },
+                    enabled = { audioOutputPreference == AudioOutputPreference.SURROUND_UPMIX }
+                )
                 val syncAwareSink = if (rendererPlan.useAudioVideoSyncSink) {
                     audioVideoSyncSinkActive = true
                     AudioVideoOffsetAudioSink(
@@ -3040,6 +3044,7 @@ class Media3PlayerEngine @Inject constructor(
     private fun resolveStartupAudioOutputPath(): String = when {
         audioOutputPreference == AudioOutputPreference.PREFER_PASSTHROUGH -> "PASSTHROUGH_PREFERRED"
         audioOutputPreference == AudioOutputPreference.DISABLE_PASSTHROUGH -> "PASSTHROUGH_DISABLED"
+        audioOutputPreference == AudioOutputPreference.SURROUND_UPMIX -> "SURROUND_UPMIX_AC3"
         activeAudioDecoderMode == DecoderMode.SOFTWARE -> "SOFTWARE_PREFERRED"
         else -> "AUTO"
     }

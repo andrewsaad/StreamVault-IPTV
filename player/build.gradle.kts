@@ -205,6 +205,9 @@ dependencies {
     implementation(libs.media3.session)
     implementation(libs.media3.ui)
 
+    // Stereo -> 5.1 Dolby Digital upmix (Settings > Audio output)
+    implementation(project(":surround-upmix"))
+
     // OkHttp (for custom data source)
     implementation(libs.okhttp)
 
