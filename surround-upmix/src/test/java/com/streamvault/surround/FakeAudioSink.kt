@@ -17,6 +17,7 @@ class FakeAudioSink(var ac3Supported: Boolean = true) : AudioSink {
     var full = false
     var flushed = 0
     var released = false
+    var positionUs = 0L
 
     override fun configure(audioSinkConfig: AudioSink.AudioSinkConfig) {
         configured += audioSinkConfig.format
@@ -39,7 +40,7 @@ class FakeAudioSink(var ac3Supported: Boolean = true) : AudioSink {
     override fun flush() { flushed++ }
     override fun release() { released = true }
     override fun setListener(listener: AudioSink.Listener) = Unit
-    override fun getCurrentPositionUs(sourceEnded: Boolean): Long = 0L
+    override fun getCurrentPositionUs(sourceEnded: Boolean): Long = positionUs
     override fun play() = Unit
     override fun handleDiscontinuity() = Unit
     override fun playToEndOfStream() = Unit

@@ -10,13 +10,18 @@ import java.nio.ByteBuffer
 /**
  * Wraps an [AudioSink]: when [enabled] and the input is stereo PCM that the output can take as AC-3 passthrough,
  * upmixes it to 5.1 and hands the delegate AC-3 frames instead. Anything else passes through untouched.
+ *
+ * [latencyOffsetUs] is read on each configure and subtracted from the playback position while upmixing: Media3 applies
+ * no output latency correction to passthrough tracks, so on outputs that re-encode Dolby (TV to soundbar) the audio
+ * would otherwise lag the picture.
  */
 @UnstableApi
 class UpmixAudioSink(
     private val delegate: AudioSink,
     private val enabled: () -> Boolean,
     private val encoderFactory: (sampleRate: Int) -> BlockEncoder = { Ac3Encoder(it) },
-    private val encoderAvailable: () -> Boolean = { Ac3Encoder.isAvailable }
+    private val encoderAvailable: () -> Boolean = { Ac3Encoder.isAvailable },
+    private val latencyOffsetUs: () -> Long = { DEFAULT_LATENCY_OFFSET_US }
 ) : AudioSink by delegate {
 
     private var pipeline: UpmixPipeline? = null
@@ -26,6 +31,7 @@ class UpmixAudioSink(
     private var lastInputTimeUs = 0L
     private var lastInputStart = 0
     private var volume = 1f
+    private var offsetUs = 0L
 
     /** True while stereo input is being upmixed (for diagnostics and tests). */
     val isUpmixing: Boolean get() = pipeline != null
@@ -56,7 +62,14 @@ class UpmixAudioSink(
         }
         pipeline = UpmixPipeline(requireNotNull(encoder), format.sampleRate, format.pcmEncoding == C.ENCODING_PCM_FLOAT)
             .also { it.gain = volume }
+        offsetUs = latencyOffsetUs().coerceAtLeast(0L)
         lastInput = null
+    }
+
+    override fun getCurrentPositionUs(sourceEnded: Boolean): Long {
+        val positionUs = delegate.getCurrentPositionUs(sourceEnded)
+        if (pipeline == null || positionUs == AudioSink.CURRENT_POSITION_NOT_SET) return positionUs
+        return positionUs - offsetUs
     }
 
     override fun setVolume(volume: Float) {
@@ -137,6 +150,9 @@ class UpmixAudioSink(
     }
 
     companion object {
+        /** Tuned by ear on a Google TV Streamer into a Sonos Arc. */
+        const val DEFAULT_LATENCY_OFFSET_US = 200_000L
+
         fun ac3Format(sampleRate: Int): Format = Format.Builder()
             .setSampleMimeType(MimeTypes.AUDIO_AC3)
             .setChannelCount(StereoUpmixer.OUTPUT_CHANNELS)

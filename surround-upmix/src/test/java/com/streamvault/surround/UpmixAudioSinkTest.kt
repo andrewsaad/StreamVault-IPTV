@@ -16,12 +16,14 @@ class UpmixAudioSinkTest {
     private val fake = FakeAudioSink()
     private val encoders = mutableListOf<FakeEncoder>()
     private var enabled = true
+    private var offsetUs = 0L
 
     private fun sink(available: Boolean = true) = UpmixAudioSink(
         delegate = fake,
         enabled = { enabled },
         encoderFactory = { FakeEncoder(blockFrames = 2).also { encoders += it } },
-        encoderAvailable = { available }
+        encoderAvailable = { available },
+        latencyOffsetUs = { offsetUs }
     )
 
     private fun pcm(channels: Int = 2, rate: Int = 48_000, encoding: Int = C.ENCODING_PCM_16BIT): Format =
@@ -132,6 +134,21 @@ class UpmixAudioSinkTest {
         val fl = encoders.single().blocks.map { it[0] }
         assertThat(fl[0]).isWithin(1e-6f).of(1000 / 32768f * 0.5f)
         assertThat(fl[1]).isEqualTo(0f)
+    }
+
+    @Test
+    fun latencyOffsetDelaysPositionOnlyWhileUpmixing() {
+        offsetUs = 200_000L
+        fake.positionUs = 1_000_000L
+        val s = sink()
+        configure(s, pcm(channels = 6))                      // passthrough: position untouched
+        assertThat(s.getCurrentPositionUs(false)).isEqualTo(1_000_000L)
+        configure(s, pcm())
+        assertThat(s.getCurrentPositionUs(false)).isEqualTo(800_000L)
+        offsetUs = 300_000L                                  // read on configure, not on every position query
+        assertThat(s.getCurrentPositionUs(false)).isEqualTo(800_000L)
+        fake.positionUs = AudioSink.CURRENT_POSITION_NOT_SET
+        assertThat(s.getCurrentPositionUs(false)).isEqualTo(AudioSink.CURRENT_POSITION_NOT_SET)
     }
 
     @Test
