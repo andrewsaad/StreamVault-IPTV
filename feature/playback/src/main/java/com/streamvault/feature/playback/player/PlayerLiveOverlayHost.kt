@@ -179,6 +179,7 @@ internal fun BoxScope.PlayerLiveOverlayHost(
             val liveTranslationAvailable by viewModel.liveTranslationAvailable.collectAsStateWithLifecycle()
             val currentChannelRecording by viewModel.currentChannelRecording.collectAsStateWithLifecycle()
             val isMuted by viewModel.isMuted.collectAsStateWithLifecycle()
+            val surroundUpmixEnabled by viewModel.surroundUpmixEnabled.collectAsStateWithLifecycle()
             val audioVideoSyncEnabled by viewModel.audioVideoSyncEnabled.collectAsStateWithLifecycle()
             val castConnectionState by viewModel.castConnectionState.collectAsStateWithLifecycle()
             val timeshiftUiState by viewModel.timeshiftUiState.collectAsStateWithLifecycle()
@@ -226,6 +227,8 @@ internal fun BoxScope.PlayerLiveOverlayHost(
                 channelVariantCount = currentChannel?.variants?.size ?: 0,
                 isMuted = isMuted,
                 onToggleMute = viewModel::toggleMute,
+                isSurroundUpmixEnabled = surroundUpmixEnabled,
+                onToggleSurroundUpmix = viewModel::toggleSurroundUpmix,
                 onOpenSubtitleTracks = { onOpenModal(PlayerModal.TrackSelection(TrackType.TEXT)) },
                 onOpenAudioTracks = { onOpenModal(PlayerModal.TrackSelection(TrackType.AUDIO)) },
                 onOpenVideoTracks = { onOpenModal(PlayerModal.TrackSelection(TrackType.VIDEO)) },

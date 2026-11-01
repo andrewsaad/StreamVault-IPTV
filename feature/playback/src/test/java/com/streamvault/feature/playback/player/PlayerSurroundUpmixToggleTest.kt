@@ -3,6 +3,7 @@ package com.streamvault.feature.playback.player
 import com.google.common.truth.Truth.assertThat
 import com.streamvault.domain.model.AudioOutputPreference
 import com.streamvault.domain.settings.PlayerPreferences
+import com.streamvault.feature.playback.player.overlay.surroundUpmixQuickActionTag
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
@@ -63,6 +64,12 @@ class PlayerSurroundUpmixToggleTest {
         PlayerPreferencesCoordinator(preferences).toggleSurroundUpmix()
 
         verify(preferences).setPlayerAudioOutputPreference(AudioOutputPreference.SURROUND_UPMIX)
+    }
+
+    @Test
+    fun `live quick action tag shows the current state`() {
+        assertThat(surroundUpmixQuickActionTag(enabled = true)).isEqualTo("5.1 On")
+        assertThat(surroundUpmixQuickActionTag(enabled = false)).isEqualTo("5.1 Off")
     }
 
     private fun preferencesWith(preference: AudioOutputPreference): PlayerPreferences =

@@ -68,6 +68,9 @@ import java.util.Date
 import com.streamvault.core.ui.design.BrowseColors.Brand as Primary
 import com.streamvault.core.ui.design.BrowseColors.TextTertiary as OnSurfaceDim
 
+/** Short state tag for the live quick-action row; the label can be cut off at the button's max width. */
+internal fun surroundUpmixQuickActionTag(enabled: Boolean): String = if (enabled) "5.1 On" else "5.1 Off"
+
 @Composable
 fun ChannelInfoOverlay(
     currentChannel: Channel?,
@@ -108,6 +111,8 @@ fun ChannelInfoOverlay(
     qualityOptionCount: Int = 0,
     isMuted: Boolean = false,
     onToggleMute: () -> Unit = {},
+    isSurroundUpmixEnabled: Boolean = false,
+    onToggleSurroundUpmix: (() -> Unit)? = null,
     onOpenSubtitleTracks: () -> Unit = {},
     onOpenAudioTracks: () -> Unit = {},
     onOpenVideoTracks: () -> Unit = {},
@@ -484,6 +489,18 @@ fun ChannelInfoOverlay(
                             icon = stringResource(R.string.player_audio),
                             label = stringResource(R.string.player_audio),
                             onClick = onOpenAudioTracks,
+                            onInteraction = { handleMainActionFocus(null) }
+                        )
+                    }
+                }
+                if (onToggleSurroundUpmix != null) {
+                    item {
+                        QuickActionButton(
+                            icon = surroundUpmixQuickActionTag(isSurroundUpmixEnabled),
+                            label = stringResource(
+                                if (isSurroundUpmixEnabled) R.string.player_surround_upmix_on else R.string.player_surround_upmix_off
+                            ),
+                            onClick = onToggleSurroundUpmix,
                             onInteraction = { handleMainActionFocus(null) }
                         )
                     }
