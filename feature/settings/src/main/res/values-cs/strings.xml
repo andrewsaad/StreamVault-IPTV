@@ -231,6 +231,7 @@
     <string name="settings_audio_output_auto">Auto</string>
     <string name="settings_audio_output_prefer_passthrough">Upřednostnit průchod</string>
     <string name="settings_audio_output_disable_passthrough">Zakázat průchod</string>
+    <string name="settings_audio_output_surround_upmix">Převést stereo na 5.1 (Dolby)</string>
     <string name="settings_surface_auto">Automaticky</string>
     <string name="settings_surface_surface_view">SurfaceView</string>
     <string name="settings_surface_texture_view">TextureView</string>

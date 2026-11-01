@@ -228,6 +228,7 @@
     <string name="settings_audio_output_auto">Otomatis</string>
     <string name="settings_audio_output_prefer_passthrough">Utamakan passthrough</string>
     <string name="settings_audio_output_disable_passthrough">Nonaktifkan passthrough</string>
+    <string name="settings_audio_output_surround_upmix">Ubah stereo ke 5.1 (Dolby)</string>
     <string name="settings_surface_auto">Otomatis</string>
     <string name="settings_surface_surface_view">SurfaceView</string>
     <string name="settings_surface_texture_view">TextureView</string>

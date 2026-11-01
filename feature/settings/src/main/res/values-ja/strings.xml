@@ -228,6 +228,7 @@
     <string name="settings_audio_output_auto">自動</string>
     <string name="settings_audio_output_prefer_passthrough">パススルーを優先</string>
     <string name="settings_audio_output_disable_passthrough">パススルーを無効化</string>
+    <string name="settings_audio_output_surround_upmix">ステレオを5.1chに変換 (Dolby)</string>
     <string name="settings_surface_auto">自動</string>
     <string name="settings_surface_surface_view">SurfaceView</string>
     <string name="settings_surface_texture_view">TextureView</string>

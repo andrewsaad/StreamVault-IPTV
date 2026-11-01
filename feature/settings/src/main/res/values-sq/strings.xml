@@ -251,6 +251,7 @@
     <string name="settings_audio_output_auto">Automatike</string>
     <string name="settings_audio_output_prefer_passthrough">Prefero passthrough</string>
     <string name="settings_audio_output_disable_passthrough">Çaktivizo passthrough</string>
+    <string name="settings_audio_output_surround_upmix">Shndërro stereon në 5.1 (Dolby)</string>
     <string name="settings_surface_auto">Automatike</string>
     <string name="settings_surface_surface_view">SurfaceView</string>
     <string name="settings_surface_texture_view">TextureView</string>

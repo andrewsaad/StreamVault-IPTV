@@ -193,7 +193,8 @@ public fun SettingsPlayerPreferenceDialogs(
             listOf(
                 AudioOutputPreference.AUTO to context.getString(R.string.settings_audio_output_auto),
                 AudioOutputPreference.PREFER_PASSTHROUGH to context.getString(R.string.settings_audio_output_prefer_passthrough),
-                AudioOutputPreference.DISABLE_PASSTHROUGH to context.getString(R.string.settings_audio_output_disable_passthrough)
+                AudioOutputPreference.DISABLE_PASSTHROUGH to context.getString(R.string.settings_audio_output_disable_passthrough),
+                AudioOutputPreference.SURROUND_UPMIX to context.getString(R.string.settings_audio_output_surround_upmix)
             )
         }
         PremiumSelectionDialog(

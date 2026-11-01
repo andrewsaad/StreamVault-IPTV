@@ -251,6 +251,7 @@
     <string name="settings_audio_output_auto">स्वचालित</string>
     <string name="settings_audio_output_prefer_passthrough">पासथ्रू प्राथमिकता</string>
     <string name="settings_audio_output_disable_passthrough">पासथ्रू अक्षम करें</string>
+    <string name="settings_audio_output_surround_upmix">स्टीरियो को 5.1 में बदलें (Dolby)</string>
     <string name="settings_surface_auto">स्वचालित</string>
     <string name="settings_surface_surface_view">SurfaceView</string>
     <string name="settings_surface_texture_view">TextureView</string>

@@ -228,6 +228,7 @@
     <string name="settings_audio_output_auto">Auto</string>
     <string name="settings_audio_output_prefer_passthrough">Preferir passthrough</string>
     <string name="settings_audio_output_disable_passthrough">Desactivar passthrough</string>
+    <string name="settings_audio_output_surround_upmix">Convertir estéreo a 5.1 (Dolby)</string>
     <string name="settings_surface_auto">Auto</string>
     <string name="settings_surface_surface_view">SurfaceView</string>
     <string name="settings_surface_texture_view">TextureView</string>

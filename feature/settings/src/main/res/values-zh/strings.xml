@@ -251,6 +251,7 @@
     <string name="settings_audio_output_auto">自动</string>
     <string name="settings_audio_output_prefer_passthrough">优先直通</string>
     <string name="settings_audio_output_disable_passthrough">禁用直通</string>
+    <string name="settings_audio_output_surround_upmix">立体声升混为 5.1 (Dolby)</string>
     <string name="settings_surface_auto">自动</string>
     <string name="settings_surface_surface_view">SurfaceView</string>
     <string name="settings_surface_texture_view">TextureView</string>

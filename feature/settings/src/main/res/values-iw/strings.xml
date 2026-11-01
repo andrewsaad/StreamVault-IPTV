@@ -228,6 +228,7 @@
     <string name="settings_audio_output_auto">אוטומטי</string>
     <string name="settings_audio_output_prefer_passthrough">העדף העברה ישירה</string>
     <string name="settings_audio_output_disable_passthrough">השבת העברה ישירה</string>
+    <string name="settings_audio_output_surround_upmix">המרת סטריאו ל-5.1 (Dolby)</string>
     <string name="settings_surface_auto">אוטומטי</string>
     <string name="settings_surface_surface_view">SurfaceView</string>
     <string name="settings_surface_texture_view">TextureView</string>

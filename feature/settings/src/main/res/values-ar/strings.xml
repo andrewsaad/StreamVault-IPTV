@@ -225,6 +225,7 @@
     <string name="settings_audio_output_auto">تلقائي</string>
     <string name="settings_audio_output_prefer_passthrough">تفضيل التمرير المباشر</string>
     <string name="settings_audio_output_disable_passthrough">تعطيل التمرير المباشر</string>
+    <string name="settings_audio_output_surround_upmix">تحويل الستيريو إلى 5.1 (Dolby)</string>
     <string name="settings_surface_auto">تلقائي</string>
     <string name="settings_surface_surface_view">SurfaceView</string>
     <string name="settings_surface_texture_view">TextureView</string>

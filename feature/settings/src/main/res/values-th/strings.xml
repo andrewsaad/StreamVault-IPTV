@@ -251,6 +251,7 @@
     <string name="settings_audio_output_auto">อัตโนมัติ</string>
     <string name="settings_audio_output_prefer_passthrough">เลือกใช้ passthrough ก่อน</string>
     <string name="settings_audio_output_disable_passthrough">ปิด passthrough</string>
+    <string name="settings_audio_output_surround_upmix">แปลงสเตอริโอเป็น 5.1 (Dolby)</string>
     <string name="settings_surface_auto">อัตโนมัติ</string>
     <string name="settings_surface_surface_view">SurfaceView</string>
     <string name="settings_surface_texture_view">TextureView</string>

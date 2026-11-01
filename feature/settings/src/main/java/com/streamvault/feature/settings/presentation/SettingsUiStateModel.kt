@@ -101,7 +101,7 @@ data class SettingsUiState(
     val playerAudioDecoderMode: DecoderMode = DecoderMode.AUTO,
     val playerVideoDecoderMode: DecoderMode = DecoderMode.AUTO,
     val playerPlaybackBufferMode: PlaybackBufferMode = PlaybackBufferMode.AUTO,
-    val playerAudioOutputPreference: AudioOutputPreference = AudioOutputPreference.AUTO,
+    val playerAudioOutputPreference: AudioOutputPreference = AudioOutputPreference.DEFAULT,
     val playerCompatibilityMemoryEnabled: Boolean = true,
     val playerSurfaceMode: PlayerSurfaceMode = PlayerSurfaceMode.AUTO,
     val playerVodHttpProtocolMode: VodHttpProtocolMode = VodHttpProtocolMode.COMPATIBILITY_HTTP1,

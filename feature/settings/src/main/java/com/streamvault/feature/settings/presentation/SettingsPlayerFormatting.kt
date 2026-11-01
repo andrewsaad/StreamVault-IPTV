@@ -53,6 +53,7 @@ public fun formatAudioOutputPreferenceLabel(
     AudioOutputPreference.AUTO -> context.getString(R.string.settings_audio_output_auto)
     AudioOutputPreference.PREFER_PASSTHROUGH -> context.getString(R.string.settings_audio_output_prefer_passthrough)
     AudioOutputPreference.DISABLE_PASSTHROUGH -> context.getString(R.string.settings_audio_output_disable_passthrough)
+    AudioOutputPreference.SURROUND_UPMIX -> context.getString(R.string.settings_audio_output_surround_upmix)
 }
 
 public fun formatSurfaceModeLabel(mode: PlayerSurfaceMode, context: Context): String = when (mode) {

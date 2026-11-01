@@ -228,6 +228,7 @@
     <string name="settings_audio_output_auto">자동</string>
     <string name="settings_audio_output_prefer_passthrough">패스스루 우선</string>
     <string name="settings_audio_output_disable_passthrough">패스스루 사용 안 함</string>
+    <string name="settings_audio_output_surround_upmix">스테레오를 5.1로 변환 (Dolby)</string>
     <string name="settings_surface_auto">자동</string>
     <string name="settings_surface_surface_view">SurfaceView</string>
     <string name="settings_surface_texture_view">TextureView</string>

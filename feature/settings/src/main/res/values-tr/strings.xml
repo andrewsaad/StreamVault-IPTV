@@ -228,6 +228,7 @@
     <string name="settings_audio_output_auto">Otomatik</string>
     <string name="settings_audio_output_prefer_passthrough">Passthrough\'u tercih et</string>
     <string name="settings_audio_output_disable_passthrough">Passthrough\'u devre dışı bırak</string>
+    <string name="settings_audio_output_surround_upmix">Stereoyu 5.1\'e dönüştür (Dolby)</string>
     <string name="settings_surface_auto">Otomatik</string>
     <string name="settings_surface_surface_view">SurfaceView</string>
     <string name="settings_surface_texture_view">TextureView</string>

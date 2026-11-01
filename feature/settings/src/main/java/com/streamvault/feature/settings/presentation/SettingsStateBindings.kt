@@ -61,7 +61,7 @@ fun observeSettingsPreferenceSnapshot(
             playerAudioDecoderMode = DecoderMode.AUTO,
             playerVideoDecoderMode = DecoderMode.AUTO,
             playerPlaybackBufferMode = PlaybackBufferMode.AUTO,
-            playerAudioOutputPreference = AudioOutputPreference.AUTO,
+            playerAudioOutputPreference = AudioOutputPreference.DEFAULT,
             playerCompatibilityMemoryEnabled = true,
             playerSurfaceMode = com.streamvault.domain.model.PlayerSurfaceMode.AUTO,
             playerVodHttpProtocolMode = VodHttpProtocolMode.COMPATIBILITY_HTTP1,

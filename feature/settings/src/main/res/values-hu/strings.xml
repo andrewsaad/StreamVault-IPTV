@@ -228,6 +228,7 @@
     <string name="settings_audio_output_auto">Auto</string>
     <string name="settings_audio_output_prefer_passthrough">Passthrough előnyben részesítése</string>
     <string name="settings_audio_output_disable_passthrough">Passthrough letiltása</string>
+    <string name="settings_audio_output_surround_upmix">Sztereó átalakítása 5.1-re (Dolby)</string>
     <string name="settings_surface_auto">Automatikus</string>
     <string name="settings_surface_surface_view">SurfaceView</string>
     <string name="settings_surface_texture_view">TextureView</string>

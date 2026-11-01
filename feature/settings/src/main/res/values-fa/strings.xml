@@ -251,6 +251,7 @@
     <string name="settings_audio_output_auto">خودکار</string>
     <string name="settings_audio_output_prefer_passthrough">ترجیح عبور مستقیم</string>
     <string name="settings_audio_output_disable_passthrough">غیرفعال کردن عبور مستقیم</string>
+    <string name="settings_audio_output_surround_upmix">تبدیل استریو به 5.1 (Dolby)</string>
     <string name="settings_surface_auto">خودکار</string>
     <string name="settings_surface_surface_view">SurfaceView</string>
     <string name="settings_surface_texture_view">TextureView</string>

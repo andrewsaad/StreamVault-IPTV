@@ -795,7 +795,7 @@ class PreferencesRepository @Inject constructor(
     override val playerAudioOutputPreference: Flow<AudioOutputPreference> = context.dataStore.data.map { preferences ->
         preferences[PreferencesKeys.PLAYER_AUDIO_OUTPUT_PREFERENCE]
             ?.let { saved -> AudioOutputPreference.entries.firstOrNull { it.name == saved } }
-            ?: AudioOutputPreference.AUTO
+            ?: AudioOutputPreference.DEFAULT
     }
 
     override val playerCompatibilityMemoryEnabled: Flow<Boolean> = context.dataStore.data.map { preferences ->

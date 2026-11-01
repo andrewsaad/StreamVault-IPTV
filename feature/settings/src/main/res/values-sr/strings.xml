@@ -251,6 +251,7 @@
     <string name="settings_audio_output_auto">Аутоматски</string>
     <string name="settings_audio_output_prefer_passthrough">Предност пропуштању</string>
     <string name="settings_audio_output_disable_passthrough">Онемогући пропуштање</string>
+    <string name="settings_audio_output_surround_upmix">Претвори стерео у 5.1 (Dolby)</string>
     <string name="settings_surface_auto">Аутоматски</string>
     <string name="settings_surface_surface_view">SurfaceView</string>
     <string name="settings_surface_texture_view">TextureView</string>

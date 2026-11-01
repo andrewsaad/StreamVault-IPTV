@@ -228,6 +228,7 @@
     <string name="settings_audio_output_auto">Automaattinen</string>
     <string name="settings_audio_output_prefer_passthrough">Suosi läpivientiä</string>
     <string name="settings_audio_output_disable_passthrough">Poista läpivienti käytöstä</string>
+    <string name="settings_audio_output_surround_upmix">Muunna stereo 5.1:ksi (Dolby)</string>
     <string name="settings_surface_auto">Automaattinen</string>
     <string name="settings_surface_surface_view">SurfaceView</string>
     <string name="settings_surface_texture_view">TextureView</string>
