@@ -13,6 +13,7 @@ import com.streamvault.app.diagnostics.CrashReportStore
 import com.streamvault.app.diagnostics.RuntimeDiagnosticsManager
 import com.streamvault.core.ui.accessibility.isReducedMotionEnabled
 import com.streamvault.data.remote.jellyfin.JellyfinImageAuthInterceptor
+import com.streamvault.data.sync.ProviderSyncWorker
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -63,6 +64,13 @@ class StreamVaultApp : Application(), SingletonImageLoader.Factory {
                 .first()
             appStartupCoordinator.startProcessMaintenance()
         }
+        // The TV usually wakes from sleep rather than rebooting: refresh Live and the guide on open.
+        registerActivityLifecycleCallbacks(ForegroundSyncTrigger {
+            applicationScope.launch {
+                runCatching { ProviderSyncWorker.enqueueForegroundSync(this@StreamVaultApp) }
+                    .onFailure { Log.w("StreamVaultApp", "Foreground sync not queued", it) }
+            }
+        })
     }
 
     override fun onTerminate() {

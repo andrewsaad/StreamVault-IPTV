@@ -60,6 +60,34 @@ class ProviderSyncWorkSchedulerIntegrationTest {
         assertThat(spec.input.getLong("provider_id", -1L)).isEqualTo(-1L)
     }
 
+    @Test fun `foreground sync is due on first open, after two hours, or when the clock went back`() {
+        val interval = ProviderSyncWorker.FOREGROUND_SYNC_MIN_INTERVAL_MILLIS
+        val last = 1_800_000_000_000L
+        assertThat(ProviderSyncWorker.isForegroundSyncDue(0L, last)).isTrue()
+        assertThat(ProviderSyncWorker.isForegroundSyncDue(last, last + interval - 1)).isFalse()
+        assertThat(ProviderSyncWorker.isForegroundSyncDue(last, last + interval)).isTrue()
+        assertThat(ProviderSyncWorker.isForegroundSyncDue(last, last - 1)).isTrue()
+    }
+
+    @Test fun `foreground sync queues the boot check with a short delay at most once per interval`() {
+        val context = RuntimeEnvironment.getApplication()
+        val manager = workManager()
+        manager.cancelUniqueWork(ProviderSyncWorker.UNIQUE_BOOT_SYNC_WORK_NAME).result.get()
+        manager.pruneWork().result.get()
+        context.getSharedPreferences("provider_boot_sync", android.content.Context.MODE_PRIVATE).edit().clear().commit()
+        val now = 1_800_000_000_000L
+
+        assertThat(ProviderSyncWorker.enqueueForegroundSync(context, now)).isTrue()
+        assertThat(ProviderSyncWorker.enqueueForegroundSync(context, now + 60_000L)).isFalse()
+
+        val info = manager.getWorkInfosForUniqueWork(ProviderSyncWorker.UNIQUE_BOOT_SYNC_WORK_NAME).get().single()
+        val spec = kotlinx.coroutines.runBlocking(kotlinx.coroutines.Dispatchers.IO) {
+            (manager as androidx.work.impl.WorkManagerImpl).workDatabase.workSpecDao().getWorkSpec(info.id.toString())!!
+        }
+        assertThat(spec.initialDelay).isEqualTo(ProviderSyncWorker.FOREGROUND_SYNC_DELAY_SECONDS * 1_000L)
+        assertThat(spec.input.getBoolean(ProviderSyncWorker.KEY_BOOT_SYNC, false)).isTrue()
+    }
+
     private fun workManager(): WorkManager {
         val context = RuntimeEnvironment.getApplication()
         return runCatching { WorkManager.getInstance(context) }.getOrElse {

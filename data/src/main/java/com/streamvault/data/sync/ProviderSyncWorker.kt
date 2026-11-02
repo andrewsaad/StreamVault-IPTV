@@ -562,6 +562,10 @@ class ProviderSyncWorker(
         internal const val KEY_BOOT_SYNC = "boot_sync"
         internal const val UNIQUE_BOOT_SYNC_WORK_NAME = "provider-boot-sync"
         internal const val BOOT_SYNC_DELAY_SECONDS = 90L
+        internal const val FOREGROUND_SYNC_DELAY_SECONDS = 15L
+        internal const val FOREGROUND_SYNC_MIN_INTERVAL_MILLIS = 2 * 60 * 60 * 1000L
+        private const val BOOT_SYNC_PREFS = "provider_boot_sync"
+        private const val KEY_LAST_FOREGROUND_SYNC_AT = "last_foreground_sync_at"
         private const val INVALID_PROVIDER_ID = -1L
         private const val INVALID_REVISION = -1L
         private const val STALE_CONFIG_SYNC_MILLIS = 60_000L
@@ -596,7 +600,7 @@ class ProviderSyncWorker(
          * automatic-sync policy, playback deferral and the per-provider workflow lease apply;
          * a deferred or busy run retries with backoff. KEEP collapses repeated broadcasts.
          */
-        fun enqueueBootSync(context: Context) {
+        fun enqueueBootSync(context: Context, delaySeconds: Long = BOOT_SYNC_DELAY_SECONDS) {
             val request = OneTimeWorkRequestBuilder<ProviderSyncWorker>()
                 .setInputData(workDataOf(KEY_BOOT_SYNC to true))
                 .setConstraints(
@@ -605,11 +609,29 @@ class ProviderSyncWorker(
                         .setRequiresBatteryNotLow(true)
                         .build()
                 )
-                .setInitialDelay(BOOT_SYNC_DELAY_SECONDS, TimeUnit.SECONDS)
+                .setInitialDelay(delaySeconds, TimeUnit.SECONDS)
                 .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 10, TimeUnit.MINUTES)
                 .build()
             WorkManager.getInstance(context).enqueueUniqueWork(UNIQUE_BOOT_SYNC_WORK_NAME, ExistingWorkPolicy.KEEP, request)
         }
+
+        /**
+         * TV boxes sleep instead of rebooting, so BOOT_COMPLETED rarely fires and the app coming
+         * to the foreground is the usual power-on signal. Queues the same check as
+         * [enqueueBootSync] at most once per [FOREGROUND_SYNC_MIN_INTERVAL_MILLIS]. Reads
+         * preferences, so call it off the main thread. Returns whether a check was queued.
+         */
+        fun enqueueForegroundSync(context: Context, now: Long = System.currentTimeMillis()): Boolean {
+            val prefs = context.getSharedPreferences(BOOT_SYNC_PREFS, Context.MODE_PRIVATE)
+            if (!isForegroundSyncDue(prefs.getLong(KEY_LAST_FOREGROUND_SYNC_AT, 0L), now)) return false
+            prefs.edit().putLong(KEY_LAST_FOREGROUND_SYNC_AT, now).apply()
+            enqueueBootSync(context, FOREGROUND_SYNC_DELAY_SECONDS)
+            return true
+        }
+
+        /** A clock that moved backwards counts as due, so a bad timestamp can't block it for good. */
+        internal fun isForegroundSyncDue(lastQueuedAt: Long, now: Long): Boolean =
+            lastQueuedAt <= 0L || now < lastQueuedAt || now - lastQueuedAt >= FOREGROUND_SYNC_MIN_INTERVAL_MILLIS
 
         fun enqueueIdleCatchUp(context: Context) {
             val request = OneTimeWorkRequestBuilder<ProviderSyncWorker>()
