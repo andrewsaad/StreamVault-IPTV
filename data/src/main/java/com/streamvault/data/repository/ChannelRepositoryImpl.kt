@@ -371,8 +371,26 @@ class ChannelRepositoryImpl @Inject constructor(
         Result.error("Failed to reset channel error count", e)
     }
 
+    override fun getChannelsWithGuide(providerId: Long, startTime: Long, endTime: Long): Flow<List<Channel>> =
+        observeChannelSubset(
+            channelDao.getByProvider(providerId).map { entities ->
+                entities to channelDao.getChannelIdsWithGuide(providerId, startTime, endTime).toHashSet()
+            },
+            providerId
+        )
+
     private fun observeChannels(
         source: Flow<List<ChannelBrowseEntity>>,
+        providerId: Long
+    ): Flow<List<Channel>> = observeChannelSubset(source.map { it to null }, providerId)
+
+    /**
+     * Presents [source] entities. When the paired id set is non-null, only logical channels that
+     * contain one of those raw ids are built; numbering still uses each channel's position in the
+     * full presented list, so every returned channel equals its unfiltered presentation.
+     */
+    private fun observeChannelSubset(
+        source: Flow<Pair<List<ChannelBrowseEntity>, Set<Long>?>>,
         providerId: Long
     ): Flow<List<Channel>> = combine(
         combine(
@@ -387,23 +405,71 @@ class ChannelRepositoryImpl @Inject constructor(
         preferencesRepository.hideDecorativeLiveRows
     ) { values, hideDecorativeRows ->
         @Suppress("UNCHECKED_CAST")
-        val entities = values[0] as List<ChannelBrowseEntity>
+        val source = values[0] as Pair<List<ChannelBrowseEntity>, Set<Long>?>
+        val (entities, wantedRawIds) = source
         val level = values[1] as Int
+        @Suppress("UNCHECKED_CAST")
         val unlockedCats = values[2] as Set<Long>
         val settings = values[3] as ChannelPresentationSettings
+        @Suppress("UNCHECKED_CAST")
         val hiddenIds = values[4] as Set<Long>
         val filtered = applyVisibilityFilter(entities, level, unlockedCats, hideDecorativeRows)
             .filterNot { it.id in hiddenIds }
-        applyNumbering(
-            buildPresentedChannels(
-                filtered,
-                settings,
-                unlockedCats,
-                stalkerPortalUrlForProvider = { stalkerPortalRoot(providerId) }
-            ),
-            settings.numberingMode
-        )
+        val stalkerPortalUrlForProvider: (Long) -> String? = { stalkerPortalRoot(providerId) }
+        if (wantedRawIds == null) {
+            applyNumbering(
+                buildPresentedChannels(filtered, settings, unlockedCats, stalkerPortalUrlForProvider),
+                settings.numberingMode
+            )
+        } else {
+            buildPresentedChannelSubset(filtered, wantedRawIds, settings, unlockedCats, stalkerPortalUrlForProvider)
+        }
     }.flowOn(Dispatchers.Default)
+
+    /**
+     * Same output as `applyNumbering(buildPresentedChannels(entities))` restricted to the logical
+     * channels containing a wanted raw id, without classifying the rows of any other channel.
+     * Presented order (and so GROUP numbering) is first-appearance order of each group key.
+     */
+    private fun buildPresentedChannelSubset(
+        entities: List<ChannelBrowseEntity>,
+        wantedRawIds: Set<Long>,
+        settings: ChannelPresentationSettings,
+        unlockedCats: Set<Long>,
+        stalkerPortalUrlForProvider: (Long) -> String?
+    ): List<Channel> {
+        if (wantedRawIds.isEmpty() || entities.isEmpty()) return emptyList()
+        val groups: Collection<List<ChannelBrowseEntity>> =
+            if (settings.groupingMode == LiveChannelGroupingMode.RAW_VARIANTS) {
+                entities.map(::listOf)
+            } else {
+                val grouped = linkedMapOf<String, MutableList<ChannelBrowseEntity>>()
+                entities.forEach { entity ->
+                    grouped.getOrPut(channelGroupKey(entity)) { mutableListOf() }.add(entity)
+                }
+                grouped.values
+            }
+        val wantedPositions = ArrayList<Int>()
+        val wantedEntities = ArrayList<ChannelBrowseEntity>()
+        groups.forEachIndexed { position, group ->
+            if (group.any { it.id in wantedRawIds }) {
+                wantedPositions += position
+                wantedEntities += group
+            }
+        }
+        if (wantedEntities.isEmpty()) return emptyList()
+        val presented = buildPresentedChannels(wantedEntities, settings, unlockedCats, stalkerPortalUrlForProvider)
+        check(presented.size == wantedPositions.size) {
+            "Grouped presentation produced ${presented.size} channels for ${wantedPositions.size} groups"
+        }
+        return when (settings.numberingMode) {
+            ChannelNumberingMode.GROUP -> presented.mapIndexed { index, channel ->
+                channel.copy(number = wantedPositions[index] + 1)
+            }
+            ChannelNumberingMode.PROVIDER -> presented
+            ChannelNumberingMode.HIDDEN -> presented.map { it.copy(number = 0) }
+        }
+    }
 
     private fun decorativeAwareCategoryCountFlow(providerId: Long): Flow<List<CategoryCount>> =
         combine(

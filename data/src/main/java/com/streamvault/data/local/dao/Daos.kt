@@ -482,6 +482,39 @@ abstract class ChannelDao {
     )
     abstract suspend fun getGuideLookupsByIds(ids: List<Long>): List<ChannelGuideLookupEntity>
 
+    /**
+     * Raw channel ids whose stored guide mapping has at least one programme overlapping
+     * [startTime, endTime). Each EXISTS probe is served by the (source, xmltv id, start) index
+     * on `epg_programmes` or the (provider, channel, start) index on `programs`, so this never
+     * scans the guide. It is a superset filter: guide-source policy is applied by the caller's
+     * programme query, exactly as before.
+     */
+    @Query(
+        """
+        SELECT cem.provider_channel_id
+        FROM channel_epg_mappings cem
+        WHERE cem.provider_id = :providerId
+          AND cem.xmltv_channel_id IS NOT NULL
+          AND (
+              (cem.source_type = 'EXTERNAL' AND EXISTS (
+                  SELECT 1 FROM epg_programmes ep
+                  WHERE ep.epg_source_id = cem.epg_source_id
+                    AND ep.xmltv_channel_id = cem.xmltv_channel_id
+                    AND ep.start_time < :endTime
+                    AND ep.end_time > :startTime
+              ))
+              OR (cem.source_type = 'PROVIDER' AND EXISTS (
+                  SELECT 1 FROM programs p
+                  WHERE p.provider_id = cem.provider_id
+                    AND p.channel_id = cem.xmltv_channel_id
+                    AND p.start_time < :endTime
+                    AND p.end_time > :startTime
+              ))
+          )
+        """
+    )
+    abstract suspend fun getChannelIdsWithGuide(providerId: Long, startTime: Long, endTime: Long): List<Long>
+
     @Query(
         """
         SELECT name, stream_id, epg_channel_id

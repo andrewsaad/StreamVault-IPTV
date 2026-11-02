@@ -2,6 +2,7 @@ package com.streamvault.data.repository
 
 import android.database.sqlite.SQLiteException
 import com.google.common.truth.Truth.assertThat
+import com.google.common.truth.Truth.assertWithMessage
 import com.streamvault.data.local.dao.CategoryDao
 import com.streamvault.data.local.dao.ChannelDao
 import com.streamvault.data.local.dao.FavoriteDao
@@ -455,6 +456,55 @@ class ChannelRepositoryImplTest {
         assertThat(createRepository().getChannels(7L).first()).hasSize(100)
 
         verify(providerSnapshotDao, times(1)).getConfigSync(7L)
+    }
+
+    @Test
+    fun `getChannelsWithGuide equals the guided subset of getChannels in every presentation mode`() = runTest {
+        val entities = listOf(
+            ChannelBrowseEntity(id = 1L, streamId = 11L, name = "Sky Sports Main Event HD", logicalGroupId = "sky-me",
+                streamUrl = "https://stream/1", number = 5, providerId = 7L, epgChannelId = "sky.me"),
+            ChannelBrowseEntity(id = 2L, streamId = 12L, name = "Sky Sports Main Event FHD", logicalGroupId = "sky-me",
+                streamUrl = "https://stream/2", number = 6, providerId = 7L, epgChannelId = "sky.me"),
+            ChannelBrowseEntity(id = 3L, streamId = 13L, name = "BBC One", logicalGroupId = "bbc-one",
+                streamUrl = "https://stream/3", number = 7, providerId = 7L),
+            ChannelBrowseEntity(id = 4L, streamId = 14L, name = "##### SPORTS #####",
+                streamUrl = "https://stream/4", number = 8, providerId = 7L),
+            ChannelBrowseEntity(id = 5L, streamId = 15L, name = "beIN Sports 1", logicalGroupId = "bein-1",
+                streamUrl = "https://stream/5", number = 9, providerId = 7L, epgChannelId = "bein1"),
+            ChannelBrowseEntity(id = 6L, streamId = 16L, name = "News 24", logicalGroupId = "news-24",
+                streamUrl = "https://stream/6", number = 10, providerId = 7L),
+        )
+        val guided = listOf(2L, 5L, 404L)
+        whenever(channelDao.getByProvider(7L)).thenReturn(flowOf(entities))
+        whenever(channelDao.getChannelIdsWithGuide(7L, 100L, 200L)).thenReturn(guided)
+        whenever(parentalControlManager.unlockedCategoriesForProvider(7L)).thenReturn(flowOf(emptySet()))
+
+        for (grouping in LiveChannelGroupingMode.entries) {
+            for (numbering in ChannelNumberingMode.entries) {
+                whenever(preferencesRepository.liveChannelGroupingMode).thenReturn(flowOf(grouping))
+                whenever(preferencesRepository.liveChannelNumberingMode).thenReturn(flowOf(numbering))
+                val repository = createRepository()
+
+                val expected = repository.getChannels(7L).first().filter { channel ->
+                    channel.id in guided || channel.variants.any { it.rawChannelId in guided }
+                }
+                val actual = repository.getChannelsWithGuide(7L, 100L, 200L).first()
+
+                assertThat(actual).isNotEmpty()
+                assertWithMessage("$grouping/$numbering").that(actual).isEqualTo(expected)
+            }
+        }
+    }
+
+    @Test
+    fun `getChannelsWithGuide presents nothing when no channel has guide data`() = runTest {
+        whenever(channelDao.getByProvider(7L)).thenReturn(flowOf(listOf(
+            ChannelBrowseEntity(id = 1L, streamId = 1L, name = "News", streamUrl = "https://stream/1", providerId = 7L)
+        )))
+        whenever(channelDao.getChannelIdsWithGuide(7L, 0L, 1L)).thenReturn(emptyList())
+        whenever(parentalControlManager.unlockedCategoriesForProvider(7L)).thenReturn(flowOf(emptySet()))
+
+        assertThat(createRepository().getChannelsWithGuide(7L, 0L, 1L).first()).isEmpty()
     }
 
     @Test
