@@ -1,0 +1,150 @@
+# Provider VOD category names: TYPE|name|expected language group (NONE = no language row).
+# Golden fixture for VodLanguageClassifierTest; every real category name must keep its group.
+MOVIE|المضاف حديثا|NONE
+MOVIE|تصوير سينما|NONE
+MOVIE|افلام مصري حديثه|EGYPTIAN
+MOVIE|افلام مصري|EGYPTIAN
+MOVIE|كيدز بالمصري|EGYPTIAN
+MOVIE|افلام عربيه حديثه|ARABIC
+MOVIE|افلام عربيه|ARABIC
+MOVIE|Arabic premier|ARABIC
+MOVIE|Arabic HD 1080|ARABIC
+MOVIE|English HD 1080|ENGLISH
+MOVIE|Kids HD 1080|NONE
+MOVIE|English Movies 2026|ENGLISH
+MOVIE|English Action|ENGLISH
+MOVIE|English Horror|ENGLISH
+MOVIE|English Sci-fi|ENGLISH
+MOVIE|English Adventure|ENGLISH
+MOVIE|English Thriller|ENGLISH
+MOVIE|English Family|ENGLISH
+MOVIE|English Drama|ENGLISH
+MOVIE|English Romance|ENGLISH
+MOVIE|English Comedy|ENGLISH
+MOVIE|Asia  Movies|NONE
+MOVIE|BoxOffice|NONE
+MOVIE|Best Movies|NONE
+MOVIE|English Movies|ENGLISH
+MOVIE|English NetFlix|ENGLISH
+MOVIE|English OnDemand|ENGLISH
+MOVIE|History    Film|NONE
+MOVIE|Western Film|NONE
+MOVIE|IMDB TOP MOVIE|NONE
+MOVIE|Indian Movies New|NONE
+MOVIE|Indian Movies|NONE
+MOVIE|Turky Movies|TURKISH
+MOVIE|Amazon|NONE
+MOVIE|افلام كلاسيك|ARABIC
+MOVIE|Arabic Classic New|ARABIC
+MOVIE|Arabic Kids|ARABIC
+MOVIE|English Kids|ENGLISH
+MOVIE|Animation|NONE
+MOVIE|Tom And Jerry|NONE
+MOVIE|WWE|NONE
+MOVIE|رياضه|NONE
+MOVIE|افلام مدبلجه|NONE
+MOVIE|سعاد حسني|EGYPTIAN
+MOVIE|اسماعيل ياسين|EGYPTIAN
+MOVIE|عادل امام|EGYPTIAN
+MOVIE|احمد زكى|EGYPTIAN
+MOVIE|نور الشريف|EGYPTIAN
+MOVIE|محمود عبد العزيز|EGYPTIAN
+MOVIE|رشدي اباظة|EGYPTIAN
+MOVIE|احمد السقا|EGYPTIAN
+MOVIE|كريم عبدالعزيز|EGYPTIAN
+MOVIE|احمد عز|EGYPTIAN
+MOVIE|محمد رمضان|EGYPTIAN
+MOVIE|محمد سعد|EGYPTIAN
+MOVIE|احمد حلمي|EGYPTIAN
+MOVIE|محمد هنيدى|EGYPTIAN
+MOVIE|فريد شوقي|EGYPTIAN
+MOVIE|عمر الشريف|EGYPTIAN
+MOVIE|نبيلة عبيد|EGYPTIAN
+MOVIE|دريد لحام|ARABIC
+MOVIE|مسرحيات|EGYPTIAN
+MOVIE|Mr Bean|NONE
+MOVIE|Marvel|NONE
+MOVIE|James Bond 007|NONE
+MOVIE|jason-statham|NONE
+MOVIE|Scott Adkins|NONE
+MOVIE|Ben Affleck|NONE
+MOVIE|Michael Jai White|NONE
+MOVIE|Chris Hemsworth|NONE
+MOVIE|Arnold Schwarzenegger|NONE
+MOVIE|Sylvester Stallone|NONE
+MOVIE|Denzel Washington|NONE
+MOVIE|Gerard Butler|NONE
+MOVIE|Vin Diesel|NONE
+MOVIE|Van Damme|NONE
+MOVIE|Liam Neeson|NONE
+MOVIE|Mel Gibson|NONE
+MOVIE|Nicolas Cage|NONE
+MOVIE|The Rock|NONE
+MOVIE|Tom Cruise|NONE
+MOVIE|Tom Hanks|NONE
+MOVIE|bruce willis|NONE
+MOVIE|Keanu Reeves|NONE
+MOVIE|Leonardo DiCaprio|NONE
+MOVIE|Jet Li|NONE
+MOVIE|Jim Carrey|NONE
+MOVIE|Jackie Chan|NONE
+MOVIE|Steven Seagal|NONE
+MOVIE|Will Smith|NONE
+MOVIE|Wesley Snipes|NONE
+MOVIE|documentary film|NONE
+MOVIE|اميتاب باتشان|NONE
+MOVIE|Shah Rukh Khan شاروخان|NONE
+MOVIE|Hrithik Roshan هريثيك روشان|NONE
+MOVIE|سلمان خان|NONE
+MOVIE|Aamir Khan عامر خان|NONE
+MOVIE|Rani Mukerji راني موخرجي|NONE
+MOVIE|Ashley Mukeji أشلي كومار|NONE
+MOVIE|Allu Arjun أللو أرجون|NONE
+MOVIE|ramadan 2022|NONE
+MOVIE|Ramadan 2021|NONE
+MOVIE|Pure German Movies|NONE
+MOVIE|Pure Spanish Movie|NONE
+MOVIE|Pure English Movie|ENGLISH
+MOVIE|Pure French Movies|NONE
+MOVIE|El Kabeer Awy|EGYPTIAN
+MOVIE|English Movies 4K|ENGLISH
+SERIES|عربي يعرض الان|ARABIC
+SERIES|تركي يعرض الان|TURKISH
+SERIES|تركي مدبلج يعرض الان|TURKISH
+SERIES|مسلسلات أجنبى تعرض الان|ENGLISH
+SERIES|مسلسلات مصريه 2026|EGYPTIAN
+SERIES|مسلسلات مصريه حديثه|EGYPTIAN
+SERIES|مسلسلات مصريه|EGYPTIAN
+SERIES|مسلسلات عربيه 2026|ARABIC
+SERIES|مسلسلات عربيه|ARABIC
+SERIES|مسلسلات تركيه حديثه|TURKISH
+SERIES|مسلسلات تركيه|TURKISH
+SERIES|مسلسلات مدبلجه|NONE
+SERIES|Series Variety Vip|NONE
+SERIES|Asian Series|NONE
+SERIES|English Series [2026]|ENGLISH
+SERIES|English Series [حديثه]|ENGLISH
+SERIES|English Series|ENGLISH
+SERIES|Family Series|NONE
+SERIES|NetFilx Series|NONE
+SERIES|Ramadan Egypt 2026|EGYPTIAN
+SERIES|Ramdan Arabic 2026|ARABIC
+SERIES|Ramdan Tv Shows 2026|NONE
+SERIES|Ramadan Egypt 2025|EGYPTIAN
+SERIES|Ramadan Arabic 2025|ARABIC
+SERIES|Ramadan Tv 2025|NONE
+SERIES|Ramdan Egypt|EGYPTIAN
+SERIES|Ramdan Arabic|ARABIC
+SERIES|Ramdan Tv|NONE
+SERIES|TV Shows|NONE
+SERIES|مسلسلات كلاسيك|ARABIC
+SERIES|مسلسلات تاريخية|NONE
+SERIES|مسلسلات هنديه|NONE
+SERIES|أطفال عربى|ARABIC
+SERIES|Kides Series|NONE
+SERIES|Spacetoon|NONE
+SERIES|مسرح مصر|EGYPTIAN
+SERIES|Education|NONE
+SERIES|Documentary  Series|NONE
+SERIES|اسلاميات|NONE
+SERIES|فوازيرمصريه|EGYPTIAN
