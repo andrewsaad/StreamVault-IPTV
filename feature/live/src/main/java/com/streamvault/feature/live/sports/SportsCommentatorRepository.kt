@@ -84,7 +84,7 @@ internal class SportsCommentatorRepository(
             attemptedDate = today
             attemptedAt = now
             val html = fetcher.fetch(today) ?: return
-            val parsed = BtolatCommentatorParser.parse(html, today)
+            val parsed = withKnownKickoffs(BtolatCommentatorParser.parse(html, today, now), _entries.value, today, now)
             _entries.value = parsed
             runCatching { store.save(StoredSportsCommentators(today, now, parsed)) }
         } catch (cancelled: CancellationException) {
@@ -98,6 +98,28 @@ internal class SportsCommentatorRepository(
 
     companion object {
         val REFRESH_INTERVAL: Duration = Duration.ofHours(1)
+
+        /**
+         * btolat hides the kick-off of a match in play. When an earlier read today saw the same
+         * channel and commentator with a kick-off that has passed, keep that exact entry instead.
+         */
+        internal fun withKnownKickoffs(
+            parsed: List<SportsCommentatorEntry>,
+            previous: List<SportsCommentatorEntry>,
+            today: LocalDate,
+            now: Instant,
+        ): List<SportsCommentatorEntry> {
+            if (parsed.none(SportsCommentatorEntry::live)) return parsed
+            val known = previous.filter { entry ->
+                !entry.live && !entry.kickoff.isAfter(now) &&
+                    entry.kickoff.atZone(BtolatCommentatorParser.SOURCE_ZONE).toLocalDate() == today
+            }
+            return parsed.map { entry ->
+                if (!entry.live) return@map entry
+                known.filter { it.beinChannel == entry.beinChannel && it.commentator == entry.commentator }
+                    .maxByOrNull(SportsCommentatorEntry::kickoff) ?: entry
+            }.distinct()
+        }
     }
 }
 
@@ -146,11 +168,13 @@ internal class SharedPreferencesSportsCommentatorStore(context: Context) : Sport
         val fetchedAt = Instant.ofEpochMilli(preferences.getLong(KEY_FETCHED_AT, 0L))
         val entries = preferences.getString(KEY_ENTRIES, null).orEmpty().lineSequence().mapNotNull { line ->
             val parts = line.split('\t')
-            if (parts.size != 3) return@mapNotNull null
+            // Three fields before live entries existed; the fourth is "1" for a match seen in play.
+            if (parts.size != 3 && parts.size != 4) return@mapNotNull null
             SportsCommentatorEntry(
                 beinChannel = parts[0].toIntOrNull() ?: return@mapNotNull null,
                 kickoff = Instant.ofEpochMilli(parts[1].toLongOrNull() ?: return@mapNotNull null),
                 commentator = parts[2].takeIf(String::isNotBlank) ?: return@mapNotNull null,
+                live = parts.getOrNull(3) == "1",
             )
         }.toList()
         return StoredSportsCommentators(date, fetchedAt, entries)
@@ -162,7 +186,7 @@ internal class SharedPreferencesSportsCommentatorStore(context: Context) : Sport
             putLong(KEY_FETCHED_AT, value.fetchedAt.toEpochMilli())
             putString(KEY_ENTRIES, value.entries.joinToString("\n") { entry ->
                 val name = entry.commentator.replace('\t', ' ').replace('\n', ' ')
-                "${entry.beinChannel}\t${entry.kickoff.toEpochMilli()}\t$name"
+                "${entry.beinChannel}\t${entry.kickoff.toEpochMilli()}\t$name\t${if (entry.live) 1 else 0}"
             })
         }
     }

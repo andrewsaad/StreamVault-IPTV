@@ -12,12 +12,19 @@ internal data class SportsCommentatorEntry(
     val beinChannel: Int,
     val kickoff: Instant,
     val commentator: String,
+    /**
+     * btolat showed the match as in play, which blanks its kick-off time. [kickoff] then holds
+     * the moment the page was read, and the match started at most [SportsCommentatorMatcher.LIVE_LOOKBACK] before it.
+     */
+    val live: Boolean = false,
 )
 
 /**
  * Reads btolat.com's daily match page. Each `.match-card` carries the kick-off time, and its
  * footer holds one chip per channel: the channel name, then the commentator when one is known.
  * Only "BEIN SPORTS N" chips that name a commentator are kept; league headers are ignored.
+ * A match in play (`<li class="item Playing">`) shows no kick-off time; with [parse]'s
+ * `observedAt` its chips are kept as [SportsCommentatorEntry.live] entries instead of dropped.
  */
 internal object BtolatCommentatorParser {
     /** btolat lists times in Cairo time; the page states the offset ("التوقيت GMT+2"). */
@@ -27,6 +34,7 @@ internal object BtolatCommentatorParser {
     private val matchTime = Regex(
         """class="match-time"[^>]*>\s*([0-9٠-٩]{1,2}):([0-9٠-٩]{2})\s*([صم])?"""
     )
+    private val playingItem = Regex("""class\s*=\s*["'][^"']*\bPlaying\b""")
     private val interpolated = Regex("""<span class="sc-interp">([^<]*)</span>""")
     private val pageOffset = Regex("""التوقيت\s*GMT\s*([+-])\s*(\d{1,2})(?::(\d{2}))?""")
     private val beinChip = Regex("""^bein\s*sports?\s*(\d{1,2})(?:\s*hd)?$""", RegexOption.IGNORE_CASE)
@@ -35,18 +43,28 @@ internal object BtolatCommentatorParser {
     private const val CHIP_FALLBACK_MARKER = "<rect"
     private const val MAX_COMMENTATOR_LENGTH = 60
 
-    fun parse(html: String, date: LocalDate): List<SportsCommentatorEntry> {
+    fun parse(html: String, date: LocalDate, observedAt: Instant? = null): List<SportsCommentatorEntry> {
         val zone = pageZone(html)
         val starts = cardStart.findAll(html).map { it.range.first }.toList()
         return starts.flatMapIndexed { index, start ->
             val next = starts.getOrNull(index + 1) ?: html.length
             val close = html.indexOf("</li>", start).takeIf { it in start until next } ?: next
-            parseCard(html.substring(start, close), date, zone)
+            val liveAt = observedAt?.takeIf { isPlaying(html, start, starts.getOrNull(index - 1) ?: -1) }
+            parseCard(html.substring(start, close), date, zone, liveAt)
         }.distinct()
     }
 
-    private fun parseCard(card: String, date: LocalDate, zone: ZoneId): List<SportsCommentatorEntry> {
-        val kickoff = kickoffTime(card)?.let { date.atTime(it).atZone(zone).toInstant() } ?: return emptyList()
+    /** Whether the `<li>` opened between the previous card and this one is marked as in play. */
+    private fun isPlaying(html: String, cardStart: Int, previousCardStart: Int): Boolean {
+        val item = html.lastIndexOf("<li", cardStart)
+        if (item <= previousCardStart) return false
+        return playingItem.containsMatchIn(html.substring(item, cardStart))
+    }
+
+    private fun parseCard(card: String, date: LocalDate, zone: ZoneId, liveAt: Instant?): List<SportsCommentatorEntry> {
+        val time = kickoffTime(card)
+        val kickoff = time?.let { date.atTime(it).atZone(zone).toInstant() } ?: liveAt ?: return emptyList()
+        val live = time == null
         val marker = if (CHIP_MARKER in card) CHIP_MARKER else CHIP_FALLBACK_MARKER
         return card.split(marker).drop(1).mapNotNull { chip ->
             val texts = interpolated.findAll(chip).map { decode(it.groupValues[1]).trim() }.toList()
@@ -55,7 +73,7 @@ internal object BtolatCommentatorParser {
             val commentator = texts.getOrNull(1)
                 ?.takeIf { it.isNotBlank() && it.length <= MAX_COMMENTATOR_LENGTH && beinChip.matchEntire(it) == null }
                 ?: return@mapNotNull null
-            SportsCommentatorEntry(channel, kickoff, commentator)
+            SportsCommentatorEntry(channel, kickoff, commentator, live)
         }
     }
 
@@ -97,6 +115,12 @@ internal object BtolatCommentatorParser {
 internal object SportsCommentatorMatcher {
     val KICKOFF_TOLERANCE: Duration = Duration.ofMinutes(20)
 
+    /**
+     * How long before a page read an in-play match may have started: 90 min, half-time, stoppage,
+     * extra time and penalties, plus a guide slot that opens before kick-off.
+     */
+    val LIVE_LOOKBACK: Duration = Duration.ofMinutes(180)
+
     // Separate beIN feeds (Xtra, MAX, Premium) and non-Arabic regional feeds carry other commentary.
     private val excludedTokens = setOf(
         "xtra", "extra", "max", "premium", "plus",
@@ -137,13 +161,20 @@ internal object SportsCommentatorMatcher {
         return commentatorFor(channel, kickoff, entries)
     }
 
-    private fun commentatorFor(beinChannel: Int, kickoff: Instant, entries: List<SportsCommentatorEntry>): String? =
-        entries.asSequence()
-            .filter { it.beinChannel == beinChannel }
+    /** An entry with a known kick-off wins; otherwise a match seen in play may have kicked off this long before. */
+    private fun commentatorFor(beinChannel: Int, kickoff: Instant, entries: List<SportsCommentatorEntry>): String? {
+        val onChannel = entries.filter { it.beinChannel == beinChannel }
+        return onChannel.asSequence()
+            .filterNot(SportsCommentatorEntry::live)
             .map { it to Duration.between(it.kickoff, kickoff).abs() }
             .filter { (_, gap) -> gap <= KICKOFF_TOLERANCE }
             .minByOrNull { (_, gap) -> gap }
             ?.first?.commentator
+            ?: onChannel.asSequence()
+                .filter { it.live && !kickoff.isBefore(it.kickoff - LIVE_LOOKBACK) && !kickoff.isAfter(it.kickoff + KICKOFF_TOLERANCE) }
+                .maxByOrNull(SportsCommentatorEntry::kickoff)
+                ?.commentator
+    }
 
     fun apply(events: List<SportsEvent>, entries: List<SportsCommentatorEntry>): List<SportsEvent> =
         events.map { event ->
