@@ -32,6 +32,8 @@ import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.TestCoroutineScheduler
@@ -48,6 +50,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doSuspendableAnswer
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import org.robolectric.RobolectricTestRunner
@@ -110,6 +113,10 @@ class SportsHubViewModelTest {
         categoryId = 10L, streamUrl = "https://example.test/live",
     )
     private val channelRows = MutableStateFlow(listOf(channel))
+    /** Guide-filtered rows; null mirrors the full catalog (the pre-filter behaviour). */
+    private var guideChannelIds: Set<Long>? = null
+    private val activeSubscriptions = AtomicInteger()
+    private val catalogLoads = AtomicInteger()
     private val activeSource = MutableStateFlow<ActiveLiveSource?>(ActiveLiveSource.ProviderSource(7L))
     private val hiddenCategories = MutableStateFlow(emptySet<Long>())
 
@@ -122,8 +129,16 @@ class SportsHubViewModelTest {
         whenever(providers.getProviders()).thenReturn(flowOf(listOf(provider)))
         whenever(combined.getActiveLiveSource()).thenReturn(activeSource)
         whenever(combined.getProfiles()).thenReturn(flowOf(emptyList()))
-        whenever(channels.getChannels(7L)).thenReturn(flow {
+        whenever(channels.getChannelsWithGuide(eq(7L), any(), any())).thenReturn(flow {
             subscriptions.incrementAndGet()
+            try {
+                emitAll(guideRows())
+            } finally {
+                activeSubscriptions.decrementAndGet()
+            }
+        }.onStart { activeSubscriptions.incrementAndGet() })
+        whenever(channels.getChannels(7L)).thenReturn(flow {
+            catalogLoads.incrementAndGet()
             emitAll(channelRows)
         })
         whenever(preferences.getHiddenCategoryIds(7L, ContentType.LIVE)).thenReturn(hiddenCategories)
@@ -161,9 +176,10 @@ class SportsHubViewModelTest {
         val events = first.uiState.value.events
         store.clear()
 
-        val gate = CompletableDeferred<Map<String, List<Program>>>()
+        // The on-now guide slice is cached, so block the refresh where it publishes instead.
+        val gate = CompletableDeferred<Map<String, com.streamvault.data.preferences.SportsEventChannelPick>>()
         val refreshStarted = CompletableDeferred<Unit>()
-        whenever(epg.getResolvedProgramsForChannels(any(), any(), any(), any())).doSuspendableAnswer {
+        whenever(preferences.getSportsEventChannelPicks(any(), any())).doSuspendableAnswer {
             refreshStarted.complete(Unit)
             gate.await()
         }
@@ -240,16 +256,43 @@ class SportsHubViewModelTest {
     }
 
     @Test
-    fun `minute refresh reads current programmes without reloading channel catalog`() = sportsTest {
+    fun `minute refresh re-filters cached on-now programmes without reading the guide or catalog`() = sportsTest {
         val model = createModel()
         await { !model.uiState.value.isLoading }
         val firstReads = programmeReads.get()
+        val refreshes = AtomicInteger()
+        val collector = repositoryScope.launch { model.uiState.collect { refreshes.incrementAndGet() } }
 
         scheduler.advanceTimeBy(60_001L)
-        await { programmeReads.get() > firstReads && !model.uiState.value.isLoading }
+        scheduler.runCurrent()
+        await { refreshes.get() > 1 && !model.uiState.value.isLoading }
+        collector.cancel()
 
+        assertThat(programmeReads.get()).isEqualTo(firstReads)
         assertThat(subscriptions.get()).isEqualTo(1)
         assertThat(model.uiState.value.events).hasSize(1)
+    }
+
+    @Test
+    fun `programme starting after the load appears on a later tick from the cached guide slice`() = sportsTest {
+        val loadedAt = System.currentTimeMillis()
+        whenever(epg.getResolvedProgramsForChannels(any(), any(), any(), any())).thenAnswer {
+            programmeReads.incrementAndGet()
+            mapOf("1" to listOf(Program(
+                id = 1L, channelId = "1", title = "Arsenal vs Chelsea", category = "Football",
+                startTime = loadedAt + 300L, endTime = loadedAt + 3_600_000L,
+            )))
+        }
+        val model = createModel()
+        await { !model.uiState.value.isLoading }
+        assertThat(model.uiState.value.events).isEmpty()
+        val reads = programmeReads.get()
+        withContext(Dispatchers.IO) { delay(400L) }
+
+        scheduler.advanceTimeBy(60_001L)
+        await { model.uiState.value.events.size == 1 }
+
+        assertThat(programmeReads.get()).isEqualTo(reads)
     }
 
     @Test
@@ -282,7 +325,7 @@ class SportsHubViewModelTest {
 
     @Test
     fun `changing provider replaces channel subscription and playback choices`() = sportsTest {
-        whenever(channels.getChannels(8L)).thenReturn(flowOf(listOf(channel.copy(providerId = 8L))))
+        whenever(channels.getChannelsWithGuide(eq(8L), any(), any())).thenReturn(flowOf(listOf(channel.copy(providerId = 8L))))
         whenever(preferences.getHiddenCategoryIds(8L, ContentType.LIVE)).thenReturn(flowOf(emptySet()))
         val model = createModel()
         await { !model.uiState.value.isLoading }
@@ -297,7 +340,7 @@ class SportsHubViewModelTest {
     @Test
     fun `retry recovers a failed initial channel subscription`() = sportsTest {
         val attempts = AtomicInteger()
-        whenever(channels.getChannels(7L)).thenReturn(flow {
+        whenever(channels.getChannelsWithGuide(eq(7L), any(), any())).thenReturn(flow {
             if (attempts.incrementAndGet() == 1) error("Catalog temporarily unavailable")
             emitAll(channelRows)
         })
@@ -451,6 +494,106 @@ class SportsHubViewModelTest {
         assertThat(observed.all { state -> state.events.isNotEmpty() && state.events.all { it.provenance.score != null } }).isTrue()
     }
 
+    @Test
+    fun `guide-only channel subscription produces the same events as the full catalog`() = sportsTest {
+        val now = System.currentTimeMillis()
+        channelRows.value = listOf(
+            channel,
+            Channel(id = 2L, providerId = 7L, streamId = 2L, name = "News 24", categoryId = 10L,
+                streamUrl = "https://example.test/news"),
+            Channel(id = 3L, providerId = 7L, streamId = 3L, name = "Sports Two", categoryId = 10L,
+                streamUrl = "https://example.test/two"),
+            Channel(id = 4L, providerId = 7L, streamId = 4L, name = "Movies", categoryId = 10L,
+                streamUrl = "https://example.test/movies"),
+        )
+        val guide = mapOf(
+            "1" to listOf(Program(id = 1L, channelId = "1", title = "Arsenal vs Chelsea", category = "Football",
+                startTime = now - 60_000L, endTime = now + 3_600_000L)),
+            "3" to listOf(Program(id = 2L, channelId = "3", title = "Real Madrid vs Barcelona", category = "Football",
+                startTime = now - 120_000L, endTime = now + 3_600_000L)),
+            "4" to listOf(Program(id = 3L, channelId = "4", title = "Evening Film", category = "Movie",
+                startTime = now - 60_000L, endTime = now + 3_600_000L)),
+        )
+        whenever(epg.getResolvedProgramsForChannels(any(), any(), any(), any())).thenAnswer { invocation ->
+            val requested = invocation.getArgument<List<Long>>(1).map(Long::toString).toSet()
+            guide.filterKeys { it in requested }
+        }
+        // Old behaviour: the whole catalog feeds classification.
+        val fullModel = createModel()
+        await { !fullModel.uiState.value.isLoading }
+        delay(100L)
+        scheduler.runCurrent()
+        val fullEvents = fullModel.uiState.value.events
+        store.clear()
+
+        // New behaviour: only channels with guide rows in the window are presented.
+        guideChannelIds = setOf(1L, 3L, 4L)
+        val guidedModel = createModel()
+        await { !guidedModel.uiState.value.isLoading }
+        delay(100L)
+        scheduler.runCurrent()
+
+        assertThat(fullEvents.map { it.title }).containsExactly("Arsenal vs Chelsea", "Real Madrid vs Barcelona")
+        assertThat(guidedModel.uiState.value.events).isEqualTo(fullEvents)
+    }
+
+    @Test
+    fun `channel subscription stops shortly after Sports is left and restarts on return`() = sportsTest {
+        val repository = createRepository()
+        createModel(repository)
+        await { !repository.uiState.value.isLoading }
+        assertThat(activeSubscriptions.get()).isEqualTo(1)
+
+        store.clear()
+        scheduler.advanceTimeBy(4_000L)
+        scheduler.runCurrent()
+        assertThat(activeSubscriptions.get()).isEqualTo(1)
+        scheduler.advanceTimeBy(1_001L)
+        scheduler.runCurrent()
+        assertThat(activeSubscriptions.get()).isEqualTo(0)
+
+        // Catalog writes while Sports is hidden do not rebuild anything.
+        channelRows.value = listOf(channel.copy(name = "Renamed Sports"))
+        scheduler.runCurrent()
+        assertThat(subscriptions.get()).isEqualTo(1)
+
+        val model = createModel(repository)
+        await { model.uiState.value.events.firstOrNull()?.broadcasts?.firstOrNull()?.channel?.name == "Renamed Sports" }
+        assertThat(subscriptions.get()).isEqualTo(2)
+        assertThat(activeSubscriptions.get()).isEqualTo(1)
+    }
+
+    @Test
+    fun `full catalog is loaded only when manual search needs it`() = sportsTest {
+        val model = createModel()
+        await { !model.uiState.value.isLoading }
+        assertThat(catalogLoads.get()).isEqualTo(0)
+        val event = model.uiState.value.events.single()
+
+        model.searchChannels(event, "Sports One")
+        model.searchChannels(event, "Sports")
+
+        assertThat(catalogLoads.get()).isEqualTo(1)
+    }
+
+    @Test
+    fun `remembered pick of a channel without guide data is restored from the full catalog`() = sportsTest {
+        val news = Channel(id = 2L, providerId = 7L, streamId = 2L, name = "News 24", categoryId = 10L,
+            streamUrl = "https://example.test/news")
+        channelRows.value = listOf(channel, news)
+        guideChannelIds = setOf(1L)
+        whenever(preferences.getSportsEventChannelPicks(any(), any())).thenAnswer { invocation ->
+            invocation.getArgument<Set<String>>(0).associateWith {
+                com.streamvault.data.preferences.SportsEventChannelPick(7L, 2L, Long.MAX_VALUE)
+            }
+        }
+
+        val model = createModel()
+
+        await { model.uiState.value.events.singleOrNull()?.broadcasts?.any { it.channel.id == 2L } == true }
+        assertThat(catalogLoads.get()).isEqualTo(1)
+    }
+
     private fun sportsTest(block: suspend TestScope.() -> Unit) = runTest(scheduler) {
         repositoryScope.cancel()
         repositoryScope = backgroundScope
@@ -515,6 +658,10 @@ class SportsHubViewModelTest {
             model.viewModelScope.launch { model.uiState.collect {} }
             scheduler.runCurrent()
         }
+
+    private fun guideRows() = channelRows.map { rows ->
+        guideChannelIds?.let { ids -> rows.filter { it.id in ids } } ?: rows
+    }
 
     private suspend fun await(condition: () -> Boolean) {
         withTimeout(10_000L) {
