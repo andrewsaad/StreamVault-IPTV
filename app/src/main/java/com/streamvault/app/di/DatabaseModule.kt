@@ -102,4 +102,5 @@ object DatabaseModule {
     @Provides fun providePluginProviderOwnershipDao(db: StreamVaultDatabase): PluginProviderOwnershipDao = db.pluginProviderOwnershipDao()
     @Provides fun provideStremioAddonDao(db: StreamVaultDatabase): StremioAddonDao = db.stremioAddonDao()
     @Provides fun provideStremioPlaybackHistoryDao(db: StreamVaultDatabase): StremioPlaybackHistoryDao = db.stremioPlaybackHistoryDao()
+    @Provides fun provideSyncContentHashDao(db: StreamVaultDatabase): SyncContentHashDao = db.syncContentHashDao()
 }

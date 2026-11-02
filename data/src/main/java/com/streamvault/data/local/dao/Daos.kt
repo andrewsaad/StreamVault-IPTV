@@ -3911,6 +3911,9 @@ interface EpgSourceDao {
 
     @Query("UPDATE epg_sources SET etag = :etag, last_modified_header = :lastModified WHERE id = :id")
     suspend fun updateConditionalHeaders(id: Long, etag: String?, lastModified: String?)
+
+    @Query("UPDATE epg_sources SET content_sha256 = :sha256 WHERE id = :id")
+    suspend fun updateContentSha256(id: Long, sha256: String?)
 }
 
 @Dao

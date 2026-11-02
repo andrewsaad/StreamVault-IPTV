@@ -129,6 +129,48 @@ class StreamVaultDatabaseMigrationTest {
     }
 
     @Test
+    fun migrate90To91_addsContentHashStorageWithoutTouchingGuideRows() {
+        val databaseName = "streamvault-migrate-90-91-content-hash"
+        val database = migrationTestHelper.createDatabase(databaseName, 90)
+        database.execSQL(
+            """
+                INSERT INTO providers (id, name, type, is_active, status, last_synced_at, created_at)
+                VALUES (911, 'Hash Provider', 'XTREAM_CODES', 1, 'ACTIVE', 0, 0)
+            """.trimIndent()
+        )
+        database.execSQL(
+            """
+                INSERT INTO epg_sources (
+                    id, name, url, enabled, last_refresh_at, last_success_at, priority,
+                    created_at, updated_at, etag, timezone_policy
+                ) VALUES (912, 'Guide', 'https://example.invalid/guide.xml', 1, 5, 5, 0, 0, 0, 'etag-1', 'REQUIRE_OFFSET')
+            """.trimIndent()
+        )
+        database.close()
+
+        val migrated = migrationTestHelper.runMigrationsAndValidate(
+            databaseName,
+            91,
+            true,
+            StreamVaultDatabase.MIGRATION_90_91
+        )
+
+        migrated.query("SELECT etag, content_sha256 FROM epg_sources WHERE id = 912").use { cursor ->
+            assertEquals(true, cursor.moveToFirst())
+            assertEquals("etag-1", cursor.getString(0))
+            assertEquals(null, cursor.getString(1))
+        }
+        migrated.execSQL(
+            "INSERT INTO sync_content_hashes (provider_id, scope, `key`, sha256, updated_at) VALUES (911, 'EPG', '*', 'abc', 1)"
+        )
+        assertEquals(1, countRows(migrated, "SELECT COUNT(*) FROM sync_content_hashes WHERE provider_id = 911"))
+        migrated.execSQL("PRAGMA foreign_keys = ON")
+        migrated.execSQL("DELETE FROM providers WHERE id = 911")
+        assertEquals(0, countRows(migrated, "SELECT COUNT(*) FROM sync_content_hashes WHERE provider_id = 911"))
+        migrated.close()
+    }
+
+    @Test
     fun migrate9To10_createsBackfillsAndMaintainsFtsTables() {
         migrationTestHelper.createDatabase(testDbName, 9).apply {
             execSQL(

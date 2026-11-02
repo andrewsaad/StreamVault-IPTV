@@ -1163,7 +1163,9 @@ data class EpgSourceEntity(
     @ColumnInfo(name = "last_modified_header") val lastModifiedHeader: String? = null,
     @ColumnInfo(name = "timezone_policy")
     val timezonePolicy: XmltvTimezonePolicy = XmltvTimezonePolicy.REQUIRE_OFFSET,
-    @ColumnInfo(name = "timezone_id") val timezoneId: String? = null
+    @ColumnInfo(name = "timezone_id") val timezoneId: String? = null,
+    /** SHA-256 of the last fully imported payload; device-local, never exported to backups. */
+    @ColumnInfo(name = "content_sha256") val contentSha256: String? = null
 )
 
 // ── Provider ↔ EPG Source Assignment ───────────────────────────────
