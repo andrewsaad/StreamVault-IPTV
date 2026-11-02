@@ -4,6 +4,7 @@ import android.content.Context
 import kotlinx.coroutines.asContextElement
 import android.database.sqlite.SQLiteException
 import android.util.Log
+import androidx.core.content.edit
 import androidx.work.BackoffPolicy
 import androidx.work.Constraints
 import androidx.work.CoroutineWorker
@@ -624,7 +625,7 @@ class ProviderSyncWorker(
         fun enqueueForegroundSync(context: Context, now: Long = System.currentTimeMillis()): Boolean {
             val prefs = context.getSharedPreferences(BOOT_SYNC_PREFS, Context.MODE_PRIVATE)
             if (!isForegroundSyncDue(prefs.getLong(KEY_LAST_FOREGROUND_SYNC_AT, 0L), now)) return false
-            prefs.edit().putLong(KEY_LAST_FOREGROUND_SYNC_AT, now).apply()
+            prefs.edit { putLong(KEY_LAST_FOREGROUND_SYNC_AT, now) }
             enqueueBootSync(context, FOREGROUND_SYNC_DELAY_SECONDS)
             return true
         }
