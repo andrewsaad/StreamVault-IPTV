@@ -92,6 +92,38 @@ class AppStartupCoordinatorTest {
     }
 
     @Test
+    fun delayedTelevisionTaskStartsOnlyAfterItsDelayWithoutHoldingOthers() = runTest {
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        val scope = CoroutineScope(SupervisorJob() + dispatcher)
+        val immediateRuns = AtomicInteger(0)
+        val delayedRuns = AtomicInteger(0)
+        val coordinator = AppStartupCoordinator(
+            processTasks = emptyList(),
+            tvTasks = listOf(
+                AppStartupTask("test-immediate") { immediateRuns.incrementAndGet() },
+                AppStartupTask("test-delayed", startDelayMillis = 15_000L) { delayedRuns.incrementAndGet() }
+            ),
+            scope = scope
+        )
+
+        coordinator.onFirstUiFrameDrawn(isTelevision = true)
+        testScheduler.advanceTimeBy(14_999L)
+        testScheduler.runCurrent()
+        assertThat(immediateRuns.get()).isEqualTo(1)
+        assertThat(delayedRuns.get()).isEqualTo(0)
+
+        testScheduler.advanceTimeBy(2L)
+        testScheduler.runCurrent()
+        assertThat(delayedRuns.get()).isEqualTo(1)
+        scope.cancel()
+    }
+
+    @Test
+    fun tvInputCatalogRefreshIsDeferredPastTheFirstScreens() {
+        assertThat(AppStartupCoordinator.TV_INPUT_CATALOG_REFRESH_DELAY_MS).isAtLeast(5_000L)
+    }
+
+    @Test
     fun aFailedTaskDoesNotPreventRemainingTasks() = runTest {
         val dispatcher = StandardTestDispatcher(testScheduler)
         val scope = CoroutineScope(SupervisorJob() + dispatcher)

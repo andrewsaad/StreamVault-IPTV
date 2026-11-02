@@ -22,12 +22,15 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.supervisorScope
 
 internal data class AppStartupTask(
     val traceName: String,
+    /** Extra wait before this task starts, so heavy work stays clear of the first screens. */
+    val startDelayMillis: Long = 0L,
     val action: suspend () -> Unit
 )
 
@@ -94,7 +97,13 @@ internal class AppStartupCoordinator internal constructor(
             providerTask("launcher-recommendation-refresh", launcherRecommendationsManager) {
                 it.refreshRecommendations()
             },
-            providerTask("tv-input-catalog-refresh", tvInputChannelSyncManager) {
+            // Publishes the whole catalog to the system TV provider (a full channel
+            // presentation plus thousands of binder writes); keep it off the first screens.
+            providerTask(
+                "tv-input-catalog-refresh",
+                tvInputChannelSyncManager,
+                startDelayMillis = TV_INPUT_CATALOG_REFRESH_DELAY_MS
+            ) {
                 it.refreshTvInputCatalog()
             }
         ),
@@ -151,6 +160,7 @@ internal class AppStartupCoordinator internal constructor(
     }
 
     private suspend fun runTask(task: AppStartupTask) {
+        if (task.startDelayMillis > 0L) delay(task.startDelayMillis)
         traceSection("AppStartupCoordinator:${task.traceName}") {
             try {
                 task.action()
@@ -164,12 +174,14 @@ internal class AppStartupCoordinator internal constructor(
 
     companion object {
         private const val TAG = "AppStartupCoordinator"
+        internal const val TV_INPUT_CATALOG_REFRESH_DELAY_MS = 15_000L
 
         internal fun <T> providerTask(
             traceName: String,
             provider: Provider<T>,
+            startDelayMillis: Long = 0L,
             action: suspend (T) -> Unit
-        ): AppStartupTask = AppStartupTask(traceName) {
+        ): AppStartupTask = AppStartupTask(traceName, startDelayMillis) {
             action(provider.get())
         }
     }
