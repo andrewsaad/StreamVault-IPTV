@@ -4,6 +4,11 @@ import android.util.Log
 import com.streamvault.data.local.DatabaseTransactionRunner
 import com.streamvault.data.local.dao.ProgramDao
 import com.streamvault.data.local.dao.ProviderDao
+import com.streamvault.data.local.dao.SyncContentHashDao
+import com.streamvault.data.local.entity.SyncContentHashEntity
+import com.streamvault.data.local.entity.SyncContentHashScope
+import com.streamvault.data.util.ContentDigest
+import com.streamvault.data.util.DigestingInputStream
 import com.streamvault.data.preferences.PreferencesRepository
 import com.streamvault.data.local.entity.ProgramBrowseEntity
 import com.streamvault.data.local.entity.ProgramEntity
@@ -62,6 +67,7 @@ class EpgRepositoryImpl @Inject constructor(
     private val epgSourceRepository: EpgSourceRepository,
     private val preferencesRepository: PreferencesRepository,
     private val providerCapabilityResolver: ProviderCapabilityResolver? = null,
+    private val syncContentHashDao: SyncContentHashDao? = null,
     private val externalScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 ) : EpgRepository {
 
@@ -272,6 +278,9 @@ class EpgRepositoryImpl @Inject constructor(
                     ?.timezone
                     ?.trim()
                     ?.takeIf(String::isNotEmpty)
+                // Seeded with the parser timezone: the same bytes parsed in another zone are a
+                // different guide, so a timezone change always forces a full import.
+                val contentDigest = ContentDigest.seeded(EPG_CONTENT_HASH_FORMAT, providerTimezoneId.orEmpty())
                 val batch = ArrayList<ProgramEntity>(EPG_PROGRAM_BATCH_SIZE)
                 suspend fun flushBatch() {
                     if (batch.isEmpty()) return
@@ -322,7 +331,7 @@ class EpgRepositoryImpl @Inject constructor(
                             // Let OkHttp negotiate/decompress standard gzip responses. We still
                             // inspect the bytes so download-style URLs that return raw `.gz`
                             // payloads without transparent decompression continue to work.
-                            val limitedStream = object : FilterInputStream(rawStream) {
+                            val limitedStream = object : FilterInputStream(DigestingInputStream(rawStream, contentDigest)) {
                                 private var bytesRead = 0L
                                 override fun read(): Int {
                                     if (bytesRead >= MAX_EPG_SIZE_BYTES) throw IOException("EPG response too large (>200 MB)")
@@ -340,15 +349,38 @@ class EpgRepositoryImpl @Inject constructor(
                                         flushBatch()
                                     }
                                 }
+                                // Hash what the parser left unread too (trailing bytes, gzip trailer).
+                                val drain = ByteArray(8_192)
+                                while (limitedStream.read(drain, 0, drain.size) >= 0) Unit
                             }
                         }
                     }
 
                     flushBatch()
 
+                    // Only a fully read and parsed payload reaches this point.
+                    val contentSha256 = ContentDigest.hex(contentDigest)
+                    val storedSha256 = syncContentHashDao?.get(providerId, SyncContentHashScope.EPG, SyncContentHashScope.SINGLE_KEY)
+                    if (isUnchangedEpgPayload(storedSha256, contentSha256) { programDao.countByProvider(providerId) }) {
+                        transactionRunner.inTransaction {
+                            programDao.deleteByProvider(stagingProviderId)
+                        }
+                        Log.d("EpgRepository", "Provider $providerId guide payload unchanged; kept existing programs")
+                        return@withLock Result.success(Unit)
+                    }
+
                     transactionRunner.inTransaction {
                         programDao.deleteByProvider(providerId)
                         programDao.moveToProvider(stagingProviderId, providerId)
+                        syncContentHashDao?.upsert(
+                            SyncContentHashEntity(
+                                providerId = providerId,
+                                scope = SyncContentHashScope.EPG,
+                                key = SyncContentHashScope.SINGLE_KEY,
+                                sha256 = contentSha256,
+                                updatedAt = System.currentTimeMillis()
+                            )
+                        )
                     }
 
                     Result.success(Unit)

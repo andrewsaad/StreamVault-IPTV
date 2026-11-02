@@ -20,7 +20,9 @@ import com.streamvault.data.parser.XmltvParser
 import com.streamvault.data.parser.XmltvIngestionLimits
 import com.streamvault.data.parser.XmltvLimitExceeded
 import com.streamvault.data.parser.XmltvLimitKind
+import com.streamvault.data.mapper.toDomain
 import com.streamvault.data.preferences.PreferencesRepository
+import com.streamvault.data.util.ContentDigest
 import com.streamvault.domain.model.ContentType
 import com.streamvault.domain.model.EpgMatchType
 import com.streamvault.domain.model.EpgSourceType
@@ -554,6 +556,120 @@ class EpgSourceRepositoryImplTest {
         assertThat(result is Result.Success).isTrue()
         verify(xmltvParser).parseStreamingWithChannels(any(), isNull(), any(), any(), any())
     }
+
+    @Test
+    fun `refreshSource skips the swap but still resolves mappings when the payload hash matches`() = runTest {
+        val payload = "<tv></tv>"
+        val source = EpgSourceEntity(
+            id = 10L,
+            name = "Primary",
+            url = "https://example.com/epg.xml",
+            contentSha256 = expectedSourceHash(payload)
+        )
+        val call: Call = mock()
+        whenever(epgSourceDao.getById(10L)).thenReturn(source)
+        whenever(okHttpClient.newCall(any())).thenReturn(call)
+        enqueueResponse(call, okResponse(source.url, payload, etag = "etag-2"))
+        whenever(xmltvParser.maybeDecompressGzip(eq(source.url), any())).thenAnswer { it.arguments[1] }
+        whenever(epgProgrammeDao.countBySource(10L)).thenReturn(40)
+        whenever(providerEpgSourceDao.getProviderIdsForSourceSync(10L)).thenReturn(listOf(7L))
+
+        val result = repository.refreshSource(10L)
+
+        assertThat(result is Result.Success).isTrue()
+        verify(epgProgrammeDao, never()).moveToSource(any(), any())
+        verify(epgChannelDao, never()).moveToSource(any(), any())
+        verify(epgProgrammeDao, never()).deleteBySource(10L)
+        verify(epgChannelDao, never()).deleteBySource(10L)
+        verify(epgProgrammeDao, times(2)).deleteBySource(-10L)
+        verify(epgSourceDao, never()).updateContentSha256(any(), any())
+        verify(epgSourceDao).updateConditionalHeaders(10L, "etag-2", null)
+        verify(epgSourceDao).updateRefreshSuccess(eq(10L), any())
+        verify(resolutionEngine).resolveForProvider(7L, emptySet())
+        // Manual overrides live in the mapping table; the skip path never rewrites it.
+        verify(channelEpgMappingDao, never()).deleteForChannel(any(), any())
+        verify(channelEpgMappingDao, never()).upsert(any())
+    }
+
+    @Test
+    fun `refreshSource swaps and stores the new hash when the payload changed`() = runTest {
+        val payload = "<tv></tv>"
+        val source = EpgSourceEntity(
+            id = 10L,
+            name = "Primary",
+            url = "https://example.com/epg.xml",
+            contentSha256 = "older-payload"
+        )
+        val call: Call = mock()
+        whenever(epgSourceDao.getById(10L)).thenReturn(source)
+        whenever(okHttpClient.newCall(any())).thenReturn(call)
+        enqueueResponse(call, okResponse(source.url, payload))
+        whenever(xmltvParser.maybeDecompressGzip(eq(source.url), any())).thenAnswer { it.arguments[1] }
+        whenever(epgProgrammeDao.countBySource(10L)).thenReturn(40)
+        whenever(providerEpgSourceDao.getProviderIdsForSourceSync(10L)).thenReturn(listOf(7L))
+
+        val result = repository.refreshSource(10L)
+
+        assertThat(result is Result.Success).isTrue()
+        verify(epgProgrammeDao).moveToSource(-10L, 10L)
+        verify(epgChannelDao).moveToSource(-10L, 10L)
+        verify(epgSourceDao).updateContentSha256(10L, expectedSourceHash(payload))
+        verify(resolutionEngine).resolveForProvider(7L, emptySet())
+    }
+
+    @Test
+    fun `refreshSource never stores a hash when the download fails mid parse`() = runTest {
+        val source = EpgSourceEntity(id = 10L, name = "Primary", url = "https://example.com/epg.xml")
+        val call: Call = mock()
+        whenever(epgSourceDao.getById(10L)).thenReturn(source)
+        whenever(okHttpClient.newCall(any())).thenReturn(call)
+        enqueueResponse(call, okResponse(source.url, "<tv>"))
+        whenever(xmltvParser.maybeDecompressGzip(eq(source.url), any())).thenAnswer { it.arguments[1] }
+        doAnswer { throw IOException("connection reset") }
+            .whenever(xmltvParser)
+            .parseStreamingWithChannels(any(), anyOrNull(), any(), any(), any())
+
+        val result = repository.refreshSource(10L)
+
+        assertThat(result is Result.Error).isTrue()
+        verify(epgSourceDao, never()).updateContentSha256(any(), any())
+    }
+
+    @Test
+    fun `updateSource clears the stored hash when the timezone policy changes`() = runTest {
+        val existing = EpgSourceEntity(
+            id = 10L,
+            name = "Primary",
+            url = "https://example.com/epg.xml",
+            contentSha256 = "abc"
+        )
+        whenever(epgSourceDao.getById(10L)).thenReturn(existing)
+
+        repository.updateSource(existing.toDomain().copy(timezonePolicy = XmltvTimezonePolicy.UTC))
+        repository.updateSource(existing.toDomain().copy(name = "Renamed"))
+
+        val captor = argumentCaptor<EpgSourceEntity>()
+        verify(epgSourceDao, times(2)).update(captor.capture())
+        assertThat(captor.firstValue.contentSha256).isNull()
+        assertThat(captor.secondValue.contentSha256).isEqualTo("abc")
+    }
+
+    private fun okResponse(url: String, body: String, etag: String? = null): Response =
+        Response.Builder()
+            .request(Request.Builder().url(url).build())
+            .protocol(Protocol.HTTP_1_1)
+            .code(200)
+            .message("OK")
+            .apply { etag?.let { header("ETag", it) } }
+            .body(body.toResponseBody("application/xml".toMediaType()))
+            .build()
+
+    private fun expectedSourceHash(payload: String): String =
+        ContentDigest.hex(
+            ContentDigest.seeded(EPG_CONTENT_HASH_FORMAT, XmltvTimezonePolicy.REQUIRE_OFFSET.name, "").apply {
+                update(payload.toByteArray(Charsets.UTF_8))
+            }
+        )
 
     @Test
     fun `timezone policy validation accepts only valid explicit IANA zones`() {

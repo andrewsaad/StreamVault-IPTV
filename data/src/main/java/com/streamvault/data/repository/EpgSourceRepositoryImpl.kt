@@ -26,6 +26,8 @@ import com.streamvault.data.parser.XmltvIngestionLimits
 import com.streamvault.data.parser.XmltvLimitExceeded
 import com.streamvault.data.parser.XmltvLimitKind
 import com.streamvault.domain.util.ProviderInputSanitizer
+import com.streamvault.data.util.ContentDigest
+import com.streamvault.data.util.DigestingInputStream
 import com.streamvault.data.util.ProviderUrlProtocolResolver
 import com.streamvault.data.util.runSuspendCatching
 import com.streamvault.data.util.UrlSecurityPolicy
@@ -98,6 +100,20 @@ internal fun openLimitedXmltvInput(
         XmltvLimitKind.DECOMPRESSED_BYTES
     )
 }
+
+/** Bump when parsing changes so stored hashes from older builds no longer match. */
+internal const val EPG_CONTENT_HASH_FORMAT = "xmltv-v1"
+
+/**
+ * An import may be skipped only when the stored hash came from a complete import of the same
+ * payload and the committed rows are still present.
+ */
+/** Rows are counted only once the hashes match, so a changed payload costs no extra query. */
+internal suspend inline fun isUnchangedEpgPayload(
+    storedSha256: String?,
+    freshSha256: String,
+    committedRowCount: suspend () -> Int
+): Boolean = storedSha256 != null && storedSha256 == freshSha256 && committedRowCount() > 0
 
 internal fun shouldRateLimitEpgRefresh(
     lastSuccessfulRefreshAt: Long,
@@ -192,6 +208,11 @@ class EpgSourceRepositoryImpl @Inject constructor(
         val normalizedTimezone = validateXmltvTimezonePolicy(source.timezonePolicy, source.timezoneId)
         if (normalizedTimezone is Result.Error) return normalizedTimezone
         val normalizedTimezoneId = (normalizedTimezone as Result.Success).data
+        // A different URL or timezone policy changes what the stored rows mean, so the next
+        // refresh must import even if the payload bytes are identical.
+        val parsingChanged = trimmedUrl != existing.url ||
+            source.timezonePolicy != existing.timezonePolicy ||
+            normalizedTimezoneId != existing.timezoneId
         epgSourceDao.update(
             existing.copy(
                 name = source.name.trim().takeIf { it.isNotEmpty() } ?: existing.name,
@@ -200,7 +221,8 @@ class EpgSourceRepositoryImpl @Inject constructor(
                 priority = source.priority,
                 timezonePolicy = source.timezonePolicy,
                 timezoneId = normalizedTimezoneId,
-                updatedAt = System.currentTimeMillis()
+                updatedAt = System.currentTimeMillis(),
+                contentSha256 = if (parsingChanged) null else existing.contentSha256
             )
         )
         return Result.success(Unit)
@@ -386,9 +408,20 @@ class EpgSourceRepositoryImpl @Inject constructor(
                 val stagingId = -sourceId
                 val sourceTimezoneId = source.parserTimezoneId()
                 prepareStagingSource(source, stagingId)
+                // The digest covers the raw payload plus every setting that changes how it is
+                // parsed, so an equal hash means the committed rows already match this payload.
+                val contentDigest = ContentDigest.seeded(
+                    EPG_CONTENT_HASH_FORMAT,
+                    source.timezonePolicy.name,
+                    source.timezoneId.orEmpty()
+                )
 
                 rawInputStream.use { raw ->
-                    openLimitedXmltvInput(raw, source.url, xmltvParser).use { decompressed ->
+                    val hashedRaw = DigestingInputStream(
+                        limitEpgInput(raw, XmltvIngestionLimits().maxRawBytes, XmltvLimitKind.RAW_BYTES),
+                        contentDigest
+                    )
+                    openLimitedXmltvInput(hashedRaw, source.url, xmltvParser).use { decompressed ->
                         xmltvParser.parseStreamingWithChannels(
                             inputStream = decompressed,
                             timezoneId = sourceTimezoneId,
@@ -432,6 +465,8 @@ class EpgSourceRepositoryImpl @Inject constructor(
                                 }
                             }
                         )
+                        // Hash what the parser left unread too (trailing bytes, gzip trailer).
+                        hashedRaw.drainToEnd()
                     }
                 }
 
@@ -443,6 +478,24 @@ class EpgSourceRepositoryImpl @Inject constructor(
                     epgProgrammeDao.insertAll(programmeBatch.toList())
                 }
 
+                // Reaching this point means the whole payload was read and parsed, so the
+                // hash describes a complete download.
+                val contentSha256 = ContentDigest.hex(contentDigest)
+                if (isUnchangedEpgPayload(source.contentSha256, contentSha256) { epgProgrammeDao.countBySource(sourceId) }) {
+                    transactionRunner.inTransaction {
+                        epgProgrammeDao.deleteBySource(stagingId)
+                        epgChannelDao.deleteBySource(stagingId)
+                        epgSourceDao.delete(stagingId)
+                    }
+                    epgSourceDao.updateRefreshSuccess(sourceId, System.currentTimeMillis())
+                    epgSourceDao.updateConditionalHeaders(sourceId, responseEtag, responseLastModified)
+                    if (resolveAffectedProviders) {
+                        resolveAffectedProviders(providerEpgSourceDao.getProviderIdsForSourceSync(sourceId))
+                    }
+                    Log.d(TAG, "Source $sourceId payload unchanged; kept existing guide rows")
+                    return@withLock Result.success(Unit)
+                }
+
                 // Atomically swap staging data into the real source ID
                 transactionRunner.inTransaction {
                     epgChannelDao.deleteBySource(sourceId)
@@ -450,6 +503,7 @@ class EpgSourceRepositoryImpl @Inject constructor(
                     epgChannelDao.moveToSource(stagingId, sourceId)
                     epgProgrammeDao.moveToSource(stagingId, sourceId)
                     epgSourceDao.delete(stagingId)
+                    epgSourceDao.updateContentSha256(sourceId, contentSha256)
                 }
 
                 epgSourceDao.updateRefreshSuccess(sourceId, System.currentTimeMillis())

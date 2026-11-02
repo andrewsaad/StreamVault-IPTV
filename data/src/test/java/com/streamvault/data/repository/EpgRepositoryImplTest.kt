@@ -4,6 +4,10 @@ import com.google.common.truth.Truth.assertThat
 import com.streamvault.data.local.DatabaseTransactionRunner
 import com.streamvault.data.local.dao.ProgramDao
 import com.streamvault.data.local.dao.ProviderDao
+import com.streamvault.data.local.dao.SyncContentHashDao
+import com.streamvault.data.local.entity.SyncContentHashEntity
+import com.streamvault.data.local.entity.SyncContentHashScope
+import com.streamvault.data.util.ContentDigest
 import com.streamvault.data.local.entity.ProviderEntity
 import com.streamvault.data.local.entity.ProgramBrowseEntity
 import com.streamvault.data.local.entity.ProgramEntity
@@ -677,6 +681,79 @@ class EpgRepositoryImplTest {
         assertThat(result.isSuccess).isTrue()
         verify(xmltvParser).parseStreaming(any(), eq("America/New_York"), any())
     }
+
+    @Test
+    fun `refreshEpg keeps committed programs and skips the swap when the payload hash matches`() = runTest {
+        val hashDao: SyncContentHashDao = mock()
+        whenever(hashDao.get(7L, SyncContentHashScope.EPG, SyncContentHashScope.SINGLE_KEY))
+            .thenReturn(expectedProviderHash("<tv></tv>"))
+        whenever(programDao.countByProvider(7L)).thenReturn(12)
+
+        val result = repositoryWithHashes(hashDao).refreshEpg(7L, "https://example.com/epg.xml")
+
+        assertThat(result.isSuccess).isTrue()
+        verify(programDao, never()).deleteByProvider(7L)
+        verify(programDao, never()).moveToProvider(any(), any())
+        verify(programDao, times(2)).deleteByProvider(-7L)
+        verify(hashDao, never()).upsert(any())
+    }
+
+    @Test
+    fun `refreshEpg swaps and records the hash when the payload changed`() = runTest {
+        val hashDao: SyncContentHashDao = mock()
+        whenever(hashDao.get(7L, SyncContentHashScope.EPG, SyncContentHashScope.SINGLE_KEY)).thenReturn("stale")
+        whenever(programDao.countByProvider(7L)).thenReturn(12)
+
+        val result = repositoryWithHashes(hashDao).refreshEpg(7L, "https://example.com/epg.xml")
+
+        assertThat(result.isSuccess).isTrue()
+        verify(programDao).moveToProvider(-7L, 7L)
+        val captor = argumentCaptor<SyncContentHashEntity>()
+        verify(hashDao).upsert(captor.capture())
+        assertThat(captor.firstValue.sha256).isEqualTo(expectedProviderHash("<tv></tv>"))
+        assertThat(captor.firstValue.scope).isEqualTo(SyncContentHashScope.EPG)
+    }
+
+    @Test
+    fun `refreshEpg imports when hashes match but no committed programs remain`() = runTest {
+        val hashDao: SyncContentHashDao = mock()
+        whenever(hashDao.get(7L, SyncContentHashScope.EPG, SyncContentHashScope.SINGLE_KEY))
+            .thenReturn(expectedProviderHash("<tv></tv>"))
+        whenever(programDao.countByProvider(7L)).thenReturn(0)
+
+        val result = repositoryWithHashes(hashDao).refreshEpg(7L, "https://example.com/epg.xml")
+
+        assertThat(result.isSuccess).isTrue()
+        verify(programDao).moveToProvider(-7L, 7L)
+    }
+
+    @Test
+    fun `refreshEpg never records a hash for a failed import`() = runTest {
+        val hashDao: SyncContentHashDao = mock()
+        whenever(xmltvParser.parseStreaming(any(), anyOrNull(), any())).thenThrow(IllegalStateException("broken xml"))
+
+        val result = repositoryWithHashes(hashDao).refreshEpg(7L, "https://example.com/epg.xml")
+
+        assertThat(result.isError).isTrue()
+        verify(hashDao, never()).upsert(any())
+        verify(programDao, never()).moveToProvider(any(), any())
+    }
+
+    private fun repositoryWithHashes(hashDao: SyncContentHashDao) = EpgRepositoryImpl(
+        programDao = programDao,
+        providerDao = providerDao,
+        xmltvParser = xmltvParser,
+        okHttpClient = okHttpClientReturningXml(),
+        transactionRunner = transactionRunner,
+        epgSourceRepository = epgSourceRepository,
+        preferencesRepository = preferencesRepository,
+        syncContentHashDao = hashDao
+    )
+
+    private fun expectedProviderHash(payload: String): String =
+        ContentDigest.hex(ContentDigest.seeded(EPG_CONTENT_HASH_FORMAT, "").apply {
+            update(payload.toByteArray(Charsets.UTF_8))
+        })
 
     private fun okHttpClientReturningXml(): OkHttpClient =
         okHttpClientReturningBody("<tv></tv>".toByteArray(Charsets.UTF_8))
