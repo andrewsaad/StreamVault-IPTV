@@ -129,6 +129,39 @@ class StreamVaultDatabaseMigrationTest {
     }
 
     @Test
+    fun migrate91To92_addsFavoriteSyncStorageAndKeepsGroups() {
+        val databaseName = "streamvault-migrate-91-92-favorite-sync"
+        val database = migrationTestHelper.createDatabase(databaseName, 91)
+        database.execSQL(
+            """
+                INSERT INTO providers (id, name, type, is_active, status, last_synced_at, created_at)
+                VALUES (921, 'Sync Provider', 'XTREAM_CODES', 1, 'ACTIVE', 0, 0)
+            """.trimIndent()
+        )
+        database.execSQL(
+            "INSERT INTO virtual_groups (id, provider_id, name, icon_emoji, position, created_at, content_type) " +
+                "VALUES (922, 921, 'Sports', NULL, 0, 0, 'LIVE')"
+        )
+        database.close()
+
+        val migrated = migrationTestHelper.runMigrationsAndValidate(
+            databaseName,
+            92,
+            true,
+            StreamVaultDatabase.MIGRATION_91_92
+        )
+
+        migrated.query("SELECT name, sync_uuid FROM virtual_groups WHERE id = 922").use { cursor ->
+            assertEquals(true, cursor.moveToFirst())
+            assertEquals("Sports", cursor.getString(0))
+            assertEquals(null, cursor.getString(1))
+        }
+        migrated.execSQL("INSERT INTO favorite_sync_state (`key`, value) VALUES ('etag', '\"abc\"')")
+        assertEquals(1, countRows(migrated, "SELECT COUNT(*) FROM favorite_sync_state"))
+        migrated.close()
+    }
+
+    @Test
     fun migrate90To91_addsContentHashStorageWithoutTouchingGuideRows() {
         val databaseName = "streamvault-migrate-90-91-content-hash"
         val database = migrationTestHelper.createDatabase(databaseName, 90)

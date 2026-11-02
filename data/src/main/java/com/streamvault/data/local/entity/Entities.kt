@@ -865,7 +865,8 @@ data class FavoriteEntity(
     indices = [
         Index(value = ["provider_id", "content_type"]),
         Index(value = ["position"]),
-        Index(value = ["content_type"])
+        Index(value = ["content_type"]),
+        Index(value = ["sync_uuid"])
     ]
 )
 data class VirtualGroupEntity(
@@ -876,7 +877,9 @@ data class VirtualGroupEntity(
     @ColumnInfo(name = "icon_emoji") val iconEmoji: String? = null,
     val position: Int = 0,
     @ColumnInfo(name = "created_at") val createdAt: Long = System.currentTimeMillis(),
-    @ColumnInfo(name = "content_type") val contentType: ContentType = ContentType.LIVE
+    @ColumnInfo(name = "content_type") val contentType: ContentType = ContentType.LIVE,
+    /** Device-independent id used by favorites sync; null until the group is first synced. */
+    @ColumnInfo(name = "sync_uuid") val syncUuid: String? = null
 )
 
 data class CategoryCount(
