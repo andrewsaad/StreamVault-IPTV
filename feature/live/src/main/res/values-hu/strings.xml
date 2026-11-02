@@ -281,6 +281,7 @@
     <string name="live_sports_standings_attribution">Adatok innen: %1$s</string>
     <string name="live_sports_team_metadata">Csapat adatai: %1$s</string>
     <string name="live_sports_league_metadata">Liga adatai: %1$s</string>
+    <string name="live_sports_commentator">Kommentátor: %1$s</string>
     <string name="live_sports_standings_season">Idény: %1$s</string>
     <string name="live_sports_table_played">Meccsek</string>
     <string name="live_sports_table_won">Győzelmek</string>

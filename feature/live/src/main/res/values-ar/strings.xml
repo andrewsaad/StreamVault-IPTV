@@ -281,6 +281,7 @@
     <string name="live_sports_standings_attribution">البيانات من %1$s</string>
     <string name="live_sports_team_metadata">تفاصيل الفريق: %1$s</string>
     <string name="live_sports_league_metadata">تفاصيل الدوري: %1$s</string>
+    <string name="live_sports_commentator">المعلق: %1$s</string>
     <string name="live_sports_standings_season">الموسم: %1$s</string>
     <string name="live_sports_table_played">لعب</string>
     <string name="live_sports_table_won">فوز</string>

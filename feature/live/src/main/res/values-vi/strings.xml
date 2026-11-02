@@ -281,6 +281,7 @@
     <string name="live_sports_standings_attribution">Dữ liệu từ %1$s</string>
     <string name="live_sports_team_metadata">Thông tin đội: %1$s</string>
     <string name="live_sports_league_metadata">Thông tin giải đấu: %1$s</string>
+    <string name="live_sports_commentator">Bình luận viên: %1$s</string>
     <string name="live_sports_standings_season">Mùa giải: %1$s</string>
     <string name="live_sports_table_played">Đã đấu</string>
     <string name="live_sports_table_won">Thắng</string>

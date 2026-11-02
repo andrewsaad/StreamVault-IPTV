@@ -281,6 +281,7 @@
     <string name="live_sports_standings_attribution">Të dhëna nga %1$s</string>
     <string name="live_sports_team_metadata">Detajet e ekipit: %1$s</string>
     <string name="live_sports_league_metadata">Detajet e ligës: %1$s</string>
+    <string name="live_sports_commentator">Komentator: %1$s</string>
     <string name="live_sports_standings_season">Sezoni: %1$s</string>
     <string name="live_sports_table_played">Ndeshje</string>
     <string name="live_sports_table_won">Fitore</string>

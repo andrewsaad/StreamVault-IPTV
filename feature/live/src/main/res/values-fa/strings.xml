@@ -281,6 +281,7 @@
     <string name="live_sports_standings_attribution">داده‌ها از %1$s</string>
     <string name="live_sports_team_metadata">جزئیات تیم: %1$s</string>
     <string name="live_sports_league_metadata">جزئیات لیگ: %1$s</string>
+    <string name="live_sports_commentator">گزارشگر: %1$s</string>
     <string name="live_sports_standings_season">فصل: %1$s</string>
     <string name="live_sports_table_played">بازی</string>
     <string name="live_sports_table_won">برد</string>

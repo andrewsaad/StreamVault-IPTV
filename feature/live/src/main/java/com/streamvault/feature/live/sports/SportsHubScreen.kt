@@ -67,6 +67,7 @@ import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -246,6 +247,8 @@ internal fun SportsHubContent(
                         val attributionLines = events.maxOf { event ->
                             event.attributionCredits.sumOf { it.lineCount }
                         }
+                        // Keep a row's cards the same height when only some name a commentator.
+                        val commentatorLines = if (events.any { it.commentator != null }) 1 else 0
                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             Text(league, fontSize = 17.sp, fontWeight = FontWeight.SemiBold,
                                 color = BrowseColors.TextPrimary)
@@ -260,6 +263,7 @@ internal fun SportsHubContent(
                                         isLive = event.isLiveAt(state.nowMillis),
                                         showDate = state.selectedTimeRange == SportsTimeRange.UPCOMING,
                                         attributionLines = attributionLines,
+                                        commentatorLines = commentatorLines,
                                         onShowDetails = { detailsEvent = it },
                                     )
                                 }
@@ -447,6 +451,7 @@ private fun FeaturedSportsEvent(
             EventEyebrow(event, isLive)
             SportsFixture(event, featured = true, modifier = Modifier.fillMaxWidth().height(72.dp))
             Text(formatEventTime(event, showDate), fontSize = 12.sp, color = BrowseColors.TextSecondary)
+            SportsCommentatorLine(event, fontSize = 12.sp)
             Text(sportsDescriptionForPresentation(event.description).ifBlank { event.title },
                 fontSize = 12.sp, color = BrowseColors.TextSecondary, maxLines = 3, overflow = TextOverflow.Ellipsis)
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -463,7 +468,8 @@ private fun FeaturedSportsEvent(
         return
     }
     Row(
-        modifier = Modifier.fillMaxWidth().height(180.dp + 18.dp * event.attributionCredits.sumOf { it.lineCount })
+        modifier = Modifier.fillMaxWidth().height(180.dp + 18.dp * event.attributionCredits.sumOf { it.lineCount } +
+            (if (event.commentator != null) COMMENTATOR_LINE_HEIGHT else 0.dp))
             .clip(RoundedCornerShape(12.dp))
             .background(Brush.horizontalGradient(listOf(BrowseColors.SurfaceEmphasis, BrowseColors.Surface)))
             .border(1.dp, BrowseColors.Outline, RoundedCornerShape(12.dp))
@@ -475,6 +481,7 @@ private fun FeaturedSportsEvent(
             SportsFixture(event, featured = true, modifier = Modifier.weight(1f))
             Text(formatEventTime(event, showDate), fontSize = 12.sp, color = BrowseColors.TextSecondary,
                 maxLines = 1, overflow = TextOverflow.Ellipsis)
+            SportsCommentatorLine(event, fontSize = 12.sp)
         }
         Box(Modifier.width(1.dp).fillMaxHeight().background(BrowseColors.Outline))
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -528,6 +535,16 @@ private fun EventEyebrow(event: SportsEvent, isLive: Boolean) {
         }
         SportsProviderCredits(event)
     }
+}
+
+// One text line plus the column spacing it adds.
+private val COMMENTATOR_LINE_HEIGHT = 24.dp
+
+@Composable
+private fun SportsCommentatorLine(event: SportsEvent, fontSize: TextUnit) {
+    val commentator = event.commentator ?: return
+    Text(stringResource(R.string.live_sports_commentator, commentator), fontSize = fontSize,
+        color = BrowseColors.TextSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
 }
 
 @Composable
@@ -664,11 +681,12 @@ private fun SportsEventCard(
     isLive: Boolean,
     showDate: Boolean,
     attributionLines: Int,
+    commentatorLines: Int,
     onShowDetails: (SportsEvent) -> Unit,
 ) {
     TvClickableSurface(
         onClick = { onShowDetails(event) },
-        modifier = Modifier.width(244.dp).height(172.dp + 18.dp * attributionLines),
+        modifier = Modifier.width(244.dp).height(172.dp + 18.dp * attributionLines + COMMENTATOR_LINE_HEIGHT * commentatorLines),
         shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(10.dp)),
         scale = ClickableSurfaceDefaults.scale(focusedScale = 1.02f),
     ) {
@@ -677,6 +695,7 @@ private fun SportsEventCard(
             SportsFixture(event, featured = false, modifier = Modifier.weight(1f))
             Text(formatEventTime(event, showDate), fontSize = 11.sp,
                 color = BrowseColors.TextSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            SportsCommentatorLine(event, fontSize = 11.sp)
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 event.broadcastsForPresentation().firstOrNull()?.channel?.let { channel ->
                     ChannelLogoBadge(channelName = channel.name, logoUrl = channel.logoUrl, modifier = Modifier.size(18.dp))
@@ -758,6 +777,7 @@ private fun SportsEventDetailsDialog(
                 Text(event.title, fontSize = 22.sp, fontWeight = FontWeight.Bold,
                     color = BrowseColors.TextPrimary, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 Text(formatEventTime(event, showDate = true), fontSize = 12.sp, color = BrowseColors.TextSecondary)
+                SportsCommentatorLine(event, fontSize = 12.sp)
                 Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(4.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(stringResource(R.string.live_sports_channel_choices, event.broadcasts.size),

@@ -281,6 +281,7 @@
     <string name="live_sports_standings_attribution">Date de la %1$s</string>
     <string name="live_sports_team_metadata">Detalii echipă: %1$s</string>
     <string name="live_sports_league_metadata">Detalii ligă: %1$s</string>
+    <string name="live_sports_commentator">Comentator: %1$s</string>
     <string name="live_sports_standings_season">Sezon: %1$s</string>
     <string name="live_sports_table_played">Jucate</string>
     <string name="live_sports_table_won">Victorii</string>

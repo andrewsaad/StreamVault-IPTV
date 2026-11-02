@@ -281,6 +281,7 @@
     <string name="live_sports_standings_attribution">डेटा: %1$s</string>
     <string name="live_sports_team_metadata">टीम का विवरण: %1$s</string>
     <string name="live_sports_league_metadata">लीग का विवरण: %1$s</string>
+    <string name="live_sports_commentator">कमेंटेटर: %1$s</string>
     <string name="live_sports_standings_season">सीज़न: %1$s</string>
     <string name="live_sports_table_played">खेले</string>
     <string name="live_sports_table_won">जीते</string>

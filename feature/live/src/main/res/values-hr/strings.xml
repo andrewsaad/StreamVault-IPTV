@@ -281,6 +281,7 @@
     <string name="live_sports_standings_attribution">Podaci od %1$s</string>
     <string name="live_sports_team_metadata">Podaci o momčadi: %1$s</string>
     <string name="live_sports_league_metadata">Podaci o ligi: %1$s</string>
+    <string name="live_sports_commentator">Komentator: %1$s</string>
     <string name="live_sports_standings_season">Sezona: %1$s</string>
     <string name="live_sports_table_played">Odigrano</string>
     <string name="live_sports_table_won">Pobjede</string>

@@ -281,6 +281,7 @@
     <string name="live_sports_standings_attribution">Data daripada %1$s</string>
     <string name="live_sports_team_metadata">Maklumat pasukan: %1$s</string>
     <string name="live_sports_league_metadata">Maklumat liga: %1$s</string>
+    <string name="live_sports_commentator">Pengulas: %1$s</string>
     <string name="live_sports_standings_season">Musim: %1$s</string>
     <string name="live_sports_table_played">Dimainkan</string>
     <string name="live_sports_table_won">Menang</string>

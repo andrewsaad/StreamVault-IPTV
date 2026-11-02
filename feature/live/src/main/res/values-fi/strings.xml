@@ -281,6 +281,7 @@
     <string name="live_sports_standings_attribution">Tiedot: %1$s</string>
     <string name="live_sports_team_metadata">Joukkueen tiedot: %1$s</string>
     <string name="live_sports_league_metadata">Liigan tiedot: %1$s</string>
+    <string name="live_sports_commentator">Selostaja: %1$s</string>
     <string name="live_sports_standings_season">Kausi: %1$s</string>
     <string name="live_sports_table_played">Ottelut</string>
     <string name="live_sports_table_won">Voitot</string>

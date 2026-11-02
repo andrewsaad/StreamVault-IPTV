@@ -281,6 +281,7 @@
     <string name="live_sports_standings_attribution">נתונים מאת %1$s</string>
     <string name="live_sports_team_metadata">פרטי הקבוצה: %1$s</string>
     <string name="live_sports_league_metadata">פרטי הליגה: %1$s</string>
+    <string name="live_sports_commentator">פרשן: %1$s</string>
     <string name="live_sports_standings_season">עונה: %1$s</string>
     <string name="live_sports_table_played">משחקים</string>
     <string name="live_sports_table_won">ניצחונות</string>

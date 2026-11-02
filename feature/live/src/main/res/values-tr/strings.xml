@@ -281,6 +281,7 @@
     <string name="live_sports_standings_attribution">Veri kaynağı: %1$s</string>
     <string name="live_sports_team_metadata">Takım bilgileri: %1$s</string>
     <string name="live_sports_league_metadata">Lig bilgileri: %1$s</string>
+    <string name="live_sports_commentator">Spiker: %1$s</string>
     <string name="live_sports_standings_season">Sezon: %1$s</string>
     <string name="live_sports_table_played">Oynanan</string>
     <string name="live_sports_table_won">Galibiyet</string>

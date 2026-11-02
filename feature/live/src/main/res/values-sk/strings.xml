@@ -281,6 +281,7 @@
     <string name="live_sports_standings_attribution">Údaje od %1$s</string>
     <string name="live_sports_team_metadata">Informácie o tíme: %1$s</string>
     <string name="live_sports_league_metadata">Informácie o lige: %1$s</string>
+    <string name="live_sports_commentator">Komentátor: %1$s</string>
     <string name="live_sports_standings_season">Sezóna: %1$s</string>
     <string name="live_sports_table_played">Odohrané</string>
     <string name="live_sports_table_won">Výhry</string>

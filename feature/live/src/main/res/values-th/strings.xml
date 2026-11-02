@@ -281,6 +281,7 @@
     <string name="live_sports_standings_attribution">ข้อมูลจาก %1$s</string>
     <string name="live_sports_team_metadata">รายละเอียดทีม: %1$s</string>
     <string name="live_sports_league_metadata">รายละเอียดลีก: %1$s</string>
+    <string name="live_sports_commentator">ผู้บรรยาย: %1$s</string>
     <string name="live_sports_standings_season">ฤดูกาล: %1$s</string>
     <string name="live_sports_table_played">แข่ง</string>
     <string name="live_sports_table_won">ชนะ</string>

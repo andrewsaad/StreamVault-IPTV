@@ -281,6 +281,7 @@
     <string name="live_sports_standings_attribution">数据来源：%1$s</string>
     <string name="live_sports_team_metadata">球队信息：%1$s</string>
     <string name="live_sports_league_metadata">联赛信息：%1$s</string>
+    <string name="live_sports_commentator">解说：%1$s</string>
     <string name="live_sports_standings_season">赛季：%1$s</string>
     <string name="live_sports_table_played">场次</string>
     <string name="live_sports_table_won">胜</string>
