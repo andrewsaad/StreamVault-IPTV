@@ -367,4 +367,16 @@
 <string name="trakt_rating_saved">Nilai Anda tersimpan di Trakt.</string>
 <string name="trakt_rating_failed">Nilai Anda tidak dapat disimpan di Trakt.</string>
 <string name="trakt_favorite_sync_failed">StreamVault menyimpan perubahan, tetapi tidak dapat memperbarui Favorit Trakt. Coba lagi.</string>
+  <string name="dashboard_live_matches">Langsung &amp; segera</string>
+  <string name="dashboard_live_match_live">LANGSUNG</string>
+  <string name="dashboard_live_match_in_minutes">dalam %1$d mnt</string>
+  <string name="dashboard_live_match_commentator">Komentator: %1$s</string>
+  <string name="dashboard_new_arabic_movies">Film Arab baru</string>
+  <string name="dashboard_new_egyptian_movies">Film Mesir baru</string>
+  <string name="dashboard_new_english_movies">Film Inggris baru</string>
+  <string name="dashboard_new_turkish_movies">Film Turki baru</string>
+  <string name="dashboard_new_arabic_series">Serial Arab baru</string>
+  <string name="dashboard_new_egyptian_series">Serial Mesir baru</string>
+  <string name="dashboard_new_english_series">Serial Inggris baru</string>
+  <string name="dashboard_new_turkish_series">Serial Turki baru</string>
 </resources>

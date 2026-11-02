@@ -960,4 +960,13 @@
     <string name="settings_m3u_catchup_query_format">Format de requête de rattrapage</string>
     <string name="settings_m3u_catchup_query_format_subtitle">Utilisé pour les chaînes M3U sans source de rattrapage propre. Laissez le champ vide pour désactiver ce format de secours. Exemple : ?utc={utc}</string>
     <string name="settings_m3u_catchup_query_format_disabled">Désactivé</string>
+    <string name="dashboard_live_matches">En direct et bientôt</string>
+    <string name="dashboard_new_arabic_movies">Nouveaux films arabes</string>
+    <string name="dashboard_new_egyptian_movies">Nouveaux films égyptiens</string>
+    <string name="dashboard_new_english_movies">Nouveaux films anglais</string>
+    <string name="dashboard_new_turkish_movies">Nouveaux films turcs</string>
+    <string name="dashboard_new_arabic_series">Nouvelles séries arabes</string>
+    <string name="dashboard_new_egyptian_series">Nouvelles séries égyptiennes</string>
+    <string name="dashboard_new_english_series">Nouvelles séries anglaises</string>
+    <string name="dashboard_new_turkish_series">Nouvelles séries turques</string>
 </resources>

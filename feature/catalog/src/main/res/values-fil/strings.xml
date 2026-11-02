@@ -353,4 +353,16 @@
   <string name="vod_sync_needed_title">Kailangan ng Sync</string>
   <string name="vod_unavailable_subtitle">Naglalabas ang provider na ito ng hiwalay na catalog para sa Mga Pelikula at Serye.</string>
   <string name="vod_unavailable_title">Hindi available ang VOD</string>
+  <string name="dashboard_live_matches">Live at malapit na</string>
+  <string name="dashboard_live_match_live">LIVE</string>
+  <string name="dashboard_live_match_in_minutes">sa loob ng %1$d min</string>
+  <string name="dashboard_live_match_commentator">Komentarista: %1$s</string>
+  <string name="dashboard_new_arabic_movies">Mga bagong Arabic na pelikula</string>
+  <string name="dashboard_new_egyptian_movies">Mga bagong Egyptian na pelikula</string>
+  <string name="dashboard_new_english_movies">Mga bagong English na pelikula</string>
+  <string name="dashboard_new_turkish_movies">Mga bagong Turkish na pelikula</string>
+  <string name="dashboard_new_arabic_series">Mga bagong Arabic na serye</string>
+  <string name="dashboard_new_egyptian_series">Mga bagong Egyptian na serye</string>
+  <string name="dashboard_new_english_series">Mga bagong English na serye</string>
+  <string name="dashboard_new_turkish_series">Mga bagong Turkish na serye</string>
 </resources>

@@ -367,4 +367,16 @@
 <string name="trakt_rating_saved">Votre note a été enregistrée sur Trakt.</string>
 <string name="trakt_rating_failed">Impossible d’enregistrer votre note sur Trakt.</string>
 <string name="trakt_favorite_sync_failed">StreamVault a enregistré la modification, mais n’a pas pu mettre à jour vos favoris Trakt. Réessayez.</string>
+  <string name="dashboard_live_matches">En direct et bientôt</string>
+  <string name="dashboard_live_match_live">EN DIRECT</string>
+  <string name="dashboard_live_match_in_minutes">dans %1$d min</string>
+  <string name="dashboard_live_match_commentator">Commentateur : %1$s</string>
+  <string name="dashboard_new_arabic_movies">Nouveaux films arabes</string>
+  <string name="dashboard_new_egyptian_movies">Nouveaux films égyptiens</string>
+  <string name="dashboard_new_english_movies">Nouveaux films anglais</string>
+  <string name="dashboard_new_turkish_movies">Nouveaux films turcs</string>
+  <string name="dashboard_new_arabic_series">Nouvelles séries arabes</string>
+  <string name="dashboard_new_egyptian_series">Nouvelles séries égyptiennes</string>
+  <string name="dashboard_new_english_series">Nouvelles séries anglaises</string>
+  <string name="dashboard_new_turkish_series">Nouvelles séries turques</string>
 </resources>

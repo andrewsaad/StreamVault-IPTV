@@ -957,4 +957,13 @@
     <string name="settings_m3u_catchup_query_format">Định dạng truy vấn phát lại từ kho lưu trữ</string>
     <string name="settings_m3u_catchup_query_format_subtitle">Dùng cho các kênh M3U không có nguồn phát lại riêng. Để trống để tắt định dạng dự phòng này. Ví dụ: ?utc={utc}</string>
     <string name="settings_m3u_catchup_query_format_disabled">Đã tắt</string>
+    <string name="dashboard_live_matches">Trực tiếp &amp; sắp diễn ra</string>
+    <string name="dashboard_new_arabic_movies">Phim Ả Rập mới</string>
+    <string name="dashboard_new_egyptian_movies">Phim Ai Cập mới</string>
+    <string name="dashboard_new_english_movies">Phim tiếng Anh mới</string>
+    <string name="dashboard_new_turkish_movies">Phim Thổ Nhĩ Kỳ mới</string>
+    <string name="dashboard_new_arabic_series">Phim bộ Ả Rập mới</string>
+    <string name="dashboard_new_egyptian_series">Phim bộ Ai Cập mới</string>
+    <string name="dashboard_new_english_series">Phim bộ tiếng Anh mới</string>
+    <string name="dashboard_new_turkish_series">Phim bộ Thổ Nhĩ Kỳ mới</string>
 </resources>

@@ -353,4 +353,16 @@
   <string name="vod_sync_needed_title">نیاز به همگام‌سازی</string>
   <string name="vod_unavailable_subtitle">این سرویس‌دهنده کاتالوگ‌های جداگانه فیلم و سریال ارائه می‌دهد.</string>
   <string name="vod_unavailable_title">VOD در دسترس نیست</string>
+  <string name="dashboard_live_matches">زنده و به‌زودی</string>
+  <string name="dashboard_live_match_live">زنده</string>
+  <string name="dashboard_live_match_in_minutes">%1$d دقیقه دیگر</string>
+  <string name="dashboard_live_match_commentator">گزارشگر: %1$s</string>
+  <string name="dashboard_new_arabic_movies">فیلم‌های جدید عربی</string>
+  <string name="dashboard_new_egyptian_movies">فیلم‌های جدید مصری</string>
+  <string name="dashboard_new_english_movies">فیلم‌های جدید انگلیسی</string>
+  <string name="dashboard_new_turkish_movies">فیلم‌های جدید ترکی</string>
+  <string name="dashboard_new_arabic_series">سریال‌های جدید عربی</string>
+  <string name="dashboard_new_egyptian_series">سریال‌های جدید مصری</string>
+  <string name="dashboard_new_english_series">سریال‌های جدید انگلیسی</string>
+  <string name="dashboard_new_turkish_series">سریال‌های جدید ترکی</string>
 </resources>

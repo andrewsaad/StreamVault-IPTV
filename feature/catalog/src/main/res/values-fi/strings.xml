@@ -367,4 +367,16 @@
 <string name="trakt_rating_saved">Arvosanasi tallennettiin Traktiin.</string>
 <string name="trakt_rating_failed">Arvosanan tallentaminen Traktiin epäonnistui.</string>
 <string name="trakt_favorite_sync_failed">StreamVault tallensi muutoksen, mutta Trakt-suosikkeja ei voitu päivittää. Yritä uudelleen.</string>
+  <string name="dashboard_live_matches">Suorana ja pian</string>
+  <string name="dashboard_live_match_live">SUORA</string>
+  <string name="dashboard_live_match_in_minutes">%1$d min päästä</string>
+  <string name="dashboard_live_match_commentator">Selostaja: %1$s</string>
+  <string name="dashboard_new_arabic_movies">Uudet arabialaiset elokuvat</string>
+  <string name="dashboard_new_egyptian_movies">Uudet egyptiläiset elokuvat</string>
+  <string name="dashboard_new_english_movies">Uudet englanninkieliset elokuvat</string>
+  <string name="dashboard_new_turkish_movies">Uudet turkkilaiset elokuvat</string>
+  <string name="dashboard_new_arabic_series">Uudet arabialaiset sarjat</string>
+  <string name="dashboard_new_egyptian_series">Uudet egyptiläiset sarjat</string>
+  <string name="dashboard_new_english_series">Uudet englanninkieliset sarjat</string>
+  <string name="dashboard_new_turkish_series">Uudet turkkilaiset sarjat</string>
 </resources>

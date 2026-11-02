@@ -353,4 +353,16 @@
   <string name="vod_sync_needed_title">Je potrebná synchronizácia</string>
   <string name="vod_unavailable_subtitle">Tento poskytovateľ ponúka samostatné katalógy filmov a seriálov.</string>
   <string name="vod_unavailable_title">VOD nie je k dispozícii</string>
+  <string name="dashboard_live_matches">Naživo a čoskoro</string>
+  <string name="dashboard_live_match_live">NAŽIVO</string>
+  <string name="dashboard_live_match_in_minutes">o %1$d min</string>
+  <string name="dashboard_live_match_commentator">Komentátor: %1$s</string>
+  <string name="dashboard_new_arabic_movies">Nové arabské filmy</string>
+  <string name="dashboard_new_egyptian_movies">Nové egyptské filmy</string>
+  <string name="dashboard_new_english_movies">Nové anglické filmy</string>
+  <string name="dashboard_new_turkish_movies">Nové turecké filmy</string>
+  <string name="dashboard_new_arabic_series">Nové arabské seriály</string>
+  <string name="dashboard_new_egyptian_series">Nové egyptské seriály</string>
+  <string name="dashboard_new_english_series">Nové anglické seriály</string>
+  <string name="dashboard_new_turkish_series">Nové turecké seriály</string>
 </resources>

@@ -353,4 +353,16 @@
   <string name="vod_sync_needed_title">ต้องซิงค์</string>
   <string name="vod_unavailable_subtitle">ผู้ให้บริการนี้มีแค็ตตาล็อกภาพยนตร์และซีรีส์แยกกัน</string>
   <string name="vod_unavailable_title">VOD ใช้งานไม่ได้</string>
+  <string name="dashboard_live_matches">ถ่ายทอดสดและเร็วๆ นี้</string>
+  <string name="dashboard_live_match_live">สด</string>
+  <string name="dashboard_live_match_in_minutes">อีก %1$d นาที</string>
+  <string name="dashboard_live_match_commentator">ผู้บรรยาย: %1$s</string>
+  <string name="dashboard_new_arabic_movies">ภาพยนตร์อาหรับใหม่</string>
+  <string name="dashboard_new_egyptian_movies">ภาพยนตร์อียิปต์ใหม่</string>
+  <string name="dashboard_new_english_movies">ภาพยนตร์อังกฤษใหม่</string>
+  <string name="dashboard_new_turkish_movies">ภาพยนตร์ตุรกีใหม่</string>
+  <string name="dashboard_new_arabic_series">ซีรีส์อาหรับใหม่</string>
+  <string name="dashboard_new_egyptian_series">ซีรีส์อียิปต์ใหม่</string>
+  <string name="dashboard_new_english_series">ซีรีส์อังกฤษใหม่</string>
+  <string name="dashboard_new_turkish_series">ซีรีส์ตุรกีใหม่</string>
 </resources>

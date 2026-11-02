@@ -955,4 +955,13 @@
     <string name="settings_m3u_catchup_query_format">回看查詢格式</string>
     <string name="settings_m3u_catchup_query_format_subtitle">用於沒有專屬回看來源的 M3U 頻道。留空即可停用此備用格式。範例：?utc={utc}</string>
     <string name="settings_m3u_catchup_query_format_disabled">已停用</string>
+    <string name="dashboard_live_matches">直播與即將開始</string>
+    <string name="dashboard_new_arabic_movies">最新阿拉伯語電影</string>
+    <string name="dashboard_new_egyptian_movies">最新埃及電影</string>
+    <string name="dashboard_new_english_movies">最新英語電影</string>
+    <string name="dashboard_new_turkish_movies">最新土耳其電影</string>
+    <string name="dashboard_new_arabic_series">最新阿拉伯語影集</string>
+    <string name="dashboard_new_egyptian_series">最新埃及影集</string>
+    <string name="dashboard_new_english_series">最新英語影集</string>
+    <string name="dashboard_new_turkish_series">最新土耳其影集</string>
 </resources>

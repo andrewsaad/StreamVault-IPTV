@@ -367,4 +367,16 @@
 <string name="trakt_rating_saved">Đã lưu điểm của bạn vào Trakt.</string>
 <string name="trakt_rating_failed">Không thể lưu điểm của bạn vào Trakt.</string>
 <string name="trakt_favorite_sync_failed">StreamVault đã lưu thay đổi nhưng không thể cập nhật Mục yêu thích Trakt. Hãy thử lại.</string>
+  <string name="dashboard_live_matches">Trực tiếp &amp; sắp diễn ra</string>
+  <string name="dashboard_live_match_live">TRỰC TIẾP</string>
+  <string name="dashboard_live_match_in_minutes">sau %1$d phút</string>
+  <string name="dashboard_live_match_commentator">Bình luận viên: %1$s</string>
+  <string name="dashboard_new_arabic_movies">Phim Ả Rập mới</string>
+  <string name="dashboard_new_egyptian_movies">Phim Ai Cập mới</string>
+  <string name="dashboard_new_english_movies">Phim tiếng Anh mới</string>
+  <string name="dashboard_new_turkish_movies">Phim Thổ Nhĩ Kỳ mới</string>
+  <string name="dashboard_new_arabic_series">Phim bộ Ả Rập mới</string>
+  <string name="dashboard_new_egyptian_series">Phim bộ Ai Cập mới</string>
+  <string name="dashboard_new_english_series">Phim bộ tiếng Anh mới</string>
+  <string name="dashboard_new_turkish_series">Phim bộ Thổ Nhĩ Kỳ mới</string>
 </resources>

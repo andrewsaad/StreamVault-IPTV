@@ -958,4 +958,13 @@
     <string name="settings_m3u_catchup_query_format">Формат на заявката за архивно предаване</string>
     <string name="settings_m3u_catchup_query_format_subtitle">Използва се за M3U канали без собствен източник за архивно предаване. Оставете празно, за да изключите резервния формат. Пример: ?utc={utc}</string>
     <string name="settings_m3u_catchup_query_format_disabled">Изключено</string>
+    <string name="dashboard_live_matches">На живо и скоро</string>
+    <string name="dashboard_new_arabic_movies">Нови арабски филми</string>
+    <string name="dashboard_new_egyptian_movies">Нови египетски филми</string>
+    <string name="dashboard_new_english_movies">Нови английски филми</string>
+    <string name="dashboard_new_turkish_movies">Нови турски филми</string>
+    <string name="dashboard_new_arabic_series">Нови арабски сериали</string>
+    <string name="dashboard_new_egyptian_series">Нови египетски сериали</string>
+    <string name="dashboard_new_english_series">Нови английски сериали</string>
+    <string name="dashboard_new_turkish_series">Нови турски сериали</string>
 </resources>

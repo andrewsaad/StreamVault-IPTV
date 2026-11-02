@@ -7,6 +7,8 @@ import com.streamvault.data.preferences.PreferencesRepository
 import com.streamvault.data.sync.ProviderSyncStateSource
 import com.streamvault.feature.catalog.R
 import com.streamvault.feature.catalog.api.CatalogAppUpdatePort
+import com.streamvault.feature.catalog.api.CatalogLiveMatch
+import com.streamvault.feature.catalog.api.CatalogLiveMatchesPort
 import com.streamvault.feature.catalog.api.CatalogUpdateAction
 import com.streamvault.domain.model.ActiveLiveSource
 import com.streamvault.domain.model.AppHomeDashboardShelf
@@ -47,8 +49,10 @@ import java.time.Year
 import java.time.format.DateTimeFormatter
 import javax.inject.Inject
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
@@ -58,8 +62,10 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import com.streamvault.domain.util.AdultContentVisibilityPolicy
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 @HiltViewModel
@@ -80,7 +86,8 @@ class DashboardViewModel @Inject constructor(
     private val appUpdatePort: CatalogAppUpdatePort,
     private val recordingManager: RecordingManager,
     private val traktAccount: TraktAccount,
-    private val traktWatchlist: TraktWatchlist
+    private val traktWatchlist: TraktWatchlist,
+    liveMatchesPort: CatalogLiveMatchesPort
 ) : ViewModel() {
     private companion object {
         const val FAVORITE_CHANNEL_LIMIT = 12
@@ -89,6 +96,8 @@ class DashboardViewModel @Inject constructor(
         const val MOVIE_SHELF_LIMIT = 12
         const val SERIES_SHELF_LIMIT = 12
         const val HOME_SHORTCUT_LIMIT = 4
+        const val LANGUAGE_SHELF_LIMIT = 20
+        const val LIVE_MATCHES_STOP_TIMEOUT_MS = 5_000L
     }
 
     private val _uiState = MutableStateFlow(DashboardUiState())
@@ -99,6 +108,20 @@ class DashboardViewModel @Inject constructor(
 
     private val _scheduledChannelIds = MutableStateFlow<Set<Long>>(emptySet())
     val scheduledChannelIds: StateFlow<Set<Long>> = _scheduledChannelIds.asStateFlow()
+
+    /** Providers of the active live source; drives the "Live & starting soon" row. */
+    private val activeLiveProviderIds = MutableStateFlow<List<Long>>(emptyList())
+
+    /** Football on now or soon. Polls only while the dashboard UI collects it (WhileSubscribed). */
+    val liveMatches: StateFlow<List<CatalogLiveMatch>> = liveMatchesTicker(
+        providerIds = activeLiveProviderIds,
+        port = liveMatchesPort,
+        nowMs = System::currentTimeMillis
+    ).stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(LIVE_MATCHES_STOP_TIMEOUT_MS),
+        initialValue = emptyList()
+    )
 
     init {
         viewModelScope.launch {
@@ -133,6 +156,7 @@ class DashboardViewModel @Inject constructor(
                 .flatMapLatest { (activeSource, activeProvider) ->
                     flow {
                         if (activeSource == null && activeProvider == null) {
+                            activeLiveProviderIds.value = emptyList()
                             emit(DashboardUiState(isLoading = false))
                             return@flow
                         }
@@ -142,9 +166,11 @@ class DashboardViewModel @Inject constructor(
                                 val provider = activeProvider?.takeIf { it.id == activeSource.providerId }
                                     ?: providerRepository.getProvider(activeSource.providerId)
                                     ?: run {
+                                        activeLiveProviderIds.value = emptyList()
                                         emit(DashboardUiState(isLoading = false))
                                         return@flow
                                     }
+                                activeLiveProviderIds.value = listOf(provider.id)
                                 emitAll(observeDashboard(provider, listOf(provider.id), combinedProfileId = null))
                             }
 
@@ -158,13 +184,18 @@ class DashboardViewModel @Inject constructor(
                                 val provider = activeProvider?.takeIf { it.id in liveProviderIds }
                                     ?: liveProviderIds.firstOrNull()?.let { providerRepository.getProvider(it) }
                                     ?: run {
+                                        activeLiveProviderIds.value = emptyList()
                                         emit(DashboardUiState(isLoading = false, currentCombinedProfileId = activeSource.profileId))
                                         return@flow
                                     }
+                                activeLiveProviderIds.value = liveProviderIds
                                 emitAll(observeDashboard(provider, liveProviderIds, combinedProfileId = activeSource.profileId))
                             }
 
-                            null -> emit(DashboardUiState(isLoading = false))
+                            null -> {
+                                activeLiveProviderIds.value = emptyList()
+                                emit(DashboardUiState(isLoading = false))
+                            }
                         }
                     }
                 }
@@ -241,6 +272,64 @@ class DashboardViewModel @Inject constructor(
                     }
                 }
             }
+
+    private fun observeLanguageMovieShelves(providerId: Long): Flow<Map<VodLanguage, List<Movie>>> =
+        combine(
+            movieRepository.getCategories(providerId),
+            preferencesRepository.getHiddenCategoryIds(providerId, ContentType.MOVIE),
+            preferencesRepository.parentalControlLevel
+        ) { categories, hiddenCategoryIds, level ->
+            languageCategoryIds(categories, hiddenCategoryIds, level)
+        }
+            .flowOn(Dispatchers.Default)
+            .distinctUntilChanged()
+            .flatMapLatest { groups ->
+                if (groups.isEmpty()) {
+                    flowOf(emptyMap())
+                } else {
+                    combine(groups.map { (language, categoryIds) ->
+                        movieRepository.getFreshByCategoriesPreview(providerId, categoryIds, LANGUAGE_SHELF_LIMIT)
+                            .combine(preferencesRepository.parentalControlLevel) { movies, level ->
+                                language to movies.filter { !shouldHideVodFromHome(it, level) }
+                            }
+                    }) { rows -> rows.toMap() }
+                }
+            }
+
+    private fun observeLanguageSeriesShelves(providerId: Long): Flow<Map<VodLanguage, List<Series>>> =
+        combine(
+            seriesRepository.getCategories(providerId),
+            preferencesRepository.getHiddenCategoryIds(providerId, ContentType.SERIES),
+            preferencesRepository.parentalControlLevel
+        ) { categories, hiddenCategoryIds, level ->
+            languageCategoryIds(categories, hiddenCategoryIds, level)
+        }
+            .flowOn(Dispatchers.Default)
+            .distinctUntilChanged()
+            .flatMapLatest { groups ->
+                if (groups.isEmpty()) {
+                    flowOf(emptyMap())
+                } else {
+                    combine(groups.map { (language, categoryIds) ->
+                        seriesRepository.getFreshByCategoriesPreview(providerId, categoryIds, LANGUAGE_SHELF_LIMIT)
+                            .combine(preferencesRepository.parentalControlLevel) { series, level ->
+                                language to series.filter { !shouldHideVodFromHome(it, level) }
+                            }
+                    }) { rows -> rows.toMap() }
+                }
+            }
+
+    private fun languageCategoryIds(
+        categories: List<Category>,
+        hiddenCategoryIds: Set<Long>,
+        level: Int
+    ): Map<VodLanguage, List<Long>> = VodLanguageClassifier.groupIds(
+        categories = categories.filter { category ->
+            category.id !in hiddenCategoryIds && !shouldHideVodCategoryFromHome(category, level)
+        },
+        nameOf = Category::name,
+        idOf = Category::id
+    )
 
     private fun observeDashboard(
         provider: Provider,
@@ -395,6 +484,13 @@ class DashboardViewModel @Inject constructor(
                 traktWatchlistMovies = watchlistMovies,
                 traktWatchlistSeries = watchlistSeries
             )
+        }.combine(
+            combine(
+                observeLanguageMovieShelves(provider.id).onStart { emit(emptyMap()) },
+                observeLanguageSeriesShelves(provider.id).onStart { emit(emptyMap()) }
+            ) { movies, series -> movies to series }
+        ) { shelves, (languageMovies, languageSeries) ->
+            shelves.copy(languageMovies = languageMovies, languageSeries = languageSeries)
         }
 
         val baseSnapshot = combine(
@@ -445,6 +541,8 @@ class DashboardViewModel @Inject constructor(
                 traktWatchlistSeries = snapshot.shelves.traktWatchlistSeries,
                 recentMovies = snapshot.shelves.recentMovies,
                 recentSeries = snapshot.shelves.recentSeries,
+                languageMovies = snapshot.shelves.languageMovies,
+                languageSeries = snapshot.shelves.languageSeries,
                 topRatedMovies = snapshot.shelves.topRatedMovies,
                 recommendedMovies = snapshot.shelves.recommendedMovies,
                 pinnedMovieCategories = snapshot.pinnedMovieCategories,
@@ -957,7 +1055,9 @@ private data class DashboardContentShelves(
     val topRatedMovies: List<Movie> = emptyList(),
     val recommendedMovies: List<Movie> = emptyList(),
     val pinnedMovieCategories: Map<String, List<Movie>> = emptyMap(),
-    val pinnedSeriesCategories: Map<String, List<Series>> = emptyMap()
+    val pinnedSeriesCategories: Map<String, List<Series>> = emptyMap(),
+    val languageMovies: Map<VodLanguage, List<Movie>> = emptyMap(),
+    val languageSeries: Map<VodLanguage, List<Series>> = emptyMap()
 )
 
 private data class DashboardSnapshot(
@@ -988,6 +1088,10 @@ data class DashboardUiState(
     val traktWatchlistSeries: List<Series> = emptyList(),
     val recentMovies: List<Movie> = emptyList(),
     val recentSeries: List<Series> = emptyList(),
+    val languageMovies: Map<VodLanguage, List<Movie>> = emptyMap(),
+    val languageSeries: Map<VodLanguage, List<Series>> = emptyMap(),
+    /** Filled by the screen from [DashboardViewModel.liveMatches], which polls only while visible. */
+    val liveMatches: List<CatalogLiveMatch> = emptyList(),
     val topRatedMovies: List<Movie> = emptyList(),
     val recommendedMovies: List<Movie> = emptyList(),
     val pinnedMovieCategories: Map<String, List<Movie>> = emptyMap(),

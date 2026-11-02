@@ -367,4 +367,16 @@
 <string name="trakt_rating_saved">Tu puntuación se guardó en Trakt.</string>
 <string name="trakt_rating_failed">No se pudo guardar tu puntuación en Trakt.</string>
 <string name="trakt_favorite_sync_failed">StreamVault guardó el cambio, pero no pudo actualizar tus favoritos de Trakt. Inténtalo de nuevo.</string>
+  <string name="dashboard_live_matches">En directo y próximamente</string>
+  <string name="dashboard_live_match_live">EN DIRECTO</string>
+  <string name="dashboard_live_match_in_minutes">en %1$d min</string>
+  <string name="dashboard_live_match_commentator">Comentarista: %1$s</string>
+  <string name="dashboard_new_arabic_movies">Nuevas películas árabes</string>
+  <string name="dashboard_new_egyptian_movies">Nuevas películas egipcias</string>
+  <string name="dashboard_new_english_movies">Nuevas películas inglesas</string>
+  <string name="dashboard_new_turkish_movies">Nuevas películas turcas</string>
+  <string name="dashboard_new_arabic_series">Nuevas series árabes</string>
+  <string name="dashboard_new_egyptian_series">Nuevas series egipcias</string>
+  <string name="dashboard_new_english_series">Nuevas series inglesas</string>
+  <string name="dashboard_new_turkish_series">Nuevas series turcas</string>
 </resources>

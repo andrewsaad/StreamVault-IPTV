@@ -367,4 +367,16 @@
 <string name="trakt_rating_saved">Din bedømmelse blev gemt på Trakt.</string>
 <string name="trakt_rating_failed">Kunne ikke gemme din bedømmelse på Trakt.</string>
 <string name="trakt_favorite_sync_failed">StreamVault gemte ændringen, men kunne ikke opdatere Trakt-favoritter. Prøv igen.</string>
+  <string name="dashboard_live_matches">Live og snart</string>
+  <string name="dashboard_live_match_live">LIVE</string>
+  <string name="dashboard_live_match_in_minutes">om %1$d min</string>
+  <string name="dashboard_live_match_commentator">Kommentator: %1$s</string>
+  <string name="dashboard_new_arabic_movies">Nye arabiske film</string>
+  <string name="dashboard_new_egyptian_movies">Nye egyptiske film</string>
+  <string name="dashboard_new_english_movies">Nye engelske film</string>
+  <string name="dashboard_new_turkish_movies">Nye tyrkiske film</string>
+  <string name="dashboard_new_arabic_series">Nye arabiske serier</string>
+  <string name="dashboard_new_egyptian_series">Nye egyptiske serier</string>
+  <string name="dashboard_new_english_series">Nye engelske serier</string>
+  <string name="dashboard_new_turkish_series">Nye tyrkiske serier</string>
 </resources>

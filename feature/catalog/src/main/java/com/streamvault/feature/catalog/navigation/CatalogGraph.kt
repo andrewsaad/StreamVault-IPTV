@@ -73,6 +73,25 @@ fun NavGraphBuilder.registerCatalogGraph(
                     )
                 )
             },
+            onLiveMatchChannelClick = { channel, combinedProfileId ->
+                // Single provider: zapping stays inside the channel's own group (beIN 1 -> beIN 2).
+                // Combined sources keep the dashboard's proven "recent" context.
+                val ownGroup = combinedProfileId == null
+                onPlayChannel(
+                    channel,
+                    CatalogChannelPlaybackContext(
+                        categoryId = if (ownGroup) {
+                            channel.categoryId
+                        } else {
+                            com.streamvault.domain.model.VirtualCategoryIds.RECENT
+                        },
+                        providerId = channel.providerId,
+                        isVirtual = !ownGroup,
+                        combinedProfileId = combinedProfileId,
+                        returnDestination = AppDestination.Home,
+                    )
+                )
+            },
             onMovieClick = { movie -> onOpenMovieDetail(movie, AppDestination.Home) },
             onSeriesClick = { series -> onOpenSeriesDetail(series, AppDestination.Home) },
             onPlaybackHistoryClick = { history -> onPlayHistory(history, AppDestination.Home) },

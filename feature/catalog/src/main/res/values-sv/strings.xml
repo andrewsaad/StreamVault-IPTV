@@ -367,4 +367,16 @@
 <string name="trakt_rating_saved">Ditt betyg har sparats på Trakt.</string>
 <string name="trakt_rating_failed">Det gick inte att spara ditt betyg på Trakt.</string>
 <string name="trakt_favorite_sync_failed">StreamVault sparade ändringen men kunde inte uppdatera dina Trakt-favoriter. Försök igen.</string>
+  <string name="dashboard_live_matches">Live och snart</string>
+  <string name="dashboard_live_match_live">LIVE</string>
+  <string name="dashboard_live_match_in_minutes">om %1$d min</string>
+  <string name="dashboard_live_match_commentator">Kommentator: %1$s</string>
+  <string name="dashboard_new_arabic_movies">Nya arabiska filmer</string>
+  <string name="dashboard_new_egyptian_movies">Nya egyptiska filmer</string>
+  <string name="dashboard_new_english_movies">Nya engelska filmer</string>
+  <string name="dashboard_new_turkish_movies">Nya turkiska filmer</string>
+  <string name="dashboard_new_arabic_series">Nya arabiska serier</string>
+  <string name="dashboard_new_egyptian_series">Nya egyptiska serier</string>
+  <string name="dashboard_new_english_series">Nya engelska serier</string>
+  <string name="dashboard_new_turkish_series">Nya turkiska serier</string>
 </resources>

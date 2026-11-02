@@ -353,4 +353,16 @@
   <string name="vod_sync_needed_title">Kërkohet sinkronizim</string>
   <string name="vod_unavailable_subtitle">Ky ofrues ekspozon katalogë të veçantë për Filmat dhe Serialet.</string>
   <string name="vod_unavailable_title">VOD nuk disponohet</string>
+  <string name="dashboard_live_matches">Live dhe së shpejti</string>
+  <string name="dashboard_live_match_live">LIVE</string>
+  <string name="dashboard_live_match_in_minutes">pas %1$d min</string>
+  <string name="dashboard_live_match_commentator">Komentator: %1$s</string>
+  <string name="dashboard_new_arabic_movies">Filma të rinj arabë</string>
+  <string name="dashboard_new_egyptian_movies">Filma të rinj egjiptianë</string>
+  <string name="dashboard_new_english_movies">Filma të rinj anglezë</string>
+  <string name="dashboard_new_turkish_movies">Filma të rinj turq</string>
+  <string name="dashboard_new_arabic_series">Seriale të reja arabe</string>
+  <string name="dashboard_new_egyptian_series">Seriale të reja egjiptiane</string>
+  <string name="dashboard_new_english_series">Seriale të reja angleze</string>
+  <string name="dashboard_new_turkish_series">Seriale të reja turke</string>
 </resources>

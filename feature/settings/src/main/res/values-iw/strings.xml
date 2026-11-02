@@ -963,4 +963,13 @@
     <string name="settings_m3u_catchup_query_format">תבנית שאילתת צפייה בארכיון</string>
     <string name="settings_m3u_catchup_query_format_subtitle">משמשת לערוצי M3U ללא מקור צפייה בארכיון משלהם. יש להשאיר ריק כדי להשבית את תבנית הגיבוי הזו. לדוגמה: ?utc={utc}</string>
     <string name="settings_m3u_catchup_query_format_disabled">מושבת</string>
+    <string name="dashboard_live_matches">בשידור חי ובקרוב</string>
+    <string name="dashboard_new_arabic_movies">סרטים ערביים חדשים</string>
+    <string name="dashboard_new_egyptian_movies">סרטים מצריים חדשים</string>
+    <string name="dashboard_new_english_movies">סרטים באנגלית חדשים</string>
+    <string name="dashboard_new_turkish_movies">סרטים טורקיים חדשים</string>
+    <string name="dashboard_new_arabic_series">סדרות ערביות חדשות</string>
+    <string name="dashboard_new_egyptian_series">סדרות מצריות חדשות</string>
+    <string name="dashboard_new_english_series">סדרות באנגלית חדשות</string>
+    <string name="dashboard_new_turkish_series">סדרות טורקיות חדשות</string>
 </resources>

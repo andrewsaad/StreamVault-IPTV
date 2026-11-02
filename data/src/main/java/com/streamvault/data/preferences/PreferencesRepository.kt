@@ -3148,7 +3148,7 @@ class PreferencesRepository @Inject constructor(
         return if (decoded.isEmpty()) {
             AppHomeDashboardShelf.defaultOrder
         } else {
-            AppHomeDashboardShelf.normalizeForStorage(decoded)
+            AppHomeDashboardShelf.upgradeLegacyDefault(AppHomeDashboardShelf.normalizeForStorage(decoded))
         }
     }
 

@@ -960,4 +960,13 @@
     <string name="settings_m3u_catchup_query_format">Format for catch-up-forespørgsel</string>
     <string name="settings_m3u_catchup_query_format_subtitle">Bruges til M3U-kanaler uden deres egen catch-up-kilde. Lad feltet være tomt for at slå reserveformatet fra. Eksempel: ?utc={utc}</string>
     <string name="settings_m3u_catchup_query_format_disabled">Deaktiveret</string>
+    <string name="dashboard_live_matches">Live og snart</string>
+    <string name="dashboard_new_arabic_movies">Nye arabiske film</string>
+    <string name="dashboard_new_egyptian_movies">Nye egyptiske film</string>
+    <string name="dashboard_new_english_movies">Nye engelske film</string>
+    <string name="dashboard_new_turkish_movies">Nye tyrkiske film</string>
+    <string name="dashboard_new_arabic_series">Nye arabiske serier</string>
+    <string name="dashboard_new_egyptian_series">Nye egyptiske serier</string>
+    <string name="dashboard_new_english_series">Nye engelske serier</string>
+    <string name="dashboard_new_turkish_series">Nye tyrkiske serier</string>
 </resources>

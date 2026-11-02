@@ -958,4 +958,13 @@
     <string name="settings_m3u_catchup_query_format">キャッチアップクエリ形式</string>
     <string name="settings_m3u_catchup_query_format_subtitle">専用のキャッチアップソースがないM3Uチャンネルに使用します。この代替形式を無効にするには空欄にします。例: ?utc={utc}</string>
     <string name="settings_m3u_catchup_query_format_disabled">無効</string>
+    <string name="dashboard_live_matches">ライブ・まもなく開始</string>
+    <string name="dashboard_new_arabic_movies">新着アラビア語映画</string>
+    <string name="dashboard_new_egyptian_movies">新着エジプト映画</string>
+    <string name="dashboard_new_english_movies">新着英語映画</string>
+    <string name="dashboard_new_turkish_movies">新着トルコ映画</string>
+    <string name="dashboard_new_arabic_series">新着アラビア語シリーズ</string>
+    <string name="dashboard_new_egyptian_series">新着エジプトシリーズ</string>
+    <string name="dashboard_new_english_series">新着英語シリーズ</string>
+    <string name="dashboard_new_turkish_series">新着トルコシリーズ</string>
 </resources>

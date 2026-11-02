@@ -105,9 +105,12 @@ fun DashboardScreen(
     onPlaybackHistoryClick: (PlaybackHistory) -> Unit,
     scaffold: CatalogScaffoldContent,
     dashboardShelfCustomizationContent: CatalogDashboardShelfCustomizationContent,
+    onLiveMatchChannelClick: (Channel, Long?) -> Unit = onRecentChannelClick,
     viewModel: DashboardViewModel = hiltViewModel()
 ) {
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val baseUiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val liveMatches by viewModel.liveMatches.collectAsStateWithLifecycle()
+    val uiState = remember(baseUiState, liveMatches) { baseUiState.copy(liveMatches = liveMatches) }
     val recordingChannelIds by viewModel.recordingChannelIds.collectAsStateWithLifecycle()
     val scheduledChannelIds by viewModel.scheduledChannelIds.collectAsStateWithLifecycle()
     val nowMs by CatalogChannelProgressTicker.nowMs.collectAsStateWithLifecycle()
@@ -198,6 +201,43 @@ fun DashboardScreen(
                     contentType = { it.storageValue }
                 ) { section ->
                     when (section) {
+                    AppHomeDashboardShelf.LIVE_MATCHES -> DashboardLiveMatchesRow(
+                        title = stringResource(R.string.dashboard_live_matches),
+                        matches = uiState.liveMatches,
+                        nowMs = nowMs,
+                        onMatchClick = { match ->
+                            onLiveMatchChannelClick(match.channel, uiState.currentCombinedProfileId)
+                        }
+                    )
+
+                    AppHomeDashboardShelf.NEW_ARABIC_MOVIES,
+                    AppHomeDashboardShelf.NEW_EGYPTIAN_MOVIES,
+                    AppHomeDashboardShelf.NEW_ENGLISH_MOVIES,
+                    AppHomeDashboardShelf.NEW_TURKISH_MOVIES -> CategoryRow(
+                        title = stringResource(section.languageShelfTitleResId()),
+                        items = uiState.languageMoviesFor(section),
+                        keySelector = { it.id },
+                        onSeeAll = { onDestinationRequested(AppDestination.Movies) }
+                    ) { movie ->
+                        MovieCard(movie = movie, onClick = { onMovieClick(movie) })
+                    }
+
+                    AppHomeDashboardShelf.NEW_ARABIC_SERIES,
+                    AppHomeDashboardShelf.NEW_EGYPTIAN_SERIES,
+                    AppHomeDashboardShelf.NEW_ENGLISH_SERIES,
+                    AppHomeDashboardShelf.NEW_TURKISH_SERIES -> CategoryRow(
+                        title = stringResource(section.languageShelfTitleResId()),
+                        items = uiState.languageSeriesFor(section),
+                        keySelector = { it.id },
+                        onSeeAll = { onDestinationRequested(AppDestination.Series) }
+                    ) { series ->
+                        SeriesCard(
+                            series = series,
+                            subtitle = series.releaseDate ?: stringResource(R.string.dashboard_updated_series_badge),
+                            onClick = { onSeriesClick(series) }
+                        )
+                    }
+
                     AppHomeDashboardShelf.LIVE_SHORTCUTS -> DashboardShortcutRow(
                         title = stringResource(R.string.dashboard_live_shortcuts),
                         subtitle = stringResource(R.string.dashboard_live_shortcuts_subtitle),
@@ -969,6 +1009,9 @@ private fun rememberDashboardSections(
         uiState.traktWatchlistSeries,
         uiState.recentMovies,
         uiState.recentSeries,
+        uiState.languageMovies,
+        uiState.languageSeries,
+        uiState.liveMatches,
         uiState.topRatedMovies,
         uiState.recommendedMovies,
         uiState.pinnedMovieCategories,

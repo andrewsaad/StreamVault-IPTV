@@ -1035,4 +1035,13 @@
     <string name="settings_epg_phone_qr_complete">Added</string>
     <string name="settings_epg_phone_qr_error">Error</string>
     <string name="settings_backup_export_sections">Choose sections to export</string>
+    <string name="dashboard_live_matches">Live &amp; starting soon</string>
+    <string name="dashboard_new_arabic_movies">New Arabic Movies</string>
+    <string name="dashboard_new_egyptian_movies">New Egyptian Movies</string>
+    <string name="dashboard_new_english_movies">New English Movies</string>
+    <string name="dashboard_new_turkish_movies">New Turkish Movies</string>
+    <string name="dashboard_new_arabic_series">New Arabic Series</string>
+    <string name="dashboard_new_egyptian_series">New Egyptian Series</string>
+    <string name="dashboard_new_english_series">New English Series</string>
+    <string name="dashboard_new_turkish_series">New Turkish Series</string>
 </resources>

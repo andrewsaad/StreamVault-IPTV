@@ -367,4 +367,16 @@
 <string name="trakt_rating_saved">Twoja ocena została zapisana w Trakt.</string>
 <string name="trakt_rating_failed">Nie udało się zapisać oceny w Trakt.</string>
 <string name="trakt_favorite_sync_failed">StreamVault zapisał zmianę, ale nie udało się zaktualizować ulubionych Trakt. Spróbuj ponownie.</string>
+  <string name="dashboard_live_matches">Na żywo i wkrótce</string>
+  <string name="dashboard_live_match_live">NA ŻYWO</string>
+  <string name="dashboard_live_match_in_minutes">za %1$d min</string>
+  <string name="dashboard_live_match_commentator">Komentator: %1$s</string>
+  <string name="dashboard_new_arabic_movies">Nowe filmy arabskie</string>
+  <string name="dashboard_new_egyptian_movies">Nowe filmy egipskie</string>
+  <string name="dashboard_new_english_movies">Nowe filmy angielskie</string>
+  <string name="dashboard_new_turkish_movies">Nowe filmy tureckie</string>
+  <string name="dashboard_new_arabic_series">Nowe seriale arabskie</string>
+  <string name="dashboard_new_egyptian_series">Nowe seriale egipskie</string>
+  <string name="dashboard_new_english_series">Nowe seriale angielskie</string>
+  <string name="dashboard_new_turkish_series">Nowe seriale tureckie</string>
 </resources>

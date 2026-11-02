@@ -367,4 +367,16 @@
 <string name="trakt_rating_saved">Puanınız Trakt üzerine kaydedildi.</string>
 <string name="trakt_rating_failed">Puanınız Trakt üzerine kaydedilemedi.</string>
 <string name="trakt_favorite_sync_failed">StreamVault değişikliği kaydetti ancak Trakt Favorilerini güncelleyemedi. Yeniden deneyin.</string>
+  <string name="dashboard_live_matches">Canlı ve yakında</string>
+  <string name="dashboard_live_match_live">CANLI</string>
+  <string name="dashboard_live_match_in_minutes">%1$d dk sonra</string>
+  <string name="dashboard_live_match_commentator">Spiker: %1$s</string>
+  <string name="dashboard_new_arabic_movies">Yeni Arapça filmler</string>
+  <string name="dashboard_new_egyptian_movies">Yeni Mısır filmleri</string>
+  <string name="dashboard_new_english_movies">Yeni İngilizce filmler</string>
+  <string name="dashboard_new_turkish_movies">Yeni Türk filmleri</string>
+  <string name="dashboard_new_arabic_series">Yeni Arapça diziler</string>
+  <string name="dashboard_new_egyptian_series">Yeni Mısır dizileri</string>
+  <string name="dashboard_new_english_series">Yeni İngilizce diziler</string>
+  <string name="dashboard_new_turkish_series">Yeni Türk dizileri</string>
 </resources>

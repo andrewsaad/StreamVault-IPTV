@@ -958,4 +958,13 @@
     <string name="settings_m3u_catchup_query_format">Format ng query para sa catch-up</string>
     <string name="settings_m3u_catchup_query_format_subtitle">Ginagamit para sa mga M3U channel na walang sariling source ng catch-up. Iwanang blangko para i-disable ang fallback na ito. Halimbawa: ?utc={utc}</string>
     <string name="settings_m3u_catchup_query_format_disabled">Naka-disable</string>
+    <string name="dashboard_live_matches">Live at malapit na</string>
+    <string name="dashboard_new_arabic_movies">Mga bagong Arabic na pelikula</string>
+    <string name="dashboard_new_egyptian_movies">Mga bagong Egyptian na pelikula</string>
+    <string name="dashboard_new_english_movies">Mga bagong English na pelikula</string>
+    <string name="dashboard_new_turkish_movies">Mga bagong Turkish na pelikula</string>
+    <string name="dashboard_new_arabic_series">Mga bagong Arabic na serye</string>
+    <string name="dashboard_new_egyptian_series">Mga bagong Egyptian na serye</string>
+    <string name="dashboard_new_english_series">Mga bagong English na serye</string>
+    <string name="dashboard_new_turkish_series">Mga bagong Turkish na serye</string>
 </resources>

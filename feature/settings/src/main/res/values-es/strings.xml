@@ -956,4 +956,13 @@
     <string name="settings_m3u_catchup_query_format">Formato de consulta de reproducción diferida</string>
     <string name="settings_m3u_catchup_query_format_subtitle">Se usa en canales M3U sin una fuente propia de reproducción diferida. Déjalo vacío para desactivar este formato alternativo. Ejemplo: ?utc={utc}</string>
     <string name="settings_m3u_catchup_query_format_disabled">Desactivado</string>
+    <string name="dashboard_live_matches">En directo y próximamente</string>
+    <string name="dashboard_new_arabic_movies">Nuevas películas árabes</string>
+    <string name="dashboard_new_egyptian_movies">Nuevas películas egipcias</string>
+    <string name="dashboard_new_english_movies">Nuevas películas inglesas</string>
+    <string name="dashboard_new_turkish_movies">Nuevas películas turcas</string>
+    <string name="dashboard_new_arabic_series">Nuevas series árabes</string>
+    <string name="dashboard_new_egyptian_series">Nuevas series egipcias</string>
+    <string name="dashboard_new_english_series">Nuevas series inglesas</string>
+    <string name="dashboard_new_turkish_series">Nuevas series turcas</string>
 </resources>

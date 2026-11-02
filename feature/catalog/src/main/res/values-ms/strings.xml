@@ -353,4 +353,16 @@
   <string name="vod_sync_needed_title">Penyegerakan diperlukan</string>
   <string name="vod_unavailable_subtitle">Penyedia ini menyediakan katalog Filem dan Siri yang berasingan.</string>
   <string name="vod_unavailable_title">VOD tidak tersedia</string>
+  <string name="dashboard_live_matches">Langsung &amp; tidak lama lagi</string>
+  <string name="dashboard_live_match_live">LANGSUNG</string>
+  <string name="dashboard_live_match_in_minutes">dalam %1$d min</string>
+  <string name="dashboard_live_match_commentator">Pengulas: %1$s</string>
+  <string name="dashboard_new_arabic_movies">Filem Arab baharu</string>
+  <string name="dashboard_new_egyptian_movies">Filem Mesir baharu</string>
+  <string name="dashboard_new_english_movies">Filem Inggeris baharu</string>
+  <string name="dashboard_new_turkish_movies">Filem Turki baharu</string>
+  <string name="dashboard_new_arabic_series">Siri Arab baharu</string>
+  <string name="dashboard_new_egyptian_series">Siri Mesir baharu</string>
+  <string name="dashboard_new_english_series">Siri Inggeris baharu</string>
+  <string name="dashboard_new_turkish_series">Siri Turki baharu</string>
 </resources>

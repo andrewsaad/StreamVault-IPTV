@@ -960,4 +960,13 @@
     <string name="settings_m3u_catchup_query_format">Μορφή ερωτήματος επανάληψης</string>
     <string name="settings_m3u_catchup_query_format_subtitle">Χρησιμοποιείται για κανάλια M3U χωρίς δική τους πηγή επανάληψης. Αφήστε το κενό για να απενεργοποιήσετε αυτήν την εναλλακτική. Παράδειγμα: ?utc={utc}</string>
     <string name="settings_m3u_catchup_query_format_disabled">Απενεργοποιημένο</string>
+    <string name="dashboard_live_matches">Ζωντανά και σύντομα</string>
+    <string name="dashboard_new_arabic_movies">Νέες αραβικές ταινίες</string>
+    <string name="dashboard_new_egyptian_movies">Νέες αιγυπτιακές ταινίες</string>
+    <string name="dashboard_new_english_movies">Νέες αγγλικές ταινίες</string>
+    <string name="dashboard_new_turkish_movies">Νέες τουρκικές ταινίες</string>
+    <string name="dashboard_new_arabic_series">Νέες αραβικές σειρές</string>
+    <string name="dashboard_new_egyptian_series">Νέες αιγυπτιακές σειρές</string>
+    <string name="dashboard_new_english_series">Νέες αγγλικές σειρές</string>
+    <string name="dashboard_new_turkish_series">Νέες τουρκικές σειρές</string>
 </resources>

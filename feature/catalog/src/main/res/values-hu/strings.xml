@@ -367,4 +367,16 @@
 <string name="trakt_rating_saved">Az értékelésed mentve a Traktra.</string>
 <string name="trakt_rating_failed">Nem sikerült menteni az értékelésedet a Traktra.</string>
 <string name="trakt_favorite_sync_failed">A StreamVault mentette a módosítást, de nem sikerült frissítenie a Trakt kedvenceket. Próbáld újra.</string>
+  <string name="dashboard_live_matches">Élő és hamarosan</string>
+  <string name="dashboard_live_match_live">ÉLŐ</string>
+  <string name="dashboard_live_match_in_minutes">%1$d perc múlva</string>
+  <string name="dashboard_live_match_commentator">Kommentátor: %1$s</string>
+  <string name="dashboard_new_arabic_movies">Új arab filmek</string>
+  <string name="dashboard_new_egyptian_movies">Új egyiptomi filmek</string>
+  <string name="dashboard_new_english_movies">Új angol filmek</string>
+  <string name="dashboard_new_turkish_movies">Új török filmek</string>
+  <string name="dashboard_new_arabic_series">Új arab sorozatok</string>
+  <string name="dashboard_new_egyptian_series">Új egyiptomi sorozatok</string>
+  <string name="dashboard_new_english_series">Új angol sorozatok</string>
+  <string name="dashboard_new_turkish_series">Új török sorozatok</string>
 </resources>

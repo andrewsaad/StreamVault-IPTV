@@ -958,4 +958,13 @@
     <string name="settings_m3u_catchup_query_format">قالب پرس‌وجوی بازپخش آرشیوی</string>
     <string name="settings_m3u_catchup_query_format_subtitle">برای کانال‌های M3U بدون منبع بازپخش اختصاصی استفاده می‌شود. برای غیرفعال کردن این گزینه، آن را خالی بگذارید. نمونه: ?utc={utc}</string>
     <string name="settings_m3u_catchup_query_format_disabled">غیرفعال</string>
+    <string name="dashboard_live_matches">زنده و به‌زودی</string>
+    <string name="dashboard_new_arabic_movies">فیلم‌های جدید عربی</string>
+    <string name="dashboard_new_egyptian_movies">فیلم‌های جدید مصری</string>
+    <string name="dashboard_new_english_movies">فیلم‌های جدید انگلیسی</string>
+    <string name="dashboard_new_turkish_movies">فیلم‌های جدید ترکی</string>
+    <string name="dashboard_new_arabic_series">سریال‌های جدید عربی</string>
+    <string name="dashboard_new_egyptian_series">سریال‌های جدید مصری</string>
+    <string name="dashboard_new_english_series">سریال‌های جدید انگلیسی</string>
+    <string name="dashboard_new_turkish_series">سریال‌های جدید ترکی</string>
 </resources>

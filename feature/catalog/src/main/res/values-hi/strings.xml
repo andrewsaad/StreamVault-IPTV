@@ -353,4 +353,16 @@
   <string name="vod_sync_needed_title">सिंक आवश्यक</string>
   <string name="vod_unavailable_subtitle">यह प्रदाता अलग फ़िल्म और सीरीज़ कैटलॉग प्रदान करता है।</string>
   <string name="vod_unavailable_title">VOD उपलब्ध नहीं है</string>
+  <string name="dashboard_live_matches">लाइव और जल्द ही</string>
+  <string name="dashboard_live_match_live">लाइव</string>
+  <string name="dashboard_live_match_in_minutes">%1$d मिनट में</string>
+  <string name="dashboard_live_match_commentator">कमेंटेटर: %1$s</string>
+  <string name="dashboard_new_arabic_movies">नई अरबी फ़िल्में</string>
+  <string name="dashboard_new_egyptian_movies">नई मिस्री फ़िल्में</string>
+  <string name="dashboard_new_english_movies">नई अंग्रेज़ी फ़िल्में</string>
+  <string name="dashboard_new_turkish_movies">नई तुर्की फ़िल्में</string>
+  <string name="dashboard_new_arabic_series">नई अरबी सीरीज़</string>
+  <string name="dashboard_new_egyptian_series">नई मिस्री सीरीज़</string>
+  <string name="dashboard_new_english_series">नई अंग्रेज़ी सीरीज़</string>
+  <string name="dashboard_new_turkish_series">नई तुर्की सीरीज़</string>
 </resources>

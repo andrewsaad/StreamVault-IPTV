@@ -958,4 +958,13 @@
     <string name="settings_m3u_catchup_query_format">Formati i kërkesës së riluajtjes nga arkivi</string>
     <string name="settings_m3u_catchup_query_format_subtitle">Përdoret për kanalet M3U pa burimin e tyre të riluajtjes nga arkivi. Lëreni bosh për ta çaktivizuar këtë format rezervë. Shembull: ?utc={utc}</string>
     <string name="settings_m3u_catchup_query_format_disabled">Joaktiv</string>
+    <string name="dashboard_live_matches">Live dhe së shpejti</string>
+    <string name="dashboard_new_arabic_movies">Filma të rinj arabë</string>
+    <string name="dashboard_new_egyptian_movies">Filma të rinj egjiptianë</string>
+    <string name="dashboard_new_english_movies">Filma të rinj anglezë</string>
+    <string name="dashboard_new_turkish_movies">Filma të rinj turq</string>
+    <string name="dashboard_new_arabic_series">Seriale të reja arabe</string>
+    <string name="dashboard_new_egyptian_series">Seriale të reja egjiptiane</string>
+    <string name="dashboard_new_english_series">Seriale të reja angleze</string>
+    <string name="dashboard_new_turkish_series">Seriale të reja turke</string>
 </resources>

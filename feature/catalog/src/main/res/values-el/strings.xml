@@ -367,4 +367,16 @@
 <string name="trakt_rating_saved">Η βαθμολογία σας αποθηκεύτηκε στο Trakt.</string>
 <string name="trakt_rating_failed">Δεν ήταν δυνατή η αποθήκευση της βαθμολογίας σας στο Trakt.</string>
 <string name="trakt_favorite_sync_failed">Το StreamVault αποθήκευσε την αλλαγή, αλλά δεν μπόρεσε να ενημερώσει τα αγαπημένα του Trakt. Δοκιμάστε ξανά.</string>
+  <string name="dashboard_live_matches">Ζωντανά και σύντομα</string>
+  <string name="dashboard_live_match_live">ΖΩΝΤΑΝΑ</string>
+  <string name="dashboard_live_match_in_minutes">σε %1$d λεπ.</string>
+  <string name="dashboard_live_match_commentator">Σχολιαστής: %1$s</string>
+  <string name="dashboard_new_arabic_movies">Νέες αραβικές ταινίες</string>
+  <string name="dashboard_new_egyptian_movies">Νέες αιγυπτιακές ταινίες</string>
+  <string name="dashboard_new_english_movies">Νέες αγγλικές ταινίες</string>
+  <string name="dashboard_new_turkish_movies">Νέες τουρκικές ταινίες</string>
+  <string name="dashboard_new_arabic_series">Νέες αραβικές σειρές</string>
+  <string name="dashboard_new_egyptian_series">Νέες αιγυπτιακές σειρές</string>
+  <string name="dashboard_new_english_series">Νέες αγγλικές σειρές</string>
+  <string name="dashboard_new_turkish_series">Νέες τουρκικές σειρές</string>
 </resources>

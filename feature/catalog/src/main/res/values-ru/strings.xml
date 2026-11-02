@@ -367,4 +367,16 @@
 <string name="trakt_rating_saved">Оценка сохранена в Trakt.</string>
 <string name="trakt_rating_failed">Не удалось сохранить оценку в Trakt.</string>
 <string name="trakt_favorite_sync_failed">StreamVault сохранил изменение, но не смог обновить избранное Trakt. Попробуйте снова.</string>
+  <string name="dashboard_live_matches">В эфире и скоро</string>
+  <string name="dashboard_live_match_live">В ЭФИРЕ</string>
+  <string name="dashboard_live_match_in_minutes">через %1$d мин</string>
+  <string name="dashboard_live_match_commentator">Комментатор: %1$s</string>
+  <string name="dashboard_new_arabic_movies">Новые арабские фильмы</string>
+  <string name="dashboard_new_egyptian_movies">Новые египетские фильмы</string>
+  <string name="dashboard_new_english_movies">Новые английские фильмы</string>
+  <string name="dashboard_new_turkish_movies">Новые турецкие фильмы</string>
+  <string name="dashboard_new_arabic_series">Новые арабские сериалы</string>
+  <string name="dashboard_new_egyptian_series">Новые египетские сериалы</string>
+  <string name="dashboard_new_english_series">Новые английские сериалы</string>
+  <string name="dashboard_new_turkish_series">Новые турецкие сериалы</string>
 </resources>

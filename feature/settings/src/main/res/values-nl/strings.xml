@@ -960,4 +960,13 @@
     <string name="settings_m3u_catchup_query_format">Formaat van de terugkijkquery</string>
     <string name="settings_m3u_catchup_query_format_subtitle">Wordt gebruikt voor M3U-kanalen zonder eigen terugkijkbron. Laat dit leeg om dit reserveformaat uit te schakelen. Voorbeeld: ?utc={utc}</string>
     <string name="settings_m3u_catchup_query_format_disabled">Uitgeschakeld</string>
+    <string name="dashboard_live_matches">Live &amp; binnenkort</string>
+    <string name="dashboard_new_arabic_movies">Nieuwe Arabische films</string>
+    <string name="dashboard_new_egyptian_movies">Nieuwe Egyptische films</string>
+    <string name="dashboard_new_english_movies">Nieuwe Engelse films</string>
+    <string name="dashboard_new_turkish_movies">Nieuwe Turkse films</string>
+    <string name="dashboard_new_arabic_series">Nieuwe Arabische series</string>
+    <string name="dashboard_new_egyptian_series">Nieuwe Egyptische series</string>
+    <string name="dashboard_new_english_series">Nieuwe Engelse series</string>
+    <string name="dashboard_new_turkish_series">Nieuwe Turkse series</string>
 </resources>

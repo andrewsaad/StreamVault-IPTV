@@ -237,6 +237,15 @@ private fun DashboardShelfActionChip(
 
 @Composable
 private fun AppHomeDashboardShelf.labelResId(): Int = when (this) {
+    AppHomeDashboardShelf.LIVE_MATCHES -> R.string.dashboard_live_matches
+    AppHomeDashboardShelf.NEW_ARABIC_MOVIES -> R.string.dashboard_new_arabic_movies
+    AppHomeDashboardShelf.NEW_EGYPTIAN_MOVIES -> R.string.dashboard_new_egyptian_movies
+    AppHomeDashboardShelf.NEW_ENGLISH_MOVIES -> R.string.dashboard_new_english_movies
+    AppHomeDashboardShelf.NEW_TURKISH_MOVIES -> R.string.dashboard_new_turkish_movies
+    AppHomeDashboardShelf.NEW_ARABIC_SERIES -> R.string.dashboard_new_arabic_series
+    AppHomeDashboardShelf.NEW_EGYPTIAN_SERIES -> R.string.dashboard_new_egyptian_series
+    AppHomeDashboardShelf.NEW_ENGLISH_SERIES -> R.string.dashboard_new_english_series
+    AppHomeDashboardShelf.NEW_TURKISH_SERIES -> R.string.dashboard_new_turkish_series
     AppHomeDashboardShelf.FAVORITE_CHANNELS -> R.string.dashboard_favorite_channels
     AppHomeDashboardShelf.RECENT_CHANNELS -> R.string.dashboard_recent_channels
     AppHomeDashboardShelf.LIVE_SHORTCUTS -> R.string.dashboard_live_shortcuts

@@ -367,4 +367,16 @@
 <string name="trakt_rating_saved">La tua valutazione è stata salvata su Trakt.</string>
 <string name="trakt_rating_failed">Impossibile salvare la valutazione su Trakt.</string>
 <string name="trakt_favorite_sync_failed">StreamVault ha salvato la modifica, ma non è riuscito ad aggiornare i Preferiti di Trakt. Riprova.</string>
+  <string name="dashboard_live_matches">In diretta e a breve</string>
+  <string name="dashboard_live_match_live">IN DIRETTA</string>
+  <string name="dashboard_live_match_in_minutes">tra %1$d min</string>
+  <string name="dashboard_live_match_commentator">Telecronista: %1$s</string>
+  <string name="dashboard_new_arabic_movies">Nuovi film arabi</string>
+  <string name="dashboard_new_egyptian_movies">Nuovi film egiziani</string>
+  <string name="dashboard_new_english_movies">Nuovi film inglesi</string>
+  <string name="dashboard_new_turkish_movies">Nuovi film turchi</string>
+  <string name="dashboard_new_arabic_series">Nuove serie arabe</string>
+  <string name="dashboard_new_egyptian_series">Nuove serie egiziane</string>
+  <string name="dashboard_new_english_series">Nuove serie inglesi</string>
+  <string name="dashboard_new_turkish_series">Nuove serie turche</string>
 </resources>

@@ -367,4 +367,16 @@
 <string name="trakt_rating_saved">評価をTraktに保存しました。</string>
 <string name="trakt_rating_failed">評価をTraktに保存できませんでした。</string>
 <string name="trakt_favorite_sync_failed">StreamVaultで変更を保存しましたが、Traktのお気に入りを更新できませんでした。もう一度お試しください。</string>
+  <string name="dashboard_live_matches">ライブ・まもなく開始</string>
+  <string name="dashboard_live_match_live">ライブ</string>
+  <string name="dashboard_live_match_in_minutes">%1$d分後</string>
+  <string name="dashboard_live_match_commentator">実況: %1$s</string>
+  <string name="dashboard_new_arabic_movies">新着アラビア語映画</string>
+  <string name="dashboard_new_egyptian_movies">新着エジプト映画</string>
+  <string name="dashboard_new_english_movies">新着英語映画</string>
+  <string name="dashboard_new_turkish_movies">新着トルコ映画</string>
+  <string name="dashboard_new_arabic_series">新着アラビア語シリーズ</string>
+  <string name="dashboard_new_egyptian_series">新着エジプトシリーズ</string>
+  <string name="dashboard_new_english_series">新着英語シリーズ</string>
+  <string name="dashboard_new_turkish_series">新着トルコシリーズ</string>
 </resources>

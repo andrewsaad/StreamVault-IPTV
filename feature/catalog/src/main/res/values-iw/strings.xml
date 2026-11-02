@@ -367,4 +367,16 @@
 <string name="trakt_rating_saved">הדירוג נשמר ב‑Trakt.</string>
 <string name="trakt_rating_failed">לא ניתן לשמור את הדירוג ב‑Trakt.</string>
 <string name="trakt_favorite_sync_failed">StreamVault שמר את השינוי, אך לא הצליח לעדכן את המועדפים ב‑Trakt. נסו שוב.</string>
+  <string name="dashboard_live_matches">בשידור חי ובקרוב</string>
+  <string name="dashboard_live_match_live">בשידור חי</string>
+  <string name="dashboard_live_match_in_minutes">בעוד %1$d דק׳</string>
+  <string name="dashboard_live_match_commentator">פרשן: %1$s</string>
+  <string name="dashboard_new_arabic_movies">סרטים ערביים חדשים</string>
+  <string name="dashboard_new_egyptian_movies">סרטים מצריים חדשים</string>
+  <string name="dashboard_new_english_movies">סרטים באנגלית חדשים</string>
+  <string name="dashboard_new_turkish_movies">סרטים טורקיים חדשים</string>
+  <string name="dashboard_new_arabic_series">סדרות ערביות חדשות</string>
+  <string name="dashboard_new_egyptian_series">סדרות מצריות חדשות</string>
+  <string name="dashboard_new_english_series">סדרות באנגלית חדשות</string>
+  <string name="dashboard_new_turkish_series">סדרות טורקיות חדשות</string>
 </resources>

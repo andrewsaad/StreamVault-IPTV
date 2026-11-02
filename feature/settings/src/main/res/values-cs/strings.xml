@@ -966,4 +966,13 @@
     <string name="settings_m3u_catchup_query_format">Formát dotazu pro přehrávání archivu</string>
     <string name="settings_m3u_catchup_query_format_subtitle">Použije se u kanálů M3U bez vlastního zdroje archivu. Prázdná hodnota tento záložní formát vypne. Příklad: ?utc={utc}</string>
     <string name="settings_m3u_catchup_query_format_disabled">Vypnuto</string>
+    <string name="dashboard_live_matches">Živě a brzy</string>
+    <string name="dashboard_new_arabic_movies">Nové arabské filmy</string>
+    <string name="dashboard_new_egyptian_movies">Nové egyptské filmy</string>
+    <string name="dashboard_new_english_movies">Nové anglické filmy</string>
+    <string name="dashboard_new_turkish_movies">Nové turecké filmy</string>
+    <string name="dashboard_new_arabic_series">Nové arabské seriály</string>
+    <string name="dashboard_new_egyptian_series">Nové egyptské seriály</string>
+    <string name="dashboard_new_english_series">Nové anglické seriály</string>
+    <string name="dashboard_new_turkish_series">Nové turecké seriály</string>
 </resources>

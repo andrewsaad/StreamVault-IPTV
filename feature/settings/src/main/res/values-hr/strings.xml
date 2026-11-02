@@ -961,4 +961,13 @@
     <string name="settings_m3u_catchup_query_format">Format upita za reprodukciju arhive</string>
     <string name="settings_m3u_catchup_query_format_subtitle">Koristi se za M3U kanale koji nemaju vlastiti izvor arhivske reprodukcije. Ostavite prazno da biste isključili ovaj zamjenski format. Primjer: ?utc={utc}</string>
     <string name="settings_m3u_catchup_query_format_disabled">Isključeno</string>
+    <string name="dashboard_live_matches">Uživo i uskoro</string>
+    <string name="dashboard_new_arabic_movies">Novi arapski filmovi</string>
+    <string name="dashboard_new_egyptian_movies">Novi egipatski filmovi</string>
+    <string name="dashboard_new_english_movies">Novi engleski filmovi</string>
+    <string name="dashboard_new_turkish_movies">Novi turski filmovi</string>
+    <string name="dashboard_new_arabic_series">Nove arapske serije</string>
+    <string name="dashboard_new_egyptian_series">Nove egipatske serije</string>
+    <string name="dashboard_new_english_series">Nove engleske serije</string>
+    <string name="dashboard_new_turkish_series">Nove turske serije</string>
 </resources>

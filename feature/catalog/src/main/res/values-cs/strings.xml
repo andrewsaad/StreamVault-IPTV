@@ -367,4 +367,16 @@
 <string name="trakt_rating_saved">Hodnocení bylo uloženo do Traktu.</string>
 <string name="trakt_rating_failed">Hodnocení se nepodařilo uložit do Traktu.</string>
 <string name="trakt_favorite_sync_failed">StreamVault změnu uložil, ale nepodařilo se aktualizovat Oblíbené na Traktu. Zkuste to znovu.</string>
+  <string name="dashboard_live_matches">Živě a brzy</string>
+  <string name="dashboard_live_match_live">ŽIVĚ</string>
+  <string name="dashboard_live_match_in_minutes">za %1$d min</string>
+  <string name="dashboard_live_match_commentator">Komentátor: %1$s</string>
+  <string name="dashboard_new_arabic_movies">Nové arabské filmy</string>
+  <string name="dashboard_new_egyptian_movies">Nové egyptské filmy</string>
+  <string name="dashboard_new_english_movies">Nové anglické filmy</string>
+  <string name="dashboard_new_turkish_movies">Nové turecké filmy</string>
+  <string name="dashboard_new_arabic_series">Nové arabské seriály</string>
+  <string name="dashboard_new_egyptian_series">Nové egyptské seriály</string>
+  <string name="dashboard_new_english_series">Nové anglické seriály</string>
+  <string name="dashboard_new_turkish_series">Nové turecké seriály</string>
 </resources>

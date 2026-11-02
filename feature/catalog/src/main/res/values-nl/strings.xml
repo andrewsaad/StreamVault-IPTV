@@ -367,4 +367,16 @@
 <string name="trakt_rating_saved">Je beoordeling is opgeslagen op Trakt.</string>
 <string name="trakt_rating_failed">Je beoordeling kon niet op Trakt worden opgeslagen.</string>
 <string name="trakt_favorite_sync_failed">StreamVault heeft de wijziging opgeslagen, maar kon de Trakt-favorieten niet bijwerken. Probeer het opnieuw.</string>
+  <string name="dashboard_live_matches">Live &amp; binnenkort</string>
+  <string name="dashboard_live_match_live">LIVE</string>
+  <string name="dashboard_live_match_in_minutes">over %1$d min</string>
+  <string name="dashboard_live_match_commentator">Commentator: %1$s</string>
+  <string name="dashboard_new_arabic_movies">Nieuwe Arabische films</string>
+  <string name="dashboard_new_egyptian_movies">Nieuwe Egyptische films</string>
+  <string name="dashboard_new_english_movies">Nieuwe Engelse films</string>
+  <string name="dashboard_new_turkish_movies">Nieuwe Turkse films</string>
+  <string name="dashboard_new_arabic_series">Nieuwe Arabische series</string>
+  <string name="dashboard_new_egyptian_series">Nieuwe Egyptische series</string>
+  <string name="dashboard_new_english_series">Nieuwe Engelse series</string>
+  <string name="dashboard_new_turkish_series">Nieuwe Turkse series</string>
 </resources>

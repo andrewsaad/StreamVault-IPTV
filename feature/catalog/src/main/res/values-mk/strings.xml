@@ -353,4 +353,16 @@
   <string name="vod_sync_needed_title">Потребна е синхронизација</string>
   <string name="vod_unavailable_subtitle">Овој провајдер нуди одделни каталози за филмови и серии.</string>
   <string name="vod_unavailable_title">VOD е недостапен</string>
+  <string name="dashboard_live_matches">Во живо и наскоро</string>
+  <string name="dashboard_live_match_live">ВО ЖИВО</string>
+  <string name="dashboard_live_match_in_minutes">за %1$d мин</string>
+  <string name="dashboard_live_match_commentator">Коментатор: %1$s</string>
+  <string name="dashboard_new_arabic_movies">Нови арапски филмови</string>
+  <string name="dashboard_new_egyptian_movies">Нови египетски филмови</string>
+  <string name="dashboard_new_english_movies">Нови англиски филмови</string>
+  <string name="dashboard_new_turkish_movies">Нови турски филмови</string>
+  <string name="dashboard_new_arabic_series">Нови арапски серии</string>
+  <string name="dashboard_new_egyptian_series">Нови египетски серии</string>
+  <string name="dashboard_new_english_series">Нови англиски серии</string>
+  <string name="dashboard_new_turkish_series">Нови турски серии</string>
 </resources>

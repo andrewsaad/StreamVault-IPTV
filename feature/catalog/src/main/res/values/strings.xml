@@ -402,4 +402,16 @@
   <string name="vod_sync_needed_title">Sync needed</string>
   <string name="vod_unavailable_subtitle">This provider exposes separate Movies and Series catalogs.</string>
   <string name="vod_unavailable_title">VOD is unavailable</string>
+  <string name="dashboard_live_matches">Live &amp; starting soon</string>
+  <string name="dashboard_live_match_live">LIVE</string>
+  <string name="dashboard_live_match_in_minutes">in %1$d min</string>
+  <string name="dashboard_live_match_commentator">Commentator: %1$s</string>
+  <string name="dashboard_new_arabic_movies">New Arabic Movies</string>
+  <string name="dashboard_new_egyptian_movies">New Egyptian Movies</string>
+  <string name="dashboard_new_english_movies">New English Movies</string>
+  <string name="dashboard_new_turkish_movies">New Turkish Movies</string>
+  <string name="dashboard_new_arabic_series">New Arabic Series</string>
+  <string name="dashboard_new_egyptian_series">New Egyptian Series</string>
+  <string name="dashboard_new_english_series">New English Series</string>
+  <string name="dashboard_new_turkish_series">New Turkish Series</string>
 </resources>

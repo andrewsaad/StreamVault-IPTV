@@ -367,4 +367,16 @@
 <string name="trakt_rating_saved">评分已保存到 Trakt。</string>
 <string name="trakt_rating_failed">无法将评分保存到 Trakt。</string>
 <string name="trakt_favorite_sync_failed">StreamVault 已保存更改，但无法更新 Trakt 收藏夹。请重试。</string>
+  <string name="dashboard_live_matches">直播与即将开始</string>
+  <string name="dashboard_live_match_live">直播</string>
+  <string name="dashboard_live_match_in_minutes">%1$d 分钟后</string>
+  <string name="dashboard_live_match_commentator">解说：%1$s</string>
+  <string name="dashboard_new_arabic_movies">最新阿拉伯语电影</string>
+  <string name="dashboard_new_egyptian_movies">最新埃及电影</string>
+  <string name="dashboard_new_english_movies">最新英语电影</string>
+  <string name="dashboard_new_turkish_movies">最新土耳其电影</string>
+  <string name="dashboard_new_arabic_series">最新阿拉伯语剧集</string>
+  <string name="dashboard_new_egyptian_series">最新埃及剧集</string>
+  <string name="dashboard_new_english_series">最新英语剧集</string>
+  <string name="dashboard_new_turkish_series">最新土耳其剧集</string>
 </resources>

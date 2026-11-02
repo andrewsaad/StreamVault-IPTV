@@ -956,4 +956,13 @@
     <string name="settings_m3u_catchup_query_format">캐치업 쿼리 형식</string>
     <string name="settings_m3u_catchup_query_format_subtitle">전용 캐치업 소스가 없는 M3U 채널에 사용됩니다. 이 대체 형식을 끄려면 비워 두세요. 예: ?utc={utc}</string>
     <string name="settings_m3u_catchup_query_format_disabled">사용 안 함</string>
+    <string name="dashboard_live_matches">생중계 및 곧 시작</string>
+    <string name="dashboard_new_arabic_movies">새 아랍 영화</string>
+    <string name="dashboard_new_egyptian_movies">새 이집트 영화</string>
+    <string name="dashboard_new_english_movies">새 영어 영화</string>
+    <string name="dashboard_new_turkish_movies">새 터키 영화</string>
+    <string name="dashboard_new_arabic_series">새 아랍 시리즈</string>
+    <string name="dashboard_new_egyptian_series">새 이집트 시리즈</string>
+    <string name="dashboard_new_english_series">새 영어 시리즈</string>
+    <string name="dashboard_new_turkish_series">새 터키 시리즈</string>
 </resources>

@@ -956,4 +956,13 @@
     <string name="settings_m3u_catchup_query_format">Formato query per la riproduzione d’archivio</string>
     <string name="settings_m3u_catchup_query_format_subtitle">Usato per i canali M3U senza una propria sorgente di catch-up. Lascia vuoto per disattivare questo formato di riserva. Esempio: ?utc={utc}</string>
     <string name="settings_m3u_catchup_query_format_disabled">Disattivato</string>
+    <string name="dashboard_live_matches">In diretta e a breve</string>
+    <string name="dashboard_new_arabic_movies">Nuovi film arabi</string>
+    <string name="dashboard_new_egyptian_movies">Nuovi film egiziani</string>
+    <string name="dashboard_new_english_movies">Nuovi film inglesi</string>
+    <string name="dashboard_new_turkish_movies">Nuovi film turchi</string>
+    <string name="dashboard_new_arabic_series">Nuove serie arabe</string>
+    <string name="dashboard_new_egyptian_series">Nuove serie egiziane</string>
+    <string name="dashboard_new_english_series">Nuove serie inglesi</string>
+    <string name="dashboard_new_turkish_series">Nuove serie turche</string>
 </resources>

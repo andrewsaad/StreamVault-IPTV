@@ -353,4 +353,16 @@
   <string name="vod_sync_needed_title">需要同步</string>
   <string name="vod_unavailable_subtitle">此供應商分別提供電影和影集目錄。</string>
   <string name="vod_unavailable_title">VOD 無法使用</string>
+  <string name="dashboard_live_matches">直播與即將開始</string>
+  <string name="dashboard_live_match_live">直播</string>
+  <string name="dashboard_live_match_in_minutes">%1$d 分鐘後</string>
+  <string name="dashboard_live_match_commentator">講評：%1$s</string>
+  <string name="dashboard_new_arabic_movies">最新阿拉伯語電影</string>
+  <string name="dashboard_new_egyptian_movies">最新埃及電影</string>
+  <string name="dashboard_new_english_movies">最新英語電影</string>
+  <string name="dashboard_new_turkish_movies">最新土耳其電影</string>
+  <string name="dashboard_new_arabic_series">最新阿拉伯語影集</string>
+  <string name="dashboard_new_egyptian_series">最新埃及影集</string>
+  <string name="dashboard_new_english_series">最新英語影集</string>
+  <string name="dashboard_new_turkish_series">最新土耳其影集</string>
 </resources>
