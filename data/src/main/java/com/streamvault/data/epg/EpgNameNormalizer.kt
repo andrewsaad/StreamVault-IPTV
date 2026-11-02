@@ -13,7 +13,9 @@ import java.util.Locale
  */
 object EpgNameNormalizer {
 
+    // Compiled once: normalize() runs for every channel on each EPG resolution pass.
     private val nonAlphanumericRegex = Regex("[^a-z0-9]")
+    private val combiningMarksRegex = Regex("\\p{InCombiningDiacriticalMarks}+")
 
     /**
      * Produces a normalized key from a channel display name.
@@ -27,7 +29,7 @@ object EpgNameNormalizer {
         if (name.isBlank()) return ""
         val lower = name.lowercase(Locale.ROOT)
         val stripped = Normalizer.normalize(lower, Normalizer.Form.NFD)
-            .replace(Regex("\\p{InCombiningDiacriticalMarks}+"), "")
+            .replace(combiningMarksRegex, "")
         return stripped.replace(nonAlphanumericRegex, "")
     }
 }

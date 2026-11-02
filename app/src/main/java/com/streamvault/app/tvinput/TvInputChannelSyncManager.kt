@@ -2,6 +2,7 @@ package com.streamvault.app.tvinput
 
 import android.content.ComponentName
 import android.content.ContentProviderOperation
+import android.content.ContentProviderResult
 import android.content.ContentUris
 import android.content.ContentValues
 import android.content.Context
@@ -57,42 +58,72 @@ class TvInputChannelSyncManager @Inject constructor(
                 }
 
                 val channels = channelRepository.getChannels(provider.id).first()
-                publishChannels(provider, channels)
-                val publishedChannelIds = loadExistingChannels().toMutableMap()
+                val providerHash = tvProviderHash(provider)
+                // Row ids come from the channel publish itself; re-reading the whole TV channel
+                // table is only needed when the provider did not report an inserted row's id.
+                val publishedChannelIds = publishChannels(provider, providerHash, channels)
+                    ?: loadExistingChannels()
 
                 val programsByEpgId = loadPrograms(provider.id, channels)
-                publishPrograms(provider, channels, publishedChannelIds, programsByEpgId)
+                publishPrograms(provider, providerHash, channels, publishedChannelIds, programsByEpgId)
             }
         }
     }
 
-    private fun publishChannels(provider: Provider, channels: List<Channel>) {
+    /**
+     * Returns the TV row id of every published channel keyed by its stable key, or null when an
+     * inserted row's id could not be read from the batch results.
+     */
+    private fun publishChannels(
+        provider: Provider,
+        providerHash: String,
+        channels: List<Channel>
+    ): Map<String, Long>? {
         val existing = loadExistingChannelRows()
-        val targets = channels.associateBy { stableTvChannelKey(provider, it) }
+        val targets = channels.associateBy { stableTvChannelKey(providerHash, it) }
         val operations = ArrayList<ContentProviderOperation>()
+        val insertedKeys = ArrayList<String>()
+        val publishedIds = HashMap<String, Long>(targets.size)
         existing.filterKeys { it !in targets }.values.forEach { row ->
             operations += ContentProviderOperation.newDelete(
                 ContentUris.withAppendedId(TvContract.Channels.CONTENT_URI, row.id)
             ).build()
         }
+        val insertOperations = ArrayList<ContentProviderOperation>()
         targets.forEach { (key, channel) ->
-            val values = buildChannelValues(provider, channel)
+            val values = buildChannelValues(provider, key, channel)
             val row = existing[key]
             when {
-                row == null -> operations += ContentProviderOperation.newInsert(TvContract.Channels.CONTENT_URI)
-                    .withValues(values)
-                    .build()
-                row.providerData != values.getAsString(CHANNEL_COLUMN_INTERNAL_PROVIDER_DATA) ->
+                row == null -> {
+                    insertOperations += ContentProviderOperation.newInsert(TvContract.Channels.CONTENT_URI)
+                        .withValues(values)
+                        .build()
+                    insertedKeys += key
+                }
+                row.providerData != values.getAsString(CHANNEL_COLUMN_INTERNAL_PROVIDER_DATA) -> {
                     operations += ContentProviderOperation.newUpdate(
                         ContentUris.withAppendedId(TvContract.Channels.CONTENT_URI, row.id)
                     ).withValues(values).build()
+                    publishedIds[key] = row.id
+                }
+                else -> publishedIds[key] = row.id
             }
         }
         applyBatches(operations, "channels")
+        val insertResults = applyBatches(insertOperations, "channel inserts")
+        if (insertResults.size != insertedKeys.size) return null
+        insertResults.forEachIndexed { index, result ->
+            val rowId = result.uri?.let { uri -> runCatching { ContentUris.parseId(uri) }.getOrNull() }
+                ?.takeIf { it >= 0L }
+                ?: return null
+            publishedIds[insertedKeys[index]] = rowId
+        }
+        return publishedIds
     }
 
     private fun publishPrograms(
         provider: Provider,
+        providerHash: String,
         channels: List<Channel>,
         channelIds: Map<String, Long>,
         programsByEpgId: Map<String, List<Program>>
@@ -102,11 +133,12 @@ class TvInputChannelSyncManager @Inject constructor(
         channels.forEach { channel ->
             val programs = programsByEpgId[channel.epgChannelId].orEmpty()
             if (!shouldReplaceTvPrograms(channel, programs)) return@forEach
-            val tvChannelId = channelIds[stableTvChannelKey(provider, channel)] ?: return@forEach
+            val channelKey = stableTvChannelKey(providerHash, channel)
+            val tvChannelId = channelIds[channelKey] ?: return@forEach
             replaceableChannelIds += tvChannelId
             programs.sortedBy { it.startTime }.take(MAX_PROGRAMS_PER_CHANNEL).forEach { program ->
                 val values = buildProgramValues(tvChannelId, provider.id, channel, program)
-                val fingerprint = stableTvProgramKey(provider, channel, program)
+                val fingerprint = stableTvProgramKey(channelKey, program)
                 values.put(PROGRAM_COLUMN_INTERNAL_PROVIDER_DATA, fingerprint)
                 desired[fingerprint] = values
             }
@@ -181,12 +213,18 @@ class TvInputChannelSyncManager @Inject constructor(
         return result
     }
 
-    private fun applyBatches(operations: List<ContentProviderOperation>, stage: String) {
+    private fun applyBatches(
+        operations: List<ContentProviderOperation>,
+        stage: String
+    ): List<ContentProviderResult> {
+        if (operations.isEmpty()) return emptyList()
         val startedAt = System.currentTimeMillis()
+        val results = ArrayList<ContentProviderResult>(operations.size)
         operations.chunked(CONTENT_PROVIDER_BATCH_SIZE).forEach { chunk ->
-            context.contentResolver.applyBatch(TvContract.AUTHORITY, ArrayList(chunk))
+            results += context.contentResolver.applyBatch(TvContract.AUTHORITY, ArrayList(chunk))
         }
         Log.i(TAG, "TV input $stage operations=${operations.size} took=${System.currentTimeMillis() - startedAt}ms")
+        return results
     }
 
     private data class ExistingTvChannel(val id: Long, val providerData: String)
@@ -228,14 +266,14 @@ class TvInputChannelSyncManager @Inject constructor(
         }.orEmpty()
     }
 
-    private fun buildChannelValues(provider: Provider, channel: Channel): ContentValues = ContentValues().apply {
+    private fun buildChannelValues(provider: Provider, channelKey: String, channel: Channel): ContentValues = ContentValues().apply {
         put(CHANNEL_COLUMN_INPUT_ID, inputId())
         put(CHANNEL_COLUMN_TYPE, TvContract.Channels.TYPE_OTHER)
         put(CHANNEL_COLUMN_SERVICE_TYPE, TvContract.Channels.SERVICE_TYPE_AUDIO_VIDEO)
         put(CHANNEL_COLUMN_DISPLAY_NUMBER, channel.number.toString())
         put(CHANNEL_COLUMN_DISPLAY_NAME, channel.name)
         put(CHANNEL_COLUMN_DESCRIPTION, channel.categoryName ?: "IPTV")
-        put(CHANNEL_COLUMN_INTERNAL_PROVIDER_ID, stableTvChannelKey(provider, channel))
+        put(CHANNEL_COLUMN_INTERNAL_PROVIDER_ID, channelKey)
         put(CHANNEL_COLUMN_INTERNAL_PROVIDER_DATA, encodeChannelData(provider.id, channel))
         put(CHANNEL_COLUMN_APP_LINK_INTENT_URI, buildChannelIntent(channel).toUri(Intent.URI_INTENT_SCHEME))
     }
@@ -321,7 +359,11 @@ class TvInputChannelSyncManager @Inject constructor(
     }
 }
 
-internal fun stableTvChannelKey(provider: Provider, channel: Channel): String {
+internal fun stableTvChannelKey(provider: Provider, channel: Channel): String =
+    stableTvChannelKey(tvProviderHash(provider), channel)
+
+/** Hash of the provider identity; compute once per sync and reuse for every channel/program key. */
+internal fun tvProviderHash(provider: Provider): String {
     val normalizedUrl = runCatching {
         val uri = URI(provider.serverUrl.trim())
         val scheme = uri.scheme?.lowercase(Locale.ROOT).orEmpty()
@@ -340,14 +382,16 @@ internal fun stableTvChannelKey(provider: Provider, channel: Channel): String {
         provider.type.name,
         provider.stalkerMacAddress.trim().uppercase(Locale.ROOT)
     ).joinToString("|")
-    val providerHash = sha256Prefix(providerIdentity)
+    return sha256Prefix(providerIdentity)
+}
+
+internal fun stableTvChannelKey(providerHash: String, channel: Channel): String {
     val remoteStreamId = channel.streamId.takeIf { it != 0L }
         ?: error("TV input channel '${channel.name}' has no portable stream identity")
     return "$providerHash:$remoteStreamId"
 }
 
-private fun stableTvProgramKey(provider: Provider, channel: Channel, program: Program): String {
-    val channelKey = stableTvChannelKey(provider, channel)
+internal fun stableTvProgramKey(channelKey: String, program: Program): String {
     val contentHash = sha256Prefix(
         listOf(program.title, program.description.orEmpty()).joinToString("|"),
         byteCount = 6
@@ -355,11 +399,20 @@ private fun stableTvProgramKey(provider: Provider, channel: Channel, program: Pr
     return "$channelKey:${program.startTime}:${program.endTime}:$contentHash"
 }
 
-private fun sha256Prefix(value: String, byteCount: Int = 12): String =
-    MessageDigest.getInstance("SHA-256")
-        .digest(value.toByteArray(Charsets.UTF_8))
-        .take(byteCount)
-        .joinToString("") { byte -> "%02x".format(byte) }
+private val HEX_DIGITS = "0123456789abcdef".toCharArray()
+
+/** Lowercase hex of the first [byteCount] SHA-256 bytes (same output as per-byte "%02x"). */
+internal fun sha256Prefix(value: String, byteCount: Int = 12): String {
+    val digest = MessageDigest.getInstance("SHA-256").digest(value.toByteArray(Charsets.UTF_8))
+    val count = byteCount.coerceIn(0, digest.size)
+    val hex = CharArray(count * 2)
+    for (index in 0 until count) {
+        val unsigned = digest[index].toInt() and 0xff
+        hex[index * 2] = HEX_DIGITS[unsigned ushr 4]
+        hex[index * 2 + 1] = HEX_DIGITS[unsigned and 0x0f]
+    }
+    return String(hex)
+}
 
 internal fun shouldReplaceTvPrograms(channel: Channel, programs: List<Program>): Boolean {
     if (programs.isNotEmpty()) return true

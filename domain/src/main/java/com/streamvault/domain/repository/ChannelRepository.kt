@@ -8,6 +8,16 @@ import kotlinx.coroutines.flow.Flow
 
 interface ChannelRepository {
     fun getChannels(providerId: Long): Flow<List<Channel>>
+
+    /**
+     * The subset of [getChannels] whose logical channel has a raw row with guide programmes
+     * overlapping [startTime, endTime). Every returned channel is identical to its entry in
+     * [getChannels] (including numbering); unrelated channels are never presented. The default
+     * returns the full list, which is a valid superset.
+     */
+    fun getChannelsWithGuide(providerId: Long, startTime: Long, endTime: Long): Flow<List<Channel>> =
+        getChannels(providerId)
+
     fun getChannelCount(providerId: Long): Flow<Int>
     fun getChannelsByCategory(providerId: Long, categoryId: Long): Flow<List<Channel>>
     fun getChannelsByCategoryPage(providerId: Long, categoryId: Long, limit: Int): Flow<List<Channel>>

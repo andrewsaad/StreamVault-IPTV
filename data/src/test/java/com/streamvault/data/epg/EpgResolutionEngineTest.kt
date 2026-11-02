@@ -260,6 +260,66 @@ class EpgResolutionEngineTest {
     }
 
     @Test
+    fun `resolveForProvider_unchangedMappings_skipsTheWrite`() = runTest {
+        val channel = makeChannel(id = 1, name = "BBC One", epgChannelId = "bbc1.uk")
+        whenever(channelDao.getByProviderSync(PROVIDER_ID)).thenReturn(listOf(channel))
+        whenever(providerEpgSourceDao.getEnabledForProviderSync(PROVIDER_ID)).thenReturn(
+            listOf(ProviderEpgSourceEntity(id = 1, providerId = PROVIDER_ID, epgSourceId = SOURCE_1, priority = 0))
+        )
+        whenever(epgChannelDao.getBySources(listOf(SOURCE_1))).thenReturn(
+            listOf(EpgChannelEntity(id = 1, epgSourceId = SOURCE_1, xmltvChannelId = "bbc1.uk", displayName = "BBC One", normalizedName = "bbcone"))
+        )
+        val stored = ChannelEpgMappingEntity(
+            id = 42, providerChannelId = 1, providerId = PROVIDER_ID,
+            sourceType = EpgSourceType.EXTERNAL.name, epgSourceId = SOURCE_1, xmltvChannelId = "bbc1.uk",
+            matchType = EpgMatchType.EXACT_ID.name, confidence = 1.0f, matchedAt = 500L,
+            failedAttempts = 0, source = "tvg_id", updatedAt = 600L
+        )
+        whenever(channelEpgMappingDao.getForProvider(PROVIDER_ID)).thenReturn(listOf(stored))
+
+        val summary = engine.resolveForProvider(PROVIDER_ID)
+
+        assertThat(summary.exactIdMatches).isEqualTo(1)
+        verify(channelEpgMappingDao, times(0)).replaceForProvider(any(), any())
+    }
+
+    @Test
+    fun `resolveForProvider_changedMapping_keepsTimestampsOfUnchangedRows`() = runTest {
+        val unchanged = makeChannel(id = 1, name = "BBC One", epgChannelId = "bbc1.uk")
+        val changed = makeChannel(id = 2, name = "BBC Two", epgChannelId = "bbc2.uk")
+        whenever(channelDao.getByProviderSync(PROVIDER_ID)).thenReturn(listOf(unchanged, changed))
+        whenever(providerEpgSourceDao.getEnabledForProviderSync(PROVIDER_ID)).thenReturn(
+            listOf(ProviderEpgSourceEntity(id = 1, providerId = PROVIDER_ID, epgSourceId = SOURCE_1, priority = 0))
+        )
+        whenever(epgChannelDao.getBySources(listOf(SOURCE_1))).thenReturn(
+            listOf(
+                EpgChannelEntity(id = 1, epgSourceId = SOURCE_1, xmltvChannelId = "bbc1.uk", displayName = "BBC One", normalizedName = "bbcone"),
+                EpgChannelEntity(id = 2, epgSourceId = SOURCE_1, xmltvChannelId = "bbc2.uk", displayName = "BBC Two", normalizedName = "bbctwo")
+            )
+        )
+        val storedUnchanged = ChannelEpgMappingEntity(
+            id = 42, providerChannelId = 1, providerId = PROVIDER_ID,
+            sourceType = EpgSourceType.EXTERNAL.name, epgSourceId = SOURCE_1, xmltvChannelId = "bbc1.uk",
+            matchType = EpgMatchType.EXACT_ID.name, confidence = 1.0f, matchedAt = 500L,
+            failedAttempts = 0, source = "tvg_id", updatedAt = 600L
+        )
+        val storedUnmatched = ChannelEpgMappingEntity(
+            id = 43, providerChannelId = 2, providerId = PROVIDER_ID,
+            sourceType = EpgSourceType.NONE.name, failedAttempts = 1, source = "unmatched", updatedAt = 600L
+        )
+        whenever(channelEpgMappingDao.getForProvider(PROVIDER_ID)).thenReturn(listOf(storedUnchanged, storedUnmatched))
+
+        engine.resolveForProvider(PROVIDER_ID)
+
+        val captor = argumentCaptor<List<ChannelEpgMappingEntity>>()
+        verify(channelEpgMappingDao).replaceForProvider(eq(PROVIDER_ID), captor.capture())
+        val written = captor.firstValue.associateBy { it.providerChannelId }
+        assertThat(written.getValue(1L)).isEqualTo(storedUnchanged)
+        assertThat(written.getValue(2L).xmltvChannelId).isEqualTo("bbc2.uk")
+        assertThat(written.getValue(2L).updatedAt).isGreaterThan(600L)
+    }
+
+    @Test
     fun `resolveForProvider_emptyChannelList_clearsAndReturnsEmpty`() = runTest {
         whenever(channelDao.getByProviderSync(PROVIDER_ID)).thenReturn(emptyList())
 

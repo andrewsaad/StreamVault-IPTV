@@ -50,4 +50,25 @@ class EpgNameNormalizerTest {
     fun `normalize_frenchCedilla_stripped`() {
         assertThat(EpgNameNormalizer.normalize("Garçon")).isEqualTo("garcon")
     }
+
+    @Test
+    fun `normalize_precompiledRegexes_matchThePerCallImplementation`() {
+        val names = listOf(
+            "", "   ", "BBC One HD", "Télé Loisirs", "CNN - US (Int'l)", "ZDF Küche", "Garçon",
+            "beIN SPORTS 1 ᴴᴰ", "MBC Action ★", "ŞHOW TV", "Ελληνικά 24", "قناة الكأس", "Ö3 / Österreich",
+            "Canal+ Sport 2 (FR)", "ESPN２", "Ñ TV", "áb̧c",
+        )
+        names.forEach { name ->
+            assertThat(EpgNameNormalizer.normalize(name)).isEqualTo(perCallReference(name))
+        }
+    }
+
+    /** The implementation before regexes were hoisted to constants. */
+    private fun perCallReference(name: String): String {
+        if (name.isBlank()) return ""
+        val lower = name.lowercase(java.util.Locale.ROOT)
+        val stripped = java.text.Normalizer.normalize(lower, java.text.Normalizer.Form.NFD)
+            .replace(Regex("\\p{InCombiningDiacriticalMarks}+"), "")
+        return stripped.replace(Regex("[^a-z0-9]"), "")
+    }
 }

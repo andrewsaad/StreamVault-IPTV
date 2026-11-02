@@ -6,6 +6,7 @@ import com.streamvault.domain.model.ActiveLiveSource
 import com.streamvault.domain.model.Channel
 import com.streamvault.domain.model.ContentType
 import com.streamvault.domain.model.GuideSourcePolicy
+import com.streamvault.domain.model.Program
 import com.streamvault.domain.repository.ChannelRepository
 import com.streamvault.domain.repository.CombinedM3uRepository
 import com.streamvault.domain.repository.EpgRepository
@@ -60,6 +61,8 @@ import kotlinx.coroutines.flow.retryWhen
 import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 
@@ -129,6 +132,11 @@ internal class SportsHubRepository @Inject constructor(
     private val eventIndexCache = linkedMapOf<SportsIndexKey, CachedSportsEvents>()
     @Volatile private var fallbackChannelIndexCache: CachedSportsChannelIndex? = null
     @Volatile private var availableChannelEntries: List<SportsChannelIndexEntry> = emptyList()
+    /** Guide-channel snapshot of the current load; identity keys [fullCatalogCache]. */
+    @Volatile private var currentProviders: List<ProviderChannels> = emptyList()
+    @Volatile private var fullCatalogCache: CachedFullCatalog? = null
+    private val fullCatalogMutex = Mutex()
+    private val onNowProgramCache = java.util.concurrent.ConcurrentHashMap<Long, CachedGuidePrograms>()
     private val initialLoadStartedAt = SystemClock.elapsedRealtime()
     private var initialContentLogged = false
     private var lastPublishedAtMillis = 0L
@@ -187,30 +195,40 @@ internal class SportsHubRepository @Inject constructor(
             .distinctUntilChanged()
             .shareIn(scope, SharingStarted.Eagerly, replay = 1)
 
-        // Keep the channel flow subscribed while this ViewModel is alive. A clock tick or
-        // time-range change must not re-query and re-present the entire provider catalog.
+        // Only channels with guide data in the widest Sports window are presented here; the full
+        // catalog is loaded on demand (fallback matching, manual search, remembered picks).
+        // The subscription is shared while Sports is observed and stops shortly after it is left,
+        // so catalog or mapping writes elsewhere in the app never rebuild it in the background.
+        // A clock tick or time-range change must not re-query or re-present channels.
         val channelSnapshots = combine(
             activeSource,
-            guideRevision.map { it.combinedProfiles }.distinctUntilChanged(),
-        ) { source, profiles -> source to profiles }.flatMapLatest { (source, _) ->
+            // Hidden channels/categories are filtered downstream; they must not re-query channels.
+            guideRevision.map { revision ->
+                revision.copy(providers = revision.providers.map {
+                    it.copy(hiddenChannelIds = emptySet(), hiddenCategoryIds = emptySet())
+                })
+            },
+            localDates(),
+        ) { source, revision, date -> GuideChannelKey(source, revision, date) }
+            .distinctUntilChanged()
+            .flatMapLatest { key ->
+            val source = key.source
             val sources = resolveProviderSources(source)
             if (sources.isEmpty()) {
-                flowOf(emptyList<ProviderChannels>())
+                flowOf(SportsChannelSnapshot(source, emptyList()))
             } else {
+                val (guideFrom, guideUntil) = guideChannelWindow(System.currentTimeMillis())
                 combine(sources.map { (providerId, combinedProfileId) ->
                     val startedAt = SystemClock.elapsedRealtime()
                     var initialSnapshot = true
                     combine(
-                        channelRepository.getChannels(providerId),
+                        channelRepository.getChannelsWithGuide(providerId, guideFrom, guideUntil),
                         preferencesRepository.getHiddenCategoryIds(providerId, ContentType.LIVE),
                     ) { channels, hiddenCategories ->
                         ProviderChannels(
                             providerId = providerId,
                             combinedProfileId = combinedProfileId,
-                            channels = channels.filter { channel ->
-                                channel.categoryId?.let { it !in hiddenCategories } != false &&
-                                    !channel.isAdult && !channel.isUserProtected
-                            },
+                            channels = channels.filter { channel -> channel.isVisibleForSports(hiddenCategories) },
                         ).also { snapshot ->
                             if (initialSnapshot) {
                                 SportsDiagnostics.performance(
@@ -222,7 +240,7 @@ internal class SportsHubRepository @Inject constructor(
                             }
                         }
                     }.distinctUntilChanged().flowOn(dispatchers.default)
-                }) { it.toList() }
+                }) { SportsChannelSnapshot(source, it.toList()) }
             }
         }.distinctUntilChanged().retryWhen { _, _ ->
             val failedRequest = retryRequest.value
@@ -230,7 +248,20 @@ internal class SportsHubRepository @Inject constructor(
             retryRequest.first { it != failedRequest }
             _uiState.update { it.copy(isLoading = true, hasError = false) }
             true
-        }
+        }.shareIn(
+            scope,
+            SharingStarted.WhileSubscribed(
+                stopTimeoutMillis = CHANNEL_SUBSCRIPTION_STOP_TIMEOUT_MS,
+                replayExpirationMillis = 0L,
+            ),
+            replay = 1,
+        )
+
+        // While Sports is not observed only these cheap keys stay subscribed, so retained results
+        // are still invalidated (e.g. a newly hidden category) before the next screen shows them.
+        val invalidationKeys = combine(activeSource, guideRevision) { source, revision ->
+            SportsInvalidationKey(source, revision)
+        }.distinctUntilChanged()
 
         var previousInputs: SportsLoadInputs? = null
         var previouslyActive = false
@@ -257,9 +288,10 @@ internal class SportsHubRepository @Inject constructor(
                 sourceSelection.third,
             )
         }
-        val loadRequests = combine(channelSnapshots, guideRevision, loadSettings) { channels, revision, settings ->
+        val loadRequests = combine(channelSnapshots, guideRevision, loadSettings) { snapshot, revision, settings ->
             SportsLoadInputs(
-                channels,
+                snapshot.source,
+                snapshot.providers,
                 revision,
                 settings.retry,
                 settings.eventSourcePreference,
@@ -269,27 +301,35 @@ internal class SportsHubRepository @Inject constructor(
             ) to settings.range
         }
         scope.launch {
-            combine(loadRequests, activeObservers) { request, active -> request to active }.collectLatest { (request, active) ->
-                val (inputs, range) = request
-                val resumed = active && !previouslyActive
-                previouslyActive = active
+            activeObservers.flatMapLatest { active ->
+                if (active) {
+                    loadRequests.map { (inputs, range) -> SportsLoadSignal(inputs, range, inputs.invalidationKey) }
+                } else {
+                    invalidationKeys.map { key -> SportsLoadSignal(null, null, key) }
+                }
+            }.collectLatest { signal ->
+                val inputs = signal.inputs
+                val range = signal.range
+                if (inputs == null || range == null) {
+                    previouslyActive = false
+                    val previous = previousInputs
+                    if (previous != null && previous.invalidationKey != signal.key) invalidateResults()
+                    return@collectLatest
+                }
+                val resumed = !previouslyActive
+                previouslyActive = true
                 if (previousInputs != inputs) {
-                    eventIndexCache.clear()
-                    fallbackChannelIndexCache = null
-                    availableChannelEntries = emptyList()
                     if (previousInputs?.retry != inputs.retry) classificationCache.clear()
-                    _uiState.update { it.copy(events = emptyList(), isLoading = true, hasError = false) }
+                    invalidateResults()
                     previousInputs = inputs
                 }
-                if (active) {
-                    if (resumed) {
-                        refreshPresentationNow()
-                        if (!_uiState.value.isLoading && !_uiState.value.hasError) {
-                            SportsDiagnostics.performance("retained-presentation", 0L, _uiState.value.events.size)
-                        }
+                if (resumed) {
+                    refreshPresentationNow()
+                    if (!_uiState.value.isLoading && !_uiState.value.hasError) {
+                        SportsDiagnostics.performance("retained-presentation", 0L, _uiState.value.events.size)
                     }
-                    loadEvents(inputs, range, System.currentTimeMillis())
                 }
+                loadEvents(inputs, range, System.currentTimeMillis())
             }
         }
         // Commentators arrive after the guide-built events; attach them without a reload.
@@ -315,6 +355,16 @@ internal class SportsHubRepository @Inject constructor(
                 }
             }
         }
+    }
+
+    private fun invalidateResults() {
+        eventIndexCache.clear()
+        fallbackChannelIndexCache = null
+        availableChannelEntries = emptyList()
+        currentProviders = emptyList()
+        fullCatalogCache = null
+        onNowProgramCache.clear()
+        _uiState.update { it.copy(events = emptyList(), isLoading = true, hasError = false) }
     }
 
     /** Called before a new screen observes the retained state; never replay expired fixtures. */
@@ -381,6 +431,7 @@ internal class SportsHubRepository @Inject constructor(
         loadInProgress = true
         progressiveLoad = _uiState.value.events.isEmpty() || _uiState.value.isLoading
         val providerChannels = inputs.providers
+        currentProviders = providerChannels
         val window = windowFor(range, now)
         lastRequestedLocalDate = localDate(now)
         _uiState.update { it.copy(isLoading = it.isLoading || it.hasError, hasError = false) }
@@ -408,8 +459,10 @@ internal class SportsHubRepository @Inject constructor(
                 cached.events to cached.providerEvents
             } ?: withContext(dispatchers.default) {
                 val (requestFromMillis, requestUntilMillis) = providerEventRequestWindow(range, now, window)
-                availableChannelEntries = providerChannels.flatMap { provider ->
-                    provider.channels.map { SportsChannelIndexEntry(it, provider.combinedProfileId) }
+                availableChannelEntries = knownChannelEntries(providerChannels) {
+                    providerChannels.flatMap { provider ->
+                        provider.channels.map { SportsChannelIndexEntry(it, provider.combinedProfileId) }
+                    }
                 }
                 val providerTask = async {
                     withTimeoutOrNull(PROVIDER_LOAD_TIMEOUT_MS) {
@@ -447,17 +500,15 @@ internal class SportsHubRepository @Inject constructor(
                     itemCount = assembled.size,
                     groupCount = candidates.size,
                 )
-                val entries = providerData.flatMap { it.channels }
-                availableChannelEntries = entries
+                availableChannelEntries = knownChannelEntries(providerChannels) {
+                    providerData.flatMap { it.channels }
+                }
                 // The guide is usable immediately, even when a remote API is slow.
                 if (!providerTask.isCompleted && (assembled.isNotEmpty() || eventProviders.isEmpty())) {
                     withContext(Dispatchers.Main.immediate) { publishEvents(assembled, range, now, window) }
                 }
                 val providerEventLoad = providerTask.await()
                 provisionalPublisher.join()
-                // Most guide-derived events already have playable broadcasts. Build the
-                // full text index only when fallback matching or manual search needs it.
-                val channelIndex by lazy { getFallbackChannelIndex(entries) }
                 val sourcedProviderEvents = sourcedEvents(providerEventLoad)
                 val selectedProviderId = providerEventLoad.instanceId
                 val providerResolutionStartedAt = SystemClock.elapsedRealtime()
@@ -484,20 +535,28 @@ internal class SportsHubRepository @Inject constructor(
                     itemCount = assembled.size,
                     groupCount = sourcedProviderEvents.size,
                 )
-                val resolved = providerResolved.mapNotNull { resolved ->
+                val inRange = providerResolved.mapNotNull { resolved ->
                     currentCoroutineContext().ensureActive()
                     resolved.toSportsHubEvent()?.takeIf { event ->
                         programMatchesRange(event.startTime, event.endTime, range, now, window)
-                    }?.let { event ->
-                        val resolvedEvent = if (event.broadcasts.none { it.channel.streamUrl.isNotBlank() }) {
-                            SportsEventFallbackResolver.addFallbacksWhenDirectChoicesAreUnavailable(event, channelIndex)
-                        } else {
-                            event
-                        }
-                        resolvedEvent.broadcasts.mapNotNull(SportsBroadcast::fallbackMatch)
-                            .forEach { match -> SportsDiagnostics.fallbackMatch(event.id, match) }
-                        resolvedEvent
                     }
+                }
+                // Most guide-derived events already have playable broadcasts. Load the full
+                // catalog and build its text index only when fallback matching needs it.
+                val channelIndex = if (inRange.any(::needsFallbackChannels)) {
+                    getFallbackChannelIndex(fullChannelEntries(providerChannels))
+                } else {
+                    null
+                }
+                val resolved = inRange.map { event ->
+                    val resolvedEvent = if (channelIndex != null && needsFallbackChannels(event)) {
+                        SportsEventFallbackResolver.addFallbacksWhenDirectChoicesAreUnavailable(event, channelIndex)
+                    } else {
+                        event
+                    }
+                    resolvedEvent.broadcasts.mapNotNull(SportsBroadcast::fallbackMatch)
+                        .forEach { match -> SportsDiagnostics.fallbackMatch(event.id, match) }
+                    resolvedEvent
                 }
                 if (cacheKey != null) cacheEvents(cacheKey, resolved, providerEventLoad)
                 resolved to providerEventLoad
@@ -616,7 +675,17 @@ internal class SportsHubRepository @Inject constructor(
             eventIds = currentEvents.mapTo(mutableSetOf(), SportsEvent::id),
             nowMillis = now,
         )
-        val availableChannels = availableChannelEntries
+        val guideChannels = availableChannelEntries
+        val providers = currentProviders
+        // A remembered pick may name a channel without guide data; only then load the catalog.
+        val availableChannels = if (providers.isNotEmpty() && rememberedPicks.values.any { pick ->
+                pick.expiresAtMillis > now && guideChannels.none { it.matches(pick.providerId, pick.channelId) }
+            }
+        ) {
+            withContext(dispatchers.default) { fullChannelEntries(providers) }
+        } else {
+            guideChannels
+        }
         val presentedEvents = currentEvents.map { event ->
             val retained = retainSportsPresentation(event, previous[event.id], Instant.ofEpochMilli(now))
             SportsEventChannelPreferencePolicy.apply(
@@ -820,9 +889,11 @@ internal class SportsHubRepository @Inject constructor(
     }
 
     suspend fun searchChannels(event: SportsEvent, query: String): List<SportsBroadcast> {
-        val entries = availableChannelEntries
-        if (entries.isEmpty()) return emptyList()
+        val providers = currentProviders
+        if (providers.isEmpty()) return emptyList()
         return withContext(dispatchers.default) {
+            val entries = fullChannelEntries(providers)
+            if (entries.isEmpty()) return@withContext emptyList()
             val index = getFallbackChannelIndex(entries)
             if (availableChannelEntries != entries) return@withContext emptyList()
             SportsChannelFallbackMatcher.searchChannels(event, index, query).map { match ->
@@ -836,10 +907,14 @@ internal class SportsHubRepository @Inject constructor(
     }
 
     suspend fun rememberChannelForEvent(event: SportsEvent, broadcast: SportsBroadcast): Boolean {
-        val entry = availableChannelEntries.firstOrNull { candidate ->
-            candidate.channel.providerId == broadcast.channel.providerId &&
-                candidate.channel.id == broadcast.channel.id
-        } ?: return false
+        val providerId = broadcast.channel.providerId
+        val channelId = broadcast.channel.id
+        val entry = availableChannelEntries.firstOrNull { it.matches(providerId, channelId) }
+            ?: currentProviders.takeIf { it.isNotEmpty() }?.let { providers ->
+                withContext(dispatchers.default) { fullChannelEntries(providers) }
+                    .firstOrNull { it.matches(providerId, channelId) }
+            }
+            ?: return false
         val channel = entry.channel
         if (channel.streamUrl.isBlank() || channel.isAdult || channel.isUserProtected) return false
         preferencesRepository.saveSportsEventChannelPick(
@@ -855,6 +930,68 @@ internal class SportsHubRepository @Inject constructor(
     suspend fun forgetChannelForEvent(event: SportsEvent) {
         preferencesRepository.forgetSportsEventChannelPick(event.id)
         refreshRequest.update { it + 1 }
+    }
+
+    /** The full catalog when it is already loaded for [providers], otherwise [guideEntries]. */
+    private inline fun knownChannelEntries(
+        providers: List<ProviderChannels>,
+        guideEntries: () -> List<SportsChannelIndexEntry>,
+    ): List<SportsChannelIndexEntry> =
+        fullCatalogCache?.takeIf { it.providers === providers }?.entries ?: guideEntries()
+
+    /**
+     * Every visible channel of [providers], presented exactly as the guide subset. Loaded once
+     * per channel snapshot, and only when fallback matching, manual search or a remembered pick
+     * needs a channel without guide data.
+     */
+    private suspend fun fullChannelEntries(providers: List<ProviderChannels>): List<SportsChannelIndexEntry> =
+        fullCatalogMutex.withLock {
+            fullCatalogCache?.takeIf { it.providers === providers }?.let { return@withLock it.entries }
+            val startedAt = SystemClock.elapsedRealtime()
+            val entries = providers.flatMap { provider ->
+                val hiddenCategories = preferencesRepository
+                    .getHiddenCategoryIds(provider.providerId, ContentType.LIVE)
+                    .first()
+                channelRepository.getChannels(provider.providerId).first()
+                    .filter { channel -> channel.isVisibleForSports(hiddenCategories) }
+                    .map { channel -> SportsChannelIndexEntry(channel, provider.combinedProfileId) }
+            }
+            SportsDiagnostics.performance(
+                stage = "full-channel-catalog",
+                elapsedMillis = SystemClock.elapsedRealtime() - startedAt,
+                itemCount = entries.size,
+            )
+            if (currentProviders === providers) {
+                fullCatalogCache = CachedFullCatalog(providers, entries)
+                availableChannelEntries = entries
+            }
+            entries
+        }
+
+    private fun needsFallbackChannels(event: SportsEvent): Boolean =
+        event.broadcasts.none { it.channel.streamUrl.isNotBlank() }
+
+    private fun SportsChannelIndexEntry.matches(providerId: Long, channelId: Long): Boolean =
+        channel.providerId == providerId && channel.id == channelId
+
+    private fun Channel.isVisibleForSports(hiddenCategories: Set<Long>): Boolean =
+        categoryId?.let { it !in hiddenCategories } != false && !isAdult && !isUserProtected
+
+    /** Re-emits the local date so the guide-channel window rolls over at midnight. */
+    private fun localDates() = flow {
+        while (true) {
+            emit(localDate(System.currentTimeMillis()))
+            delay(60_000L)
+        }
+    }.distinctUntilChanged()
+
+    /** Covers every range's programme window (ON_NOW, TODAY, UPCOMING) with a day of margin. */
+    private fun guideChannelWindow(now: Long): Pair<Long, Long> {
+        val zone = ZoneId.systemDefault()
+        val until = Instant.ofEpochMilli(now).atZone(zone).toLocalDate()
+            .plusDays(GUIDE_CHANNEL_LOOKAHEAD_DAYS)
+            .atStartOfDay(zone).toInstant().toEpochMilli()
+        return (now - GUIDE_CHANNEL_LOOKBACK_MS) to until
     }
 
     private fun getFallbackChannelIndex(entries: List<SportsChannelIndexEntry>): SportsChannelIndex {
@@ -893,7 +1030,6 @@ internal class SportsHubRepository @Inject constructor(
         window: SportsTimeWindow,
     ): LoadedSportsProvider {
         val providerId = provider.providerId
-        val combinedProfileId = provider.combinedProfileId
         val channels = provider.channels
         if (channels.isEmpty()) return LoadedSportsProvider(emptyList(), emptyList())
 
@@ -907,20 +1043,46 @@ internal class SportsHubRepository @Inject constructor(
             emptyMap()
         }
 
+        // ON_NOW reads a short horizon once; minute ticks inside it re-filter that cached guide
+        // slice instead of querying the database again. Inputs changes clear the cache.
+        onNowProgramCache[providerId]
+            ?.takeIf { range == SportsTimeRange.ON_NOW && it.provider === provider && now >= it.from && now < it.until }
+            ?.let { cached -> return classifyProviderCandidates(provider, range, now, window, cached.programs, channelMatchConfidences) }
+        val (queryFrom, queryUntil) = if (range == SportsTimeRange.ON_NOW) {
+            now to now + ON_NOW_PROGRAM_HORIZON_MS
+        } else {
+            window.startTime to window.endTime
+        }
         val programsStartedAt = SystemClock.elapsedRealtime()
         val programsByChannelKey = epgRepository.getResolvedProgramsForChannels(
             providerId = providerId,
             channelIds = channels.map { it.id }.distinct(),
-            startTime = window.startTime,
-            endTime = window.endTime,
+            startTime = queryFrom,
+            endTime = queryUntil,
         )
+        if (range == SportsTimeRange.ON_NOW) {
+            onNowProgramCache[providerId] = CachedGuidePrograms(provider, queryFrom, queryUntil, programsByChannelKey)
+        }
         SportsDiagnostics.performance(
             stage = "resolved-programs",
             elapsedMillis = SystemClock.elapsedRealtime() - programsStartedAt,
             itemCount = programsByChannelKey.values.sumOf { programs -> programs.size },
             groupCount = programsByChannelKey.size,
         )
+        return classifyProviderCandidates(provider, range, now, window, programsByChannelKey, channelMatchConfidences)
+    }
 
+    private suspend fun classifyProviderCandidates(
+        provider: ProviderChannels,
+        range: SportsTimeRange,
+        now: Long,
+        window: SportsTimeWindow,
+        programsByChannelKey: Map<String, List<Program>>,
+        channelMatchConfidences: Map<Long, Float>,
+    ): LoadedSportsProvider {
+        val combinedProfileId = provider.combinedProfileId
+        val channels = provider.channels
+        val diagnosticsEnabled = SportsDiagnostics.isEnabled()
         val classificationStartedAt = SystemClock.elapsedRealtime()
         val cacheStatsBefore = classificationCache.stats()
         val candidates = withContext(dispatchers.default) {
@@ -1039,6 +1201,7 @@ internal class SportsHubRepository @Inject constructor(
     }
 
     private data class SportsLoadInputs(
+        val source: ActiveLiveSource?,
         val providers: List<ProviderChannels>,
         val guideRevision: SportsGuideRevision,
         val retry: Int,
@@ -1046,6 +1209,43 @@ internal class SportsHubRepository @Inject constructor(
         val scoreSourcePreference: SportsScoreSourcePreference,
         val metadataSourcePreference: SportsMetadataSourcePreference,
         val providerRevision: Long,
+    ) {
+        val invalidationKey: SportsInvalidationKey get() = SportsInvalidationKey(source, guideRevision)
+    }
+
+    private data class SportsChannelSnapshot(
+        val source: ActiveLiveSource?,
+        val providers: List<ProviderChannels>,
+    )
+
+    private data class GuideChannelKey(
+        val source: ActiveLiveSource?,
+        val guideRevision: SportsGuideRevision,
+        val localDate: LocalDate,
+    )
+
+    private data class SportsInvalidationKey(
+        val source: ActiveLiveSource?,
+        val guideRevision: SportsGuideRevision,
+    )
+
+    /** [inputs] and [range] are null while Sports is not observed. */
+    private data class SportsLoadSignal(
+        val inputs: SportsLoadInputs?,
+        val range: SportsTimeRange?,
+        val key: SportsInvalidationKey,
+    )
+
+    private class CachedGuidePrograms(
+        val provider: ProviderChannels,
+        val from: Long,
+        val until: Long,
+        val programs: Map<String, List<Program>>,
+    )
+
+    private class CachedFullCatalog(
+        val providers: List<ProviderChannels>,
+        val entries: List<SportsChannelIndexEntry>,
     )
 
     private data class SportsLoadSettings(
@@ -1130,6 +1330,11 @@ internal class SportsHubRepository @Inject constructor(
         const val MAX_EVENT_INDEX_ENTRIES = 8
         const val PROVIDER_EVENT_LOOKBACK_MS = 18 * 60 * 60_000L
         const val MIN_PROVIDER_EVENT_DURATION_MS = 30 * 60_000L
+        const val CHANNEL_SUBSCRIPTION_STOP_TIMEOUT_MS = 5_000L
+        const val ON_NOW_PROGRAM_HORIZON_MS = 30 * 60_000L
+        const val GUIDE_CHANNEL_LOOKBACK_MS = 24 * 60 * 60_000L
+        // UPCOMING ends at the start of today + 8 days; one more day absorbs EPG time shifts.
+        const val GUIDE_CHANNEL_LOOKAHEAD_DAYS = 9L
         val PROVIDER_EVENT_DEFAULT_DURATION: Duration = Duration.ofHours(6)
     }
 }
