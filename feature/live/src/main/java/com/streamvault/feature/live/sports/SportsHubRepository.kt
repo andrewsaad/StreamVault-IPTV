@@ -132,7 +132,7 @@ internal class SportsHubRepository @Inject constructor(
     private val eventIndexCache = linkedMapOf<SportsIndexKey, CachedSportsEvents>()
     @Volatile private var fallbackChannelIndexCache: CachedSportsChannelIndex? = null
     @Volatile private var availableChannelEntries: List<SportsChannelIndexEntry> = emptyList()
-    /** Guide-channel snapshot of the current load; identity keys [fullCatalogCache]. */
+    /** Guide-channel snapshot of the current load; its content (not identity) keys [fullCatalogCache]. */
     @Volatile private var currentProviders: List<ProviderChannels> = emptyList()
     @Volatile private var fullCatalogCache: CachedFullCatalog? = null
     private val fullCatalogMutex = Mutex()
@@ -895,7 +895,8 @@ internal class SportsHubRepository @Inject constructor(
             val entries = fullChannelEntries(providers)
             if (entries.isEmpty()) return@withContext emptyList()
             val index = getFallbackChannelIndex(entries)
-            if (availableChannelEntries != entries) return@withContext emptyList()
+            // Only a real channel change makes these results stale; an identical reload does not.
+            if (currentProviders != providers) return@withContext emptyList()
             SportsChannelFallbackMatcher.searchChannels(event, index, query).map { match ->
                 SportsBroadcast(
                     channel = match.entry.channel,
@@ -937,7 +938,7 @@ internal class SportsHubRepository @Inject constructor(
         providers: List<ProviderChannels>,
         guideEntries: () -> List<SportsChannelIndexEntry>,
     ): List<SportsChannelIndexEntry> =
-        fullCatalogCache?.takeIf { it.providers === providers }?.entries ?: guideEntries()
+        fullCatalogCache?.takeIf { it.providers == providers }?.entries ?: guideEntries()
 
     /**
      * Every visible channel of [providers], presented exactly as the guide subset. Loaded once
@@ -946,7 +947,7 @@ internal class SportsHubRepository @Inject constructor(
      */
     private suspend fun fullChannelEntries(providers: List<ProviderChannels>): List<SportsChannelIndexEntry> =
         fullCatalogMutex.withLock {
-            fullCatalogCache?.takeIf { it.providers === providers }?.let { return@withLock it.entries }
+            fullCatalogCache?.takeIf { it.providers == providers }?.let { return@withLock it.entries }
             val startedAt = SystemClock.elapsedRealtime()
             val entries = providers.flatMap { provider ->
                 val hiddenCategories = preferencesRepository
@@ -961,7 +962,7 @@ internal class SportsHubRepository @Inject constructor(
                 elapsedMillis = SystemClock.elapsedRealtime() - startedAt,
                 itemCount = entries.size,
             )
-            if (currentProviders === providers) {
+            if (currentProviders == providers) {
                 fullCatalogCache = CachedFullCatalog(providers, entries)
                 availableChannelEntries = entries
             }

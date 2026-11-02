@@ -577,6 +577,28 @@ class SportsHubViewModelTest {
     }
 
     @Test
+    fun `returning to Sports with unchanged channels reuses the loaded full catalog`() = sportsTest {
+        val repository = createRepository()
+        val model = createModel(repository)
+        await { !repository.uiState.value.isLoading }
+        val event = model.uiState.value.events.single()
+        assertThat(model.searchChannels(event, "Sports One")).isNotEmpty()
+        assertThat(catalogLoads.get()).isEqualTo(1)
+
+        store.clear()
+        scheduler.advanceTimeBy(5_001L)
+        scheduler.runCurrent()
+        assertThat(activeSubscriptions.get()).isEqualTo(0)
+
+        val returned = createModel(repository)
+        await { subscriptions.get() == 2 && !repository.uiState.value.isLoading }
+        val again = returned.uiState.value.events.single()
+
+        assertThat(returned.searchChannels(again, "Sports One")).isNotEmpty()
+        assertThat(catalogLoads.get()).isEqualTo(1)
+    }
+
+    @Test
     fun `remembered pick of a channel without guide data is restored from the full catalog`() = sportsTest {
         val news = Channel(id = 2L, providerId = 7L, streamId = 2L, name = "News 24", categoryId = 10L,
             streamUrl = "https://example.test/news")
