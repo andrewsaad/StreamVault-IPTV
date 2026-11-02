@@ -33,10 +33,14 @@ object VodLanguageClassifier {
 
     private val arabicPhrases = listOf("دريد لحام", "كلاسيك").map(::normalize)
 
+    // Kids categories are mostly dubbed cartoons; they would crowd the language rows.
+    private val kidsWords = setOf("kids", "kides", "kid", "اطفال", "كيدز")
+
     fun classify(categoryName: String): VodLanguage? {
         val text = normalize(categoryName)
         if (text.isEmpty()) return null
         val words = text.split(' ')
+        if (words.any { word -> word in kidsWords }) return null
         return when {
             isEgyptian(text, words) -> VodLanguage.EGYPTIAN
             isArabic(text, words) -> VodLanguage.ARABIC

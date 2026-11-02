@@ -4,7 +4,7 @@ MOVIE|المضاف حديثا|NONE
 MOVIE|تصوير سينما|NONE
 MOVIE|افلام مصري حديثه|EGYPTIAN
 MOVIE|افلام مصري|EGYPTIAN
-MOVIE|كيدز بالمصري|EGYPTIAN
+MOVIE|كيدز بالمصري|NONE
 MOVIE|افلام عربيه حديثه|ARABIC
 MOVIE|افلام عربيه|ARABIC
 MOVIE|Arabic premier|ARABIC
@@ -36,8 +36,8 @@ MOVIE|Turky Movies|TURKISH
 MOVIE|Amazon|NONE
 MOVIE|افلام كلاسيك|ARABIC
 MOVIE|Arabic Classic New|ARABIC
-MOVIE|Arabic Kids|ARABIC
-MOVIE|English Kids|ENGLISH
+MOVIE|Arabic Kids|NONE
+MOVIE|English Kids|NONE
 MOVIE|Animation|NONE
 MOVIE|Tom And Jerry|NONE
 MOVIE|WWE|NONE
@@ -140,7 +140,7 @@ SERIES|TV Shows|NONE
 SERIES|مسلسلات كلاسيك|ARABIC
 SERIES|مسلسلات تاريخية|NONE
 SERIES|مسلسلات هنديه|NONE
-SERIES|أطفال عربى|ARABIC
+SERIES|أطفال عربى|NONE
 SERIES|Kides Series|NONE
 SERIES|Spacetoon|NONE
 SERIES|مسرح مصر|EGYPTIAN
