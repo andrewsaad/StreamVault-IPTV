@@ -291,7 +291,7 @@ class XtreamLiveAttemptIsolationTest {
         for (categoryCount in listOf(4, 6)) {
             val requests = AtomicInteger()
             val fetcher = mock<SyncManagerXtreamFetcher>()
-            whenever(fetcher.fetchLiveCategoryOutcome(any(), any(), any(), anyOrNull(), anyOrNull(), any()))
+            whenever(fetcher.fetchLiveCategoryOutcome(any(), any(), any(), anyOrNull(), anyOrNull(), any(), anyOrNull()))
                 .doSuspendableAnswer { invocation ->
                     requests.incrementAndGet()
                     val category = invocation.getArgument<XtreamCategory>(2)
@@ -317,7 +317,7 @@ class XtreamLiveAttemptIsolationTest {
         val authenticationProcessed = CompletableDeferred<Unit>()
         val requests = AtomicInteger()
         val fetcher = mock<SyncManagerXtreamFetcher>()
-        whenever(fetcher.fetchLiveCategoryOutcome(any(), any(), any(), anyOrNull(), anyOrNull(), any()))
+        whenever(fetcher.fetchLiveCategoryOutcome(any(), any(), any(), anyOrNull(), anyOrNull(), any(), anyOrNull()))
             .doSuspendableAnswer { invocation ->
                 requests.incrementAndGet()
                 val category = invocation.getArgument<XtreamCategory>(2)
