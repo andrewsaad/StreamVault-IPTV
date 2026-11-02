@@ -122,6 +122,48 @@ class AutomaticSyncRunnerTest {
         } finally { AutomaticSyncActivity.stopped(player) }
     }
 
+    @Test fun `boot check refreshes fresh Xtream live and guide but not VOD`() = runTest {
+        snapshot(XtreamConfig("https://example.test", "user", "password"))
+        runner.check(7L, bypassDueTimes = true)
+        verify(commands).refreshScheduledSection(7L, SyncRepairSection.LIVE)
+        verify(commands).refreshScheduledSection(7L, SyncRepairSection.EPG)
+        verify(commands, never()).refreshScheduledSection(7L, SyncRepairSection.MOVIES)
+        verify(commands, never()).refreshScheduledSection(7L, SyncRepairSection.SERIES)
+    }
+
+    @Test fun `ordinary check leaves fresh Xtream sections alone`() = runTest {
+        snapshot(XtreamConfig("https://example.test", "user", "password"))
+        runner.check(7L)
+        verify(commands, never()).refreshScheduledSection(any(), any())
+    }
+
+    @Test fun `boot check refreshes only the guide for providers without a cheap live delta`() = runTest {
+        snapshot(M3uConfig("https://example.test/list"))
+        runner.check(7L, bypassDueTimes = true)
+        verify(commands, never()).refreshScheduledPlaylist(any(), any(), any())
+        verify(commands).refreshScheduledSection(7L, SyncRepairSection.EPG)
+    }
+
+    @Test fun `boot check honours sections switched off in automatic sync`() = runTest {
+        snapshot(XtreamConfig("https://example.test", "user", "password"))
+        whenever(preferences.automaticSyncConfiguration).thenReturn(
+            flowOf(AutomaticSyncConfiguration(AutomaticSyncSettings(live = false, epg = false)))
+        )
+        runner.check(7L, bypassDueTimes = true)
+        verify(commands, never()).refreshScheduledSection(any(), any())
+    }
+
+    @Test fun `boot check still waits while something is playing`() = runTest {
+        snapshot(XtreamConfig("https://example.test", "user", "password"))
+        val player = Any()
+        try {
+            AutomaticSyncActivity.started(player)
+            runner.check(7L, bypassDueTimes = true)
+            verify(commands, never()).refreshScheduledSection(any(), any())
+            verify(preferences).recordAutomaticSyncStatus(eq(7L), argThat { outcome == AutomaticSyncOutcome.WAITING_PLAYBACK })
+        } finally { AutomaticSyncActivity.stopped(player) }
+    }
+
     @Test fun `permanent Stalker failure is not reset by automatic checks`() = runTest {
         snapshot(StalkerConfig(portalUrl = "https://example.test", device = StalkerDeviceIdentity(macAddress = "00:11:22:33:44:55"), catalogMode = StalkerCatalogMode.BACKGROUND_INDEX))
         whenever(metadata.getMetadata(7L)).thenReturn(fresh.copy(lastMovieSuccess = 0))

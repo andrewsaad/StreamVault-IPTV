@@ -94,7 +94,12 @@ class AutomaticSyncRunner @Inject constructor(
         preferences.recordAutomaticSyncStatus(providerId, previous.copy(checkedAt = System.currentTimeMillis(), outcome = outcome))
     }
 
-    suspend fun check(providerId: Long): Result<Unit> = withContext(AutomaticSyncExecution.automatic.asContextElement(true)) {
+    /**
+     * [bypassDueTimes] is set by the power-on sync: Live (Xtream only, where unchanged
+     * payloads are skipped cheaply) and the guide refresh even when not yet due. Every waiting
+     * rule, including deferring while something plays, still applies.
+     */
+    suspend fun check(providerId: Long, bypassDueTimes: Boolean = false): Result<Unit> = withContext(AutomaticSyncExecution.automatic.asContextElement(true)) {
         val now = System.currentTimeMillis()
         val policy = preferences.automaticSyncConfiguration.first().forProvider(providerId)
         val snapshot = snapshots.getSnapshot(providerId) ?: return@withContext Result.error("Provider configuration is unavailable")
@@ -106,9 +111,12 @@ class AutomaticSyncRunner @Inject constructor(
         }
         val upgradeStartedAt = if (policy.enabled) preferences.catalogSyncUpgradeStartedAt(providerId) else null
         val metadata = planningMetadata(snapshot, upgradeStartedAt)
-        val plan = ProviderRefreshPlanner.plan(snapshot.provider.type, metadata, policy, now,
+        val duePlan = ProviderRefreshPlanner.plan(snapshot.provider.type, metadata, policy, now,
             epgAvailable = epgMode != ProviderEpgSyncMode.SKIP,
             unifiedVod = snapshot.accountRuntime.catalogLayout == CatalogLayout.UNIFIED_VOD)
+        val plan = if (bypassDueTimes) {
+            duePlan.copy(sections = withBootSections(duePlan.sections, snapshot.provider.type, policy, epgMode != ProviderEpgSyncMode.SKIP))
+        } else duePlan
         suspend fun report(outcome: AutomaticSyncOutcome) = preferences.recordAutomaticSyncStatus(providerId,
             AutomaticSyncStatus(System.currentTimeMillis(), outcome, plan.nextDueAt, plan.sections))
         val waiting = waitingReason(providerId)
@@ -213,6 +221,17 @@ class AutomaticSyncRunner @Inject constructor(
                 lastMovieSuccess = freshness(current.lastMovieSuccess), lastSeriesSuccess = freshness(current.lastSeriesSuccess),
                 lastEpgSuccess = freshness(current.lastEpgSuccess))
         }
+    }
+
+    private fun withBootSections(
+        due: List<RefreshSection>,
+        type: ProviderType,
+        policy: AutomaticSyncSettings,
+        epgAvailable: Boolean
+    ): List<RefreshSection> = buildList {
+        addAll(due)
+        if (policy.live && type == ProviderType.XTREAM_CODES && RefreshSection.LIVE !in due) add(RefreshSection.LIVE)
+        if (policy.epg && epgAvailable && RefreshSection.EPG !in due) add(RefreshSection.EPG)
     }
 
     private fun indexSuccess(job: com.streamvault.data.local.entity.XtreamIndexJobEntity?, fallback: Long): Long =

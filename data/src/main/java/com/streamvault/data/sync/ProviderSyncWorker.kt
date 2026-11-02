@@ -254,7 +254,10 @@ class ProviderSyncWorker(
                         entryPoint.syncCommands().resumePrimaryCatalog(provider.id, true)
                     } else {
                         try {
-                            entryPoint.automaticSyncRunner().check(provider.id)
+                            entryPoint.automaticSyncRunner().check(
+                                provider.id,
+                                bypassDueTimes = inputData.getBoolean(KEY_BOOT_SYNC, false)
+                            )
                         } catch (cancelled: kotlinx.coroutines.CancellationException) {
                             // The pipeline cancels/joins its own reader and writer before this
                             // control signal arrives. External worker cancellation stays cancellation.
@@ -556,6 +559,9 @@ class ProviderSyncWorker(
         private const val KEY_PROVIDER_ID = "provider_id"
         private const val KEY_PROVIDER_CONFIG_REVISION = "provider_config_revision"
         private const val KEY_STALKER_BOOTSTRAP_RESUME = "stalker_bootstrap_resume"
+        internal const val KEY_BOOT_SYNC = "boot_sync"
+        internal const val UNIQUE_BOOT_SYNC_WORK_NAME = "provider-boot-sync"
+        internal const val BOOT_SYNC_DELAY_SECONDS = 90L
         private const val INVALID_PROVIDER_ID = -1L
         private const val INVALID_REVISION = -1L
         private const val STALE_CONFIG_SYNC_MILLIS = 60_000L
@@ -582,6 +588,27 @@ class ProviderSyncWorker(
                 ExistingPeriodicWorkPolicy.UPDATE,
                 request
             )
+        }
+
+        /**
+         * One automatic check shortly after power-on or an app update that refreshes Live and
+         * the guide even when they are not due. It runs through [AutomaticSyncRunner], so the
+         * automatic-sync policy, playback deferral and the per-provider workflow lease apply;
+         * a deferred or busy run retries with backoff. KEEP collapses repeated broadcasts.
+         */
+        fun enqueueBootSync(context: Context) {
+            val request = OneTimeWorkRequestBuilder<ProviderSyncWorker>()
+                .setInputData(workDataOf(KEY_BOOT_SYNC to true))
+                .setConstraints(
+                    Constraints.Builder()
+                        .setRequiredNetworkType(NetworkType.CONNECTED)
+                        .setRequiresBatteryNotLow(true)
+                        .build()
+                )
+                .setInitialDelay(BOOT_SYNC_DELAY_SECONDS, TimeUnit.SECONDS)
+                .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 10, TimeUnit.MINUTES)
+                .build()
+            WorkManager.getInstance(context).enqueueUniqueWork(UNIQUE_BOOT_SYNC_WORK_NAME, ExistingWorkPolicy.KEEP, request)
         }
 
         fun enqueueIdleCatchUp(context: Context) {

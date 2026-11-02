@@ -35,6 +35,31 @@ class ProviderSyncWorkSchedulerIntegrationTest {
         assertThat(indexes.count { it.state == androidx.work.WorkInfo.State.BLOCKED }).isEqualTo(1)
     }
 
+    @Test fun `boot sync is one delayed unique automatic check that keeps the first request`() {
+        val context = RuntimeEnvironment.getApplication()
+        val manager = workManager()
+        manager.cancelUniqueWork(ProviderSyncWorker.UNIQUE_BOOT_SYNC_WORK_NAME).result.get()
+        manager.pruneWork().result.get()
+
+        ProviderBootSyncReceiver().onReceive(context, android.content.Intent(android.content.Intent.ACTION_BOOT_COMPLETED))
+        val first = manager.getWorkInfosForUniqueWork(ProviderSyncWorker.UNIQUE_BOOT_SYNC_WORK_NAME).get().single()
+        ProviderBootSyncReceiver().onReceive(context, android.content.Intent(android.content.Intent.ACTION_MY_PACKAGE_REPLACED))
+        ProviderBootSyncReceiver().onReceive(context, android.content.Intent("com.example.UNRELATED"))
+
+        val infos = manager.getWorkInfosForUniqueWork(ProviderSyncWorker.UNIQUE_BOOT_SYNC_WORK_NAME).get()
+        assertThat(infos.map { it.id }).containsExactly(first.id)
+        assertThat(first.state).isEqualTo(androidx.work.WorkInfo.State.ENQUEUED)
+        assertThat(first.constraints.requiredNetworkType).isEqualTo(androidx.work.NetworkType.CONNECTED)
+        assertThat(first.constraints.requiresBatteryNotLow()).isTrue()
+        assertThat(first.constraints.requiresCharging()).isFalse()
+        val spec = kotlinx.coroutines.runBlocking(kotlinx.coroutines.Dispatchers.IO) {
+            (manager as androidx.work.impl.WorkManagerImpl).workDatabase.workSpecDao().getWorkSpec(first.id.toString())!!
+        }
+        assertThat(spec.initialDelay).isEqualTo(ProviderSyncWorker.BOOT_SYNC_DELAY_SECONDS * 1_000L)
+        assertThat(spec.input.getBoolean(ProviderSyncWorker.KEY_BOOT_SYNC, false)).isTrue()
+        assertThat(spec.input.getLong("provider_id", -1L)).isEqualTo(-1L)
+    }
+
     private fun workManager(): WorkManager {
         val context = RuntimeEnvironment.getApplication()
         return runCatching { WorkManager.getInstance(context) }.getOrElse {
