@@ -200,6 +200,9 @@ public fun LazyListScope.settingsBackupSection(
             }
         }
     }
+    item(key = "settings_favorites_sync") {
+        FavoriteSyncSettings()
+    }
 }
 
 public fun LazyListScope.settingsDriveBackupSection(
