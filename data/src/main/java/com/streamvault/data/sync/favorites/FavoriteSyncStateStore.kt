@@ -65,13 +65,20 @@ class FavoriteSyncStateStore @Inject constructor(
     suspend fun setLastError(error: FavoriteSyncError?) =
         if (error == null) dao.deleteValue(KEY_LAST_ERROR) else put(KEY_LAST_ERROR, error.name)
 
+    /** Household salt from the server copy's header (or picked here before the first upload). */
+    suspend fun salt(): ByteArray? = dao.getValue(KEY_SALT)
+        ?.let { value -> runCatching { value.chunked(2).map { it.toInt(16).toByte() }.toByteArray() }.getOrNull() }
+        ?.takeIf { it.size == FavoriteSyncCrypto.SALT_BYTES }
+
+    suspend fun setSalt(salt: ByteArray) = put(KEY_SALT, salt.toHex())
+
     suspend fun unmatchedCount(): Int = dao.getValue(KEY_UNMATCHED)?.toIntOrNull() ?: 0
 
     suspend fun setUnmatchedCount(value: Int) = put(KEY_UNMATCHED, value.toString())
 
     /** Forgets the replica and server version, e.g. after switching to another sync server. */
     suspend fun resetReplica() {
-        listOf(KEY_REPLICA, KEY_ETAG, KEY_DIRTY, KEY_LAST_ERROR, KEY_UNMATCHED, KEY_LAST_SYNC_AT)
+        listOf(KEY_REPLICA, KEY_ETAG, KEY_DIRTY, KEY_LAST_ERROR, KEY_UNMATCHED, KEY_LAST_SYNC_AT, KEY_SALT)
             .forEach { dao.deleteValue(it) }
     }
 
@@ -101,5 +108,6 @@ class FavoriteSyncStateStore @Inject constructor(
         const val KEY_UNMATCHED = "unmatched"
         const val KEY_DEVICE_ID = "device_id"
         const val KEY_CLOCK = "clock"
+        const val KEY_SALT = "salt"
     }
 }

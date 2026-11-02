@@ -47,9 +47,10 @@ class FavoriteSyncClockAndCryptoTest {
     }
 
     @Test
-    fun `same passphrase gives the same keys on every TV`() {
-        val a = FavoriteSyncKeys(FavoriteSyncCrypto.deriveMasterKey("family passphrase", iterations = 10))
-        val b = FavoriteSyncKeys(FavoriteSyncCrypto.deriveMasterKey("family passphrase", iterations = 10))
+    fun `same passphrase and salt give the same keys on every TV`() {
+        val salt = FavoriteSyncCrypto.newSalt()
+        val a = keys("family passphrase", salt)
+        val b = keys("family passphrase", salt)
         val identity = "http://provider.example|user|XTREAM_CODES|"
 
         assertThat(a.providerWireKey(identity)).isEqualTo(b.providerWireKey(identity))
@@ -58,13 +59,84 @@ class FavoriteSyncClockAndCryptoTest {
     }
 
     @Test
+    fun `each household gets its own salt and the blob header carries it`() {
+        val first = FavoriteSyncCrypto.newSalt()
+        val second = FavoriteSyncCrypto.newSalt()
+        val identity = "http://provider.example|user|XTREAM_CODES|"
+
+        assertThat(first).isNotEqualTo(second)
+        assertThat(keys("family passphrase", first).providerWireKey(identity))
+            .isNotEqualTo(keys("family passphrase", second).providerWireKey(identity))
+        val blob = FavoriteSyncCrypto.encrypt(keys("family passphrase", first), "hello".toByteArray())
+        assertThat(FavoriteSyncCrypto.saltOf(blob)).isEqualTo(first)
+    }
+
+    @Test
+    fun `a tampered salt in the header fails like a wrong passphrase`() {
+        val salt = FavoriteSyncCrypto.newSalt()
+        val keys = keys("family passphrase", salt)
+        val blob = FavoriteSyncCrypto.encrypt(keys, "hello".toByteArray())
+        blob[4] = (blob[4].toInt() xor 1).toByte()
+
+        assertThrows(FavoriteSyncPairingMismatchException::class.java) {
+            FavoriteSyncCrypto.decrypt(keys("family passphrase", FavoriteSyncCrypto.saltOf(blob)), blob)
+        }
+    }
+
+    @Test
     fun `ciphertext hides the document and a wrong passphrase is a pairing mismatch`() {
-        val keys = FavoriteSyncKeys(FavoriteSyncCrypto.deriveMasterKey("right passphrase", iterations = 10))
-        val other = FavoriteSyncKeys(FavoriteSyncCrypto.deriveMasterKey("wrong passphrase", iterations = 10))
+        val salt = FavoriteSyncCrypto.newSalt()
+        val keys = keys("right passphrase", salt)
+        val other = keys("wrong passphrase", salt)
         val blob = FavoriteSyncCrypto.encrypt(keys, "{\"providers\":{\"secret-name\":{}}}".toByteArray())
 
         assertThat(String(blob, Charsets.ISO_8859_1)).doesNotContain("secret-name")
         assertThrows(FavoriteSyncPairingMismatchException::class.java) { FavoriteSyncCrypto.decrypt(other, blob) }
-        assertThrows(FavoriteSyncPairingMismatchException::class.java) { FavoriteSyncCrypto.decrypt(keys, "junk".toByteArray()) }
+        assertThrows(FavoriteSyncPairingMismatchException::class.java) { FavoriteSyncCrypto.saltOf("junk".toByteArray()) }
+    }
+
+    @Test
+    fun `production key derivation uses at least 310k iterations`() {
+        assertThat(FavoriteSyncCrypto.PBKDF2_ITERATIONS).isAtLeast(310_000)
+    }
+
+    @Test
+    fun `keyring derives once and reuses the stored key after a restart`() {
+        val store = MemorySecretStore(FavoriteSyncConfig(true, "http://sync.test", "token", "family passphrase"))
+        val salt = FavoriteSyncCrypto.newSalt()
+        val identity = "http://provider.example|user|XTREAM_CODES|"
+
+        val first = FavoriteSyncKeyring(store, 10).keys(store.load(), salt)!!
+        assertThat(store.load().derivedKeySalt).isEqualTo(salt)
+        // A different iteration count would give a different key if this keyring derived again.
+        val afterRestart = FavoriteSyncKeyring(store, 1).keys(store.load(), salt)!!
+
+        assertThat(afterRestart.providerWireKey(identity)).isEqualTo(first.providerWireKey(identity))
+    }
+
+    @Test
+    fun `keyring derives again for a new passphrase`() {
+        val store = MemorySecretStore(FavoriteSyncConfig(true, "http://sync.test", "token", "family passphrase"))
+        val salt = FavoriteSyncCrypto.newSalt()
+        val keyring = FavoriteSyncKeyring(store, 10)
+        val identity = "http://provider.example|user|XTREAM_CODES|"
+        val first = keyring.keys(store.load(), salt)!!
+
+        val changed = FavoriteSyncConfig(true, "http://sync.test", "token", "another passphrase")
+        store.save(changed)
+
+        assertThat(keyring.keys(changed, salt)!!.providerWireKey(identity)).isNotEqualTo(first.providerWireKey(identity))
+    }
+
+    private fun keys(passphrase: String, salt: ByteArray) =
+        FavoriteSyncKeys(FavoriteSyncCrypto.deriveMasterKey(passphrase, salt, iterations = 10), salt)
+
+    private class MemorySecretStore(private var config: FavoriteSyncConfig) : FavoriteSyncSecretStore {
+        override val isEncrypted: Boolean = true
+        override fun load(): FavoriteSyncConfig = config
+        override fun save(config: FavoriteSyncConfig) {
+            this.config = config
+        }
+        override fun clear() = Unit
     }
 }

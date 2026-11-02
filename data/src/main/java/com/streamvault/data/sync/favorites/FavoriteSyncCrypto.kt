@@ -16,14 +16,17 @@ class FavoriteSyncPairingMismatchException(cause: Throwable? = null) :
     GeneralSecurityException("Favorites sync document could not be decrypted", cause)
 
 /**
- * Keys derived once from the pairing passphrase. The same passphrase gives every TV the same
- * keys, so no key exchange is needed and the server only ever sees ciphertext.
+ * Keys derived from the pairing passphrase and the household salt. The same passphrase and salt
+ * give every TV the same keys, so no key exchange is needed and the server only sees ciphertext.
  */
-class FavoriteSyncKeys(masterKey: ByteArray) {
+class FavoriteSyncKeys(masterKey: ByteArray, salt: ByteArray) {
     init {
         require(masterKey.size == FavoriteSyncCrypto.KEY_BYTES) { "Invalid favorites sync key" }
+        require(salt.size == FavoriteSyncCrypto.SALT_BYTES) { "Invalid favorites sync salt" }
     }
 
+    /** Household salt; written in the clear into every blob header. */
+    val salt: ByteArray = salt.copyOf()
     internal val encryptionKey: ByteArray = FavoriteSyncCrypto.hmac(masterKey, "streamvault-favorites-enc-v1")
     private val providerKey: ByteArray = FavoriteSyncCrypto.hmac(masterKey, "streamvault-favorites-provider-v1")
 
@@ -33,41 +36,58 @@ class FavoriteSyncKeys(masterKey: ByteArray) {
 }
 
 /**
- * Wire format: "SVF1" magic, 12-byte IV, then AES-256-GCM over the gzipped JSON document.
+ * Wire format: "SVF2" magic, 16-byte household salt, 12-byte IV, then AES-256-GCM over the
+ * gzipped JSON document. The salt is random per household and not secret; the first TV to upload
+ * picks it and every other TV reads it from the header before deriving keys.
+ *
  * PBKDF2-HMAC-SHA256 is implemented over [Mac] because the platform SecretKeyFactory only offers
- * it from API 26 and the app still supports API 25 devices.
+ * it from API 26 and the app still supports API 25 devices. Derivation is slow on purpose, so
+ * [FavoriteSyncKeyring] runs it once per passphrase and salt and caches the result.
  */
 object FavoriteSyncCrypto {
     const val KEY_BYTES = 32
-    const val PBKDF2_ITERATIONS = 120_000
+    const val SALT_BYTES = 16
+    const val PBKDF2_ITERATIONS = 310_000
     private const val IV_BYTES = 12
     private const val TAG_BITS = 128
-    private val MAGIC = byteArrayOf('S'.code.toByte(), 'V'.code.toByte(), 'F'.code.toByte(), '1'.code.toByte())
-    private val AAD = "streamvault-favorites-doc-v1".toByteArray(Charsets.UTF_8)
-    private val SALT = "streamvault-favorites-sync-salt-v1".toByteArray(Charsets.UTF_8)
+    private val MAGIC = byteArrayOf('S'.code.toByte(), 'V'.code.toByte(), 'F'.code.toByte(), '2'.code.toByte())
+    private val HEADER_BYTES = MAGIC.size + SALT_BYTES + IV_BYTES
+    private val AAD = "streamvault-favorites-doc-v2".toByteArray(Charsets.UTF_8)
     private val random = SecureRandom()
 
-    fun deriveMasterKey(passphrase: String, iterations: Int = PBKDF2_ITERATIONS): ByteArray =
-        pbkdf2HmacSha256(passphrase.toByteArray(Charsets.UTF_8), SALT, iterations, KEY_BYTES)
+    fun newSalt(): ByteArray = ByteArray(SALT_BYTES).also(random::nextBytes)
+
+    fun deriveMasterKey(passphrase: String, salt: ByteArray, iterations: Int = PBKDF2_ITERATIONS): ByteArray =
+        pbkdf2HmacSha256(passphrase.toByteArray(Charsets.UTF_8), salt, iterations, KEY_BYTES)
+
+    /** Household salt from a blob header; a blob without a valid header is not ours. */
+    fun saltOf(blob: ByteArray): ByteArray {
+        if (blob.size < HEADER_BYTES + TAG_BITS / 8 || !blob.copyOfRange(0, MAGIC.size).contentEquals(MAGIC)) {
+            throw FavoriteSyncPairingMismatchException()
+        }
+        return blob.copyOfRange(MAGIC.size, MAGIC.size + SALT_BYTES)
+    }
 
     fun encrypt(keys: FavoriteSyncKeys, plaintext: ByteArray): ByteArray {
         val iv = ByteArray(IV_BYTES).also(random::nextBytes)
         val cipher = Cipher.getInstance("AES/GCM/NoPadding")
         cipher.init(Cipher.ENCRYPT_MODE, SecretKeySpec(keys.encryptionKey, "AES"), GCMParameterSpec(TAG_BITS, iv))
+        // The header is authenticated too, so a swapped salt fails like a wrong passphrase.
+        val header = MAGIC + keys.salt + iv
         cipher.updateAAD(AAD)
-        return MAGIC + iv + cipher.doFinal(gzip(plaintext))
+        cipher.updateAAD(header)
+        return header + cipher.doFinal(gzip(plaintext))
     }
 
     fun decrypt(keys: FavoriteSyncKeys, blob: ByteArray): ByteArray {
-        if (blob.size < MAGIC.size + IV_BYTES + TAG_BITS / 8 || !blob.copyOfRange(0, MAGIC.size).contentEquals(MAGIC)) {
-            throw FavoriteSyncPairingMismatchException()
-        }
-        val iv = blob.copyOfRange(MAGIC.size, MAGIC.size + IV_BYTES)
+        if (!saltOf(blob).contentEquals(keys.salt)) throw FavoriteSyncPairingMismatchException()
+        val iv = blob.copyOfRange(MAGIC.size + SALT_BYTES, HEADER_BYTES)
         val compressed = try {
             val cipher = Cipher.getInstance("AES/GCM/NoPadding")
             cipher.init(Cipher.DECRYPT_MODE, SecretKeySpec(keys.encryptionKey, "AES"), GCMParameterSpec(TAG_BITS, iv))
             cipher.updateAAD(AAD)
-            cipher.doFinal(blob, MAGIC.size + IV_BYTES, blob.size - MAGIC.size - IV_BYTES)
+            cipher.updateAAD(blob, 0, HEADER_BYTES)
+            cipher.doFinal(blob, HEADER_BYTES, blob.size - HEADER_BYTES)
         } catch (error: GeneralSecurityException) {
             throw FavoriteSyncPairingMismatchException(error)
         }
