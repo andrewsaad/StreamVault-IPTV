@@ -168,6 +168,31 @@ abstract class ChannelDao {
     )
     abstract fun getByProviderBrowsePage(providerId: Long, limit: Int): Flow<List<ChannelBrowseEntity>>
 
+    /**
+     * beIN channels first, then other channels named "sport(s)". Matches on the channel name only:
+     * provider groups such as "SPORTS" hold hundreds of unrelated feeds.
+     */
+    @Query(
+        """
+        SELECT c.id, c.stream_id, c.name, c.logo_url, c.group_title, c.category_id, c.category_name, c.stream_url,
+               c.epg_channel_id, c.number, c.catch_up_supported, c.catch_up_days, c.catchUpSource,
+               c.catch_up_type, c.catch_up_correction_seconds,
+               c.provider_id,
+               COALESCE((SELECT guide_source_policy FROM provider_configs WHERE provider_id = c.provider_id), 'AUTO') AS guide_source_policy,
+               COALESCE((SELECT channel_logo_source_policy FROM provider_configs WHERE provider_id = c.provider_id), 'SUPPLIER_PREFERRED') AS channel_logo_source_policy,
+               ec.icon_url AS epg_icon_url,
+               c.is_adult, c.is_user_protected, c.logical_group_id, c.error_count
+        FROM channels c
+        LEFT JOIN channel_epg_mappings cem ON cem.provider_channel_id = c.id AND cem.provider_id = c.provider_id
+        LEFT JOIN epg_channels ec ON ec.epg_source_id = cem.epg_source_id AND ec.xmltv_channel_id = cem.xmltv_channel_id
+        WHERE c.provider_id = :providerId
+          AND (c.name LIKE '%bein%' OR c.name LIKE '%sport%')
+        ORDER BY CASE WHEN c.name LIKE '%bein%' THEN 0 ELSE 1 END, c.number ASC, c.id ASC
+        LIMIT :limit
+        """
+    )
+    abstract suspend fun getSportsNameCandidates(providerId: Long, limit: Int): List<ChannelBrowseEntity>
+
     @Query(
         """
         SELECT c.id, c.stream_id, c.name, c.logo_url, c.group_title, c.category_id, c.category_name, c.stream_url,
@@ -1516,6 +1541,16 @@ interface MovieDao {
     @Query("SELECT * FROM movies WHERE provider_id = :providerId AND category_id = :categoryId AND added_at > 0 ORDER BY added_at DESC, name ASC, id ASC LIMIT :limit")
     fun getFreshByCategoryPreview(providerId: Long, categoryId: Long, limit: Int): Flow<List<MovieBrowseEntity>>
 
+    @Query(
+        """
+        SELECT * FROM movies
+        WHERE provider_id = :providerId AND category_id IN (:categoryIds) AND added_at > 0
+        ORDER BY added_at DESC, name ASC, id ASC
+        LIMIT :limit
+        """
+    )
+    fun getFreshByCategoriesPreview(providerId: Long, categoryIds: List<Long>, limit: Int): Flow<List<MovieBrowseEntity>>
+
         @Query(
             """
             SELECT * FROM movies
@@ -2550,6 +2585,16 @@ interface SeriesDao {
 
     @Query("SELECT * FROM series WHERE provider_id = :providerId AND category_id = :categoryId AND last_modified > 0 ORDER BY last_modified DESC, name ASC LIMIT :limit")
     fun getFreshByCategoryPreview(providerId: Long, categoryId: Long, limit: Int): Flow<List<SeriesBrowseEntity>>
+
+    @Query(
+        """
+        SELECT * FROM series
+        WHERE provider_id = :providerId AND category_id IN (:categoryIds) AND last_modified > 0
+        ORDER BY last_modified DESC, name ASC, id ASC
+        LIMIT :limit
+        """
+    )
+    fun getFreshByCategoriesPreview(providerId: Long, categoryIds: List<Long>, limit: Int): Flow<List<SeriesBrowseEntity>>
 
     @Query(
         """

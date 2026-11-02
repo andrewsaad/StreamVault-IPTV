@@ -357,6 +357,27 @@ class ChannelRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun getSportsChannelCandidates(providerId: Long, limit: Int): List<Channel> {
+        if (limit <= 0) return emptyList()
+        val level = preferencesRepository.parentalControlLevel.first()
+        val hiddenIds = preferencesRepository.getHiddenChannelIds(providerId).first()
+        val hideDecorativeRows = preferencesRepository.hideDecorativeLiveRows.first()
+        val entities = channelDao.getSportsNameCandidates(providerId, limit)
+        if (entities.isEmpty()) return emptyList()
+        return withContext(Dispatchers.Default) {
+            val stalkerPortalUrl = withContext(Dispatchers.IO) { stalkerPortalRoot(providerId) }
+            applyVisibilityFilter(entities, level, emptySet(), hideDecorativeRows)
+                .filterNot { it.id in hiddenIds }
+                .map { entity ->
+                    entity.toPresentedRawChannel(
+                        observedQuality = null,
+                        stalkerPortalUrl = stalkerPortalUrl,
+                        catchUpFallbackAvailable = false
+                    )
+                }
+        }
+    }
+
     override suspend fun incrementChannelErrorCount(channelId: Long): Result<Unit> = try {
         channelDao.incrementErrorCount(channelId)
         Result.success(Unit)

@@ -25,6 +25,11 @@ interface ChannelRepository {
     suspend fun getStreamInfo(channel: Channel, preferStableUrl: Boolean = false): Result<StreamInfo>
     suspend fun refreshChannels(providerId: Long): Result<Unit>
     fun getChannelsByIds(ids: List<Long>): Flow<List<Channel>>
+    /**
+     * Visible channels whose name mentions beIN or sport(s), beIN first, as raw (ungrouped) rows.
+     * A one-shot read for lightweight surfaces such as the home "live & starting soon" row.
+     */
+    suspend fun getSportsChannelCandidates(providerId: Long, limit: Int): List<Channel> = emptyList()
     suspend fun incrementChannelErrorCount(channelId: Long): Result<Unit>
     suspend fun resetChannelErrorCount(channelId: Long): Result<Unit>
 

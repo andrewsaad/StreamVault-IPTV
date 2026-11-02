@@ -347,6 +347,23 @@ class MovieRepositoryImpl @Inject constructor(
                 buildPresentedMovies(movies, settings).take(limit)
             }.flowOn(Dispatchers.Default)
 
+    override fun getFreshByCategoriesPreview(providerId: Long, categoryIds: List<Long>, limit: Int): Flow<List<Movie>> {
+        if (categoryIds.isEmpty() || limit <= 0) return flowOf(emptyList())
+        return combine(
+            movieDao.getFreshByCategoriesPreview(providerId, categoryIds, limit),
+            preferencesRepository.parentalControlLevel
+        ) { entities, level: Int ->
+            if (level >= 3) {
+                entities.filter { !it.isUserProtected }
+            } else {
+                entities
+            }
+        }.map { list -> list.map { it.toDomain() } }
+            .combine(moviePresentationSettingsFlow) { movies, settings ->
+                buildPresentedMovies(movies, settings).take(limit)
+            }.flowOn(Dispatchers.Default)
+    }
+
     override fun getRecommendations(providerId: Long, limit: Int): Flow<List<Movie>> =
         combine(
             getTopRatedPreview(providerId, limit = maxOf(limit * 6, 48)),

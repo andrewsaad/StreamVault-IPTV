@@ -23,6 +23,9 @@ interface MovieRepository {
     fun getCategoryPreviewRows(providerId: Long, categoryIds: List<Long>, limitPerCategory: Int): Flow<Map<Long?, List<Movie>>>
     fun getTopRatedPreview(providerId: Long, limit: Int): Flow<List<Movie>>
     fun getFreshPreview(providerId: Long, limit: Int): Flow<List<Movie>>
+    /** Newest movies (by added time) across [categoryIds]; reads only what is already synced. */
+    fun getFreshByCategoriesPreview(providerId: Long, categoryIds: List<Long>, limit: Int): Flow<List<Movie>> =
+        flowOf(emptyList())
     fun getRecommendations(providerId: Long, limit: Int): Flow<List<Movie>>
     fun getRelatedContent(providerId: Long, movieId: Long, limit: Int): Flow<List<Movie>>
     fun getMoviesByIds(ids: List<Long>): Flow<List<Movie>>

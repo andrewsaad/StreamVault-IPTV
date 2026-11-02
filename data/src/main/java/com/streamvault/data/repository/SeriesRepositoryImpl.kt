@@ -331,6 +331,23 @@ class SeriesRepositoryImpl @Inject constructor(
                 buildPresentedSeries(list, settings).take(limit)
             }.flowOn(Dispatchers.Default)
 
+    override fun getFreshByCategoriesPreview(providerId: Long, categoryIds: List<Long>, limit: Int): Flow<List<Series>> {
+        if (categoryIds.isEmpty() || limit <= 0) return flowOf(emptyList())
+        return combine(
+            seriesDao.getFreshByCategoriesPreview(providerId, categoryIds, limit),
+            preferencesRepository.parentalControlLevel
+        ) { entities, level: Int ->
+            if (level >= 3) {
+                entities.filter { !it.isUserProtected }
+            } else {
+                entities
+            }
+        }.map { list -> list.map { it.toDomain() } }
+            .combine(seriesPresentationSettingsFlow) { list, settings ->
+                buildPresentedSeries(list, settings).take(limit)
+            }.flowOn(Dispatchers.Default)
+    }
+
     override fun getSeriesByIds(ids: List<Long>): Flow<List<Series>> =
         seriesDao.getByIds(ids).map { entities -> entities.map { it.toDomain() } }
 
