@@ -2,6 +2,8 @@ package com.streamvault.data.manager
 
 import com.google.common.truth.Truth.assertThat
 import com.google.gson.Gson
+import com.streamvault.data.local.DatabaseTransactionRunner
+import com.streamvault.data.local.DirectTransactionRunner
 import com.streamvault.data.local.dao.BackupRestoreLedgerDao
 import com.streamvault.data.local.dao.ChannelDao
 import com.streamvault.data.local.dao.CategoryDao
@@ -24,6 +26,8 @@ import com.streamvault.data.local.entity.FavoriteEntity
 import com.streamvault.data.local.entity.ProviderEntity
 import com.streamvault.data.local.entity.SeriesEntity
 import com.streamvault.data.provider.toProviderSnapshot
+import com.streamvault.data.sync.favorites.FavoriteSyncChangeRecorder
+import com.streamvault.data.sync.favorites.FavoriteSyncRestoreScope
 import com.streamvault.domain.manager.BackupProviderReference
 import com.streamvault.domain.manager.PortableContentReference
 import com.streamvault.domain.manager.PortableCategoryReference
@@ -148,6 +152,44 @@ class PendingBackupRestoreCoordinatorTest {
             verify(favoriteDao).deleteGlobalByProviderAndType(77, "LIVE")
             verify(favoriteDao, atLeastOnce()).insert(any())
         }
+    }
+
+    @Test
+    fun `restored favorites are recorded for sync inside one database transaction`() = runBlocking {
+        val ledger: BackupRestoreLedgerDao = mock()
+        val providerDao: ProviderDao = mock()
+        val favoriteDao: FavoriteDao = mock()
+        val channelDao: ChannelDao = mock()
+        val gson = Gson()
+        val reference = PortableContentReference(
+            provider = BackupProviderReference("https://example.com", "user", providerType = ProviderType.XTREAM_CODES),
+            contentType = ContentType.LIVE,
+            remoteContentId = "42"
+        )
+        val favorite = BackupRestoreItemEntity(
+            id = 2, jobId = "job", providerIdentityKey = "provider", localProviderId = 77,
+            section = "FAVORITES", contentType = "LIVE", stableReferenceKey = "LIVE:42",
+            referenceJson = gson.toJson(reference), payloadJson = gson.toJson(PortableFavoriteBackup(reference)),
+            createdAt = 1, updatedAt = 1
+        )
+        whenever(providerDao.getById(77)).thenReturn(ProviderEntity(id = 77, name = "Provider", type = ProviderType.XTREAM_CODES))
+        whenever(ledger.getRetryableItemsByLocalProviderId(77)).thenReturn(listOf(favorite))
+        whenever(ledger.getRetryableItems("__GLOBAL__")).thenReturn(emptyList())
+        whenever(channelDao.getByStreamId(77, 42)).thenReturn(ChannelEntity(id = 900, streamId = 42, name = "News", providerId = 77))
+        whenever(favoriteDao.get(77, 900, "LIVE", null)).thenReturn(null)
+        val runner = TrackingTransactionRunner()
+        val recordedInTransaction = mutableListOf<Boolean>()
+        val recorder = object : FavoriteSyncChangeRecorder {
+            override suspend fun restoreApplied(scopes: Collection<FavoriteSyncRestoreScope>) {
+                recordedInTransaction += runner.depth > 0
+            }
+        }
+
+        coordinator(ledger, providerDao, favoriteDao, channelDao, gson, favoriteSyncRecorder = recorder, transactionRunner = runner)
+            .applyForProvider(77)
+
+        assertThat(recordedInTransaction).containsExactly(true)
+        Unit
     }
 
     @Test
@@ -682,7 +724,9 @@ class PendingBackupRestoreCoordinatorTest {
         channelDao: ChannelDao,
         gson: Gson,
         seriesDao: SeriesDao = mock(),
-        episodeDao: EpisodeDao = mock()
+        episodeDao: EpisodeDao = mock(),
+        favoriteSyncRecorder: FavoriteSyncChangeRecorder = FavoriteSyncChangeRecorder.NONE,
+        transactionRunner: DatabaseTransactionRunner = DirectTransactionRunner
     ) = PendingBackupRestoreCoordinator(
         ledgerDao = ledger,
         providerDao = providerDao,
@@ -700,6 +744,21 @@ class PendingBackupRestoreCoordinatorTest {
         preferencesRepository = mock(),
         providerSnapshotRepository = mock(),
         recordingManager = mock(),
-        gson = gson
+        gson = gson,
+        favoriteSyncRecorder = favoriteSyncRecorder,
+        transactionRunner = transactionRunner
     )
+
+    /** Records whether each block ran inside [inTransaction]. */
+    private class TrackingTransactionRunner : DatabaseTransactionRunner {
+        var depth = 0
+        override suspend fun <T> inTransaction(block: suspend () -> T): T {
+            depth++
+            try {
+                return block()
+            } finally {
+                depth--
+            }
+        }
+    }
 }

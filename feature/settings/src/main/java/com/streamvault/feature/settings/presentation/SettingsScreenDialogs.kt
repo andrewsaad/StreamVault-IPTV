@@ -21,6 +21,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
@@ -281,6 +284,9 @@ public fun SettingsScreenDialogs(
     )
 
     val backupPreview = uiState.backupPreview
+    val favoriteSyncViewModel: FavoriteSyncSettingsViewModel = androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel()
+    val favoriteSyncStatus by favoriteSyncViewModel.status.collectAsStateWithLifecycle()
+    var confirmFavoriteSyncRestore by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
     if (backupPreview != null && uiState.pendingBackupUri != null) {
         BackupImportPreviewDialog(
             preview = backupPreview,
@@ -295,8 +301,24 @@ public fun SettingsScreenDialogs(
             onImportRecordingSchedulesChanged = { viewModel.setImportRecordingSchedules(it) },
             onImportStremioAddonsChanged = { viewModel.setImportStremioAddons(it) },
             isImporting = uiState.isImportingBackup,
-            onConfirm = { viewModel.confirmBackupImport() }
+            onConfirm = {
+                // A restore propagates to the other TVs when favorites sync is on; say so first.
+                if (favoriteSyncStatus.enabled && uiState.backupImportPlan.importSavedLibrary) {
+                    confirmFavoriteSyncRestore = true
+                } else {
+                    viewModel.confirmBackupImport()
+                }
+            }
         )
+        if (confirmFavoriteSyncRestore) {
+            FavoriteSyncRestoreConfirmDialog(
+                onConfirm = {
+                    confirmFavoriteSyncRestore = false
+                    viewModel.confirmBackupImport()
+                },
+                onDismiss = { confirmFavoriteSyncRestore = false }
+            )
+        }
     }
 
     val syncableRestoreProviders = uiState.pendingRestoreProviders.withIndex().filter { (_, reference) ->

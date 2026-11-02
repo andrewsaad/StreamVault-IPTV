@@ -62,6 +62,9 @@ import com.streamvault.data.preferences.PreferencesRepository
 import com.streamvault.data.preferences.toDomainPreference
 import com.streamvault.data.security.CredentialCrypto
 import com.streamvault.data.provider.toTypedConfiguration
+import com.streamvault.data.provider.ProviderIdentityKeys
+import com.streamvault.data.sync.favorites.FavoriteSyncChangeRecorder
+import com.streamvault.data.sync.favorites.FavoriteSyncRestoreScope
 import com.streamvault.data.provider.toLegacyProvider
 import com.streamvault.data.provider.ProviderConfigurationCodec
 import com.streamvault.data.provider.guidePolicy
@@ -228,7 +231,8 @@ class BackupManagerImpl @Inject constructor(
     private val playbackQualityPreferenceDao: PlaybackQualityPreferenceDao? = null,
     private val stremioAddonDao: StremioAddonDao? = null,
     private val stremioPlaybackHistoryDao: StremioPlaybackHistoryDao? = null,
-    private val sportsProviderStore: SportsProviderStore? = null
+    private val sportsProviderStore: SportsProviderStore? = null,
+    private val favoriteSyncRecorder: FavoriteSyncChangeRecorder = FavoriteSyncChangeRecorder.NONE
 ) : BackupManager {
 
     internal suspend fun automaticSyncPreferenceBackup(providerEntities: List<ProviderEntity>): Map<String, String> {
@@ -5512,6 +5516,8 @@ class BackupManagerImpl @Inject constructor(
         val providerIdMap = resolveProviderIdMap(storedProviders, backupData.providers.orEmpty())
         val groupIdMap = mutableMapOf<Long, Long>()
         val blockedReplaceScopes = mutableSetOf<Pair<Long, ContentType>>()
+        // Restores are user intent: every scope written here is recorded for favorites sync.
+        val syncScopes = mutableListOf<FavoriteSyncRestoreScope>()
         if (conflictStrategy == BackupConflictStrategy.REPLACE_EXISTING) {
             backupData.favorites.orEmpty().forEach { favorite ->
                 val resolvedProviderId = providerIdMap[favorite.providerId]
@@ -5550,6 +5556,12 @@ class BackupManagerImpl @Inject constructor(
                 if (backupData.virtualGroups != null) {
                     virtualGroupDao.deleteByProviderAndType(providerId, contentType.name)
                 }
+                syncScopes += FavoriteSyncRestoreScope(
+                    providerId = providerId,
+                    contentType = contentType,
+                    replaceGlobal = true,
+                    replaceGroups = backupData.virtualGroups != null
+                )
             }
         }
         backupData.virtualGroups?.let { groups ->
@@ -5584,6 +5596,7 @@ class BackupManagerImpl @Inject constructor(
                     group.copy(id = 0L, providerId = resolvedProviderId).toEntity()
                 )
                 groupIdMap[group.id] = insertedId
+                syncScopes += FavoriteSyncRestoreScope(resolvedProviderId, group.contentType)
             }
         }
 
@@ -5630,7 +5643,12 @@ class BackupManagerImpl @Inject constructor(
                         groupId = resolvedGroupId
                     ).toEntity()
                 )
+                syncScopes += FavoriteSyncRestoreScope(resolvedProviderId, favorite.contentType)
             }
+        }
+        if (syncScopes.isNotEmpty()) {
+            favoriteSyncRecorder.restoreApplied(syncScopes)
+            favoriteSyncRecorder.changesCommitted()
         }
 
         val categoriesByProviderId = mutableMapOf<Long, List<com.streamvault.domain.model.Category>>()
@@ -6285,12 +6303,12 @@ private fun com.streamvault.data.local.entity.EpisodeEntity.toPortableContentRef
     urlFallback = streamUrl.takeIf { it.isNotBlank() }
 )
 
-private fun BackupProviderReference.stableIdentityKey(): String = listOf(
-    normalizeProviderServerUrl(serverUrl),
-    username.trim(),
-    providerType?.name.orEmpty(),
-    stalkerMacAddress.normalizedIdentity()
-).joinToString("|")
+private fun BackupProviderReference.stableIdentityKey(): String = ProviderIdentityKeys.stableIdentityKey(
+    serverUrl = serverUrl,
+    username = username,
+    providerType = providerType,
+    stalkerMacAddress = stalkerMacAddress
+)
 
 private fun Iterable<Provider>.findUnambiguousPortableProvider(
     reference: BackupProviderReference
@@ -6304,33 +6322,7 @@ private fun Iterable<Provider>.findUnambiguousPortableProvider(
     }.singleOrNull()
 }
 
-/**
- * Provider URLs are identities, not display strings. The setup flow normally stores a
- * canonical value, but backups can cross releases/devices where harmless differences such as
- * a trailing slash, URL scheme/host case, or an explicit default port are present.
- */
-private fun normalizeProviderServerUrl(value: String): String {
-    val trimmed = value.trim()
-    return runCatching {
-        val uri = URI(trimmed)
-        val scheme = uri.scheme?.lowercase(Locale.ROOT)
-        val host = uri.host?.lowercase(Locale.ROOT)
-        if (scheme.isNullOrBlank() || host.isNullOrBlank()) {
-            return@runCatching trimmed.trimEnd('/').lowercase(Locale.ROOT)
-        }
-        val port = when {
-            uri.port < 0 -> ""
-            scheme == "http" && uri.port == 80 -> ""
-            scheme == "https" && uri.port == 443 -> ""
-            else -> ":${uri.port}"
-        }
-        val path = uri.rawPath.orEmpty().trimEnd('/')
-        val query = uri.rawQuery?.let { "?$it" }.orEmpty()
-        "$scheme://$host$port$path$query"
-    }.getOrElse {
-        trimmed.trimEnd('/').lowercase(Locale.ROOT)
-    }
-}
+private fun normalizeProviderServerUrl(value: String): String = ProviderIdentityKeys.normalizeServerUrl(value)
 
 private fun List<com.streamvault.domain.model.Category>.resolvePortableCategory(
     reference: PortableCategoryReference

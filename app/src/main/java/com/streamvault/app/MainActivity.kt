@@ -113,6 +113,9 @@ class MainActivity : ComponentActivity(), CatalogPlatformHost {
     @Inject
     lateinit var databaseStartupCoordinator: DatabaseStartupCoordinator
 
+    @Inject
+    lateinit var favoriteSyncManager: com.streamvault.domain.manager.FavoriteSyncManager
+
     private val _pictureInPictureModeFlow = MutableStateFlow(false)
     val pictureInPictureModeFlow: StateFlow<Boolean> = _pictureInPictureModeFlow.asStateFlow()
 
@@ -272,6 +275,16 @@ class MainActivity : ComponentActivity(), CatalogPlatformHost {
             }
         }
         databaseStartupCoordinator.start()
+    }
+
+    override fun onStart() {
+        super.onStart()
+        favoriteSyncManager.onAppForegroundChanged(true)
+    }
+
+    override fun onStop() {
+        favoriteSyncManager.onAppForegroundChanged(false)
+        super.onStop()
     }
 
     override fun onResume() {

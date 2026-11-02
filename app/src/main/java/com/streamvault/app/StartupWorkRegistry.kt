@@ -22,7 +22,8 @@ import javax.inject.Inject
  */
 class StartupWorkRegistry @Inject constructor(
     @param:ApplicationContext private val context: Context,
-    private val automaticSyncIdleObserver: com.streamvault.data.sync.AutomaticSyncIdleObserver
+    private val automaticSyncIdleObserver: com.streamvault.data.sync.AutomaticSyncIdleObserver,
+    private val favoriteSyncCoordinator: com.streamvault.data.sync.favorites.FavoriteSyncCoordinator
 ) {
     fun register() {
         AppUpdateCheckWorker.enqueue(context)
@@ -44,6 +45,8 @@ class StartupWorkRegistry @Inject constructor(
         RecordingReconcileWorker.enqueuePeriodic(context)
         RecordingReconcileWorker.enqueueOneShot(context)
         ProviderDeletionCleanupWorker.enqueue(context)
+        // Schedules or cancels the 6 h favorites catch-up to match the user's toggle.
+        favoriteSyncCoordinator.start()
     }
 
     private companion object {
