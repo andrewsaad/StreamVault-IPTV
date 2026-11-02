@@ -41,6 +41,9 @@ if (localPropertiesFile.exists()) {
 
 // Opt-in performance APK has isolated app storage and never seeds real accounts.
 val xtreamSyncBenchmark = providers.gradleProperty("xtreamSyncBenchmark").orNull == "true"
+// LeakCanary is opt-in (-PleakCanary=true). On low-RAM TV devices its retained-object
+// watcher forces GCs and its heap dumps stall the UI for seconds, skewing debug timings.
+val leakCanaryEnabled = providers.gradleProperty("leakCanary").orNull == "true"
 fun localProp(key: String): String =
     if (xtreamSyncBenchmark) "" else localProperties.getProperty(key, "")
 
@@ -493,7 +496,9 @@ dependencies {
     implementation(libs.compose.ui.tooling.preview)
     debugImplementation(libs.compose.ui.tooling)
     debugImplementation("androidx.compose.ui:ui-test-manifest")
-    debugImplementation(libs.leakcanary.android)
+    if (leakCanaryEnabled) {
+        debugImplementation(libs.leakcanary.android)
+    }
 
     // Compose TV
     implementation(libs.compose.tv.foundation)
