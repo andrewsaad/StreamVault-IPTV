@@ -1,6 +1,7 @@
 package com.streamvault.feature.catalog.api
 
 import com.streamvault.core.navigation.AppDestination
+import com.streamvault.domain.model.Channel
 import com.streamvault.domain.model.Result
 import com.streamvault.domain.model.StreamInfo
 import kotlinx.coroutines.flow.Flow
@@ -92,4 +93,23 @@ data class CatalogUpdateNotice(
 interface CatalogAppUpdatePort {
     val notice: Flow<CatalogUpdateNotice?>
     suspend fun installDownloadedUpdate(expectedSha256: String?): Result<Unit>
+}
+
+/** A football match airing now or kicking off soon, for the home "Live & starting soon" row. */
+data class CatalogLiveMatch(
+    val channel: Channel,
+    val title: String,
+    val league: String?,
+    val startTimeMs: Long,
+    val endTimeMs: Long,
+    val commentator: String?,
+)
+
+/**
+ * Supplies the home "Live & starting soon" row. Implementations must be cheap to call every
+ * minute: read only sports channels' guide data, cache between calls, and never hit the network
+ * beyond their own throttles.
+ */
+interface CatalogLiveMatchesPort {
+    suspend fun liveMatches(providerIds: List<Long>, nowMs: Long): List<CatalogLiveMatch>
 }

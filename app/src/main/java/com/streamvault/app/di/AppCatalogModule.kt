@@ -2,11 +2,13 @@ package com.streamvault.app.di
 
 import com.streamvault.app.catalog.AppCatalogCastPort
 import com.streamvault.app.catalog.AppCatalogDownloadStarter
+import com.streamvault.app.catalog.AppCatalogLiveMatchesPort
 import com.streamvault.app.catalog.AppCatalogStreamPreparer
 import com.streamvault.app.catalog.AppCatalogUpdatePort
 import com.streamvault.feature.catalog.api.CatalogAppUpdatePort
 import com.streamvault.feature.catalog.api.CatalogCastPort
 import com.streamvault.feature.catalog.api.CatalogDownloadStarter
+import com.streamvault.feature.catalog.api.CatalogLiveMatchesPort
 import com.streamvault.feature.catalog.api.CatalogStreamPreparer
 import dagger.Binds
 import dagger.Module
@@ -32,4 +34,8 @@ abstract class AppCatalogModule {
     @Binds
     @Singleton
     abstract fun bindUpdatePort(impl: AppCatalogUpdatePort): CatalogAppUpdatePort
+
+    @Binds
+    @Singleton
+    abstract fun bindLiveMatchesPort(impl: AppCatalogLiveMatchesPort): CatalogLiveMatchesPort
 }
