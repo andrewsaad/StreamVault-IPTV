@@ -239,7 +239,19 @@ class EpgResolutionEngine @Inject constructor(
             )
         }
 
-        channelEpgMappingDao.replaceForProvider(providerId, mappings)
+        // Keep the stored row (and its timestamps) whenever the resolved content is unchanged, and
+        // skip the write entirely when nothing changed: every replace invalidates the channel and
+        // guide flows that join this table, which forces whole-catalog rebuilds downstream.
+        val stableMappings = mappings.map { mapping ->
+            existingMappingsByChannel[mapping.providerChannelId]
+                ?.takeIf { existing -> existing.hasSameResolutionAs(mapping) }
+                ?: mapping
+        }
+        val unchanged = stableMappings.size == existingMappings.size &&
+            stableMappings.all { mapping -> existingMappingsByChannel[mapping.providerChannelId] === mapping }
+        if (!unchanged) {
+            channelEpgMappingDao.replaceForProvider(providerId, stableMappings)
+        }
 
         val summary = EpgResolutionSummary(
             totalChannels = channels.size,
@@ -367,6 +379,10 @@ class EpgResolutionEngine @Inject constructor(
 
         result
     }
+
+    /** Equal apart from row id and the matched/updated timestamps. */
+    private fun ChannelEpgMappingEntity.hasSameResolutionAs(other: ChannelEpgMappingEntity): Boolean =
+        copy(id = 0L, matchedAt = 0L, updatedAt = 0L) == other.copy(id = 0L, matchedAt = 0L, updatedAt = 0L)
 
     private fun allowsExternalMappings(policy: GuideSourcePolicy): Boolean =
         policy == GuideSourcePolicy.AUTO || policy == GuideSourcePolicy.EXTERNAL_ONLY
