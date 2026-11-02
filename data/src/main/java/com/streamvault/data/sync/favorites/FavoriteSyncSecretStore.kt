@@ -5,6 +5,7 @@ import android.content.SharedPreferences
 import android.os.Build
 import android.util.Base64
 import android.util.Log
+import androidx.core.content.edit
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -97,16 +98,17 @@ class EncryptedFavoriteSyncSecretStore @Inject constructor(
     )
 
     override fun save(config: FavoriteSyncConfig) {
-        preferences.edit()
-            .putBoolean(KEY_ENABLED, config.enabled)
-            .putString(KEY_SERVER_URL, config.serverUrl)
-            .putString(KEY_TOKEN, config.token)
-            .putString(KEY_PASSPHRASE, config.passphrase)
-            .putBytes(KEY_DERIVED_KEY, config.derivedKey)
-            .putBytes(KEY_DERIVED_SALT, config.derivedKeySalt)
+        // Committed synchronously: pairing must survive the process being killed right after setup.
+        preferences.edit(commit = true) {
+            putBoolean(KEY_ENABLED, config.enabled)
+            putString(KEY_SERVER_URL, config.serverUrl)
+            putString(KEY_TOKEN, config.token)
+            putString(KEY_PASSPHRASE, config.passphrase)
+            putBytes(KEY_DERIVED_KEY, config.derivedKey)
+            putBytes(KEY_DERIVED_SALT, config.derivedKeySalt)
             // Written by the first version of this feature; never read again.
-            .remove(KEY_LEGACY_MASTER_KEY)
-            .commit()
+            remove(KEY_LEGACY_MASTER_KEY)
+        }
     }
 
     private fun bytes(key: String): ByteArray? =
@@ -116,7 +118,7 @@ class EncryptedFavoriteSyncSecretStore @Inject constructor(
         if (value == null) remove(key) else putString(key, Base64.encodeToString(value, Base64.NO_WRAP))
 
     override fun clear() {
-        preferences.edit().clear().commit()
+        preferences.edit(commit = true) { clear() }
     }
 
     private companion object {
