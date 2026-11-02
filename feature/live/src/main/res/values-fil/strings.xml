@@ -281,6 +281,7 @@
     <string name="live_sports_standings_attribution">Data mula sa %1$s</string>
     <string name="live_sports_team_metadata">Detalye ng koponan: %1$s</string>
     <string name="live_sports_league_metadata">Detalye ng liga: %1$s</string>
+    <string name="live_sports_commentator">Komentarista: %1$s</string>
     <string name="live_sports_standings_season">Panahon: %1$s</string>
     <string name="live_sports_table_played">Laro</string>
     <string name="live_sports_table_won">Panalo</string>

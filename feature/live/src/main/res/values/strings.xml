@@ -282,6 +282,7 @@
     <string name="live_sports_football_data_attribution">Football data provided by the %1$s</string>
     <string name="live_sports_team_metadata">Team details: %1$s</string>
     <string name="live_sports_league_metadata">League details: %1$s</string>
+    <string name="live_sports_commentator">Commentator: %1$s</string>
     <string name="live_sports_standings_season">Season: %1$s</string>
     <string name="live_sports_table_played">Played</string>
     <string name="live_sports_table_won">Won</string>

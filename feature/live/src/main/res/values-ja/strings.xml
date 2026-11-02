@@ -281,6 +281,7 @@
     <string name="live_sports_standings_attribution">データ提供元: %1$s</string>
     <string name="live_sports_team_metadata">チーム情報: %1$s</string>
     <string name="live_sports_league_metadata">リーグ情報: %1$s</string>
+    <string name="live_sports_commentator">実況：%1$s</string>
     <string name="live_sports_standings_season">シーズン: %1$s</string>
     <string name="live_sports_table_played">試合</string>
     <string name="live_sports_table_won">勝利</string>

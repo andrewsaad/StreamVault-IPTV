@@ -281,6 +281,7 @@
     <string name="live_sports_standings_attribution">Data från %1$s</string>
     <string name="live_sports_team_metadata">Lagdetaljer: %1$s</string>
     <string name="live_sports_league_metadata">Ligadetaljer: %1$s</string>
+    <string name="live_sports_commentator">Kommentator: %1$s</string>
     <string name="live_sports_standings_season">Säsong: %1$s</string>
     <string name="live_sports_table_played">Spelade</string>
     <string name="live_sports_table_won">Vunna</string>

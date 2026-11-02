@@ -281,6 +281,7 @@
     <string name="live_sports_standings_attribution">Daten von %1$s</string>
     <string name="live_sports_team_metadata">Teamdetails: %1$s</string>
     <string name="live_sports_league_metadata">Ligadetails: %1$s</string>
+    <string name="live_sports_commentator">Kommentator: %1$s</string>
     <string name="live_sports_standings_season">Saison: %1$s</string>
     <string name="live_sports_table_played">Spiele</string>
     <string name="live_sports_table_won">Siege</string>

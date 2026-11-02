@@ -281,6 +281,7 @@
     <string name="live_sports_standings_attribution">Data fra %1$s</string>
     <string name="live_sports_team_metadata">Holdoplysninger: %1$s</string>
     <string name="live_sports_league_metadata">Ligaoplysninger: %1$s</string>
+    <string name="live_sports_commentator">Kommentator: %1$s</string>
     <string name="live_sports_standings_season">Sæson: %1$s</string>
     <string name="live_sports_table_played">Spillet</string>
     <string name="live_sports_table_won">Vundet</string>

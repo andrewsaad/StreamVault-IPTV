@@ -281,6 +281,7 @@
     <string name="live_sports_standings_attribution">Dati da %1$s</string>
     <string name="live_sports_team_metadata">Dettagli squadra: %1$s</string>
     <string name="live_sports_league_metadata">Dettagli campionato: %1$s</string>
+    <string name="live_sports_commentator">Telecronista: %1$s</string>
     <string name="live_sports_standings_season">Stagione: %1$s</string>
     <string name="live_sports_table_played">Giocate</string>
     <string name="live_sports_table_won">Vinte</string>

@@ -281,6 +281,7 @@
     <string name="live_sports_standings_attribution">Δεδομένα από %1$s</string>
     <string name="live_sports_team_metadata">Πληροφορίες ομάδας: %1$s</string>
     <string name="live_sports_league_metadata">Πληροφορίες πρωταθλήματος: %1$s</string>
+    <string name="live_sports_commentator">Σχολιαστής: %1$s</string>
     <string name="live_sports_standings_season">Σεζόν: %1$s</string>
     <string name="live_sports_table_played">Αγώνες</string>
     <string name="live_sports_table_won">Νίκες</string>

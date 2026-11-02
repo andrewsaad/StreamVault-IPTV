@@ -281,6 +281,7 @@
     <string name="live_sports_standings_attribution">데이터 제공: %1$s</string>
     <string name="live_sports_team_metadata">팀 정보: %1$s</string>
     <string name="live_sports_league_metadata">리그 정보: %1$s</string>
+    <string name="live_sports_commentator">해설: %1$s</string>
     <string name="live_sports_standings_season">시즌: %1$s</string>
     <string name="live_sports_table_played">경기</string>
     <string name="live_sports_table_won">승</string>

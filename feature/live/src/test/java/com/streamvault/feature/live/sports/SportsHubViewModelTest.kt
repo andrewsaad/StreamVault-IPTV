@@ -506,6 +506,7 @@ class SportsHubViewModelTest {
         providerEventResolver,
         repositoryScope,
         SportsHubDispatchers(dispatcher, dispatcher),
+        SportsCommentatorRepository({ null }, InMemorySportsCommentatorStore(), java.time.Clock.systemUTC()),
     )
 
     private fun createModel(repository: SportsHubRepository = createRepository()) = SportsHubViewModel(repository)

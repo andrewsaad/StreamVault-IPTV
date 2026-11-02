@@ -114,6 +114,7 @@ internal class SportsHubRepository @Inject constructor(
     private val sportsProviderEventResolver: SportsProviderEventResolver,
     applicationScope: CoroutineScope,
     private val dispatchers: SportsHubDispatchers,
+    private val commentatorRepository: SportsCommentatorRepository,
 ) {
     private val scope = CoroutineScope(applicationScope.coroutineContext + Dispatchers.Main.immediate)
     private val _uiState = MutableStateFlow(SportsHubUiState())
@@ -289,6 +290,12 @@ internal class SportsHubRepository @Inject constructor(
                     }
                     loadEvents(inputs, range, System.currentTimeMillis())
                 }
+            }
+        }
+        // Commentators arrive after the guide-built events; attach them without a reload.
+        scope.launch {
+            commentatorRepository.entries.collect { entries ->
+                _uiState.update { state -> state.copy(events = SportsCommentatorMatcher.apply(state.events, entries)) }
             }
         }
         scope.launch {
@@ -618,7 +625,9 @@ internal class SportsHubRepository @Inject constructor(
                 availableChannels = availableChannels,
                 nowMillis = now,
             ).copy(providerAttributions = sportsProviderEventSourceRouter.attributions(retained.provenance))
-        }
+        }.let { events -> SportsCommentatorMatcher.apply(events, commentatorRepository.entries.value) }
+        // Publishing only happens while the hub is observed, so this is the hub's lazy trigger.
+        scope.launch(dispatchers.io) { commentatorRepository.refreshIfStale() }
         val currentState = _uiState.value
         val selectedLeague = currentState.selectedLeagueFilter?.takeIf { league ->
             presentedEvents.any { event -> event.leagueFilterKey == league && event.matches(currentState.selectedSportFilter) }
