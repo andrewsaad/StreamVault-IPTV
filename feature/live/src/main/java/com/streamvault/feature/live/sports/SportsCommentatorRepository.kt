@@ -1,6 +1,7 @@
 package com.streamvault.feature.live.sports
 
 import android.content.Context
+import androidx.core.content.edit
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.time.Clock
 import java.time.Duration
@@ -156,14 +157,14 @@ internal class SharedPreferencesSportsCommentatorStore(context: Context) : Sport
     }
 
     override fun save(value: StoredSportsCommentators) {
-        preferences.edit()
-            .putString(KEY_DATE, value.date.toString())
-            .putLong(KEY_FETCHED_AT, value.fetchedAt.toEpochMilli())
-            .putString(KEY_ENTRIES, value.entries.joinToString("\n") { entry ->
+        preferences.edit {
+            putString(KEY_DATE, value.date.toString())
+            putLong(KEY_FETCHED_AT, value.fetchedAt.toEpochMilli())
+            putString(KEY_ENTRIES, value.entries.joinToString("\n") { entry ->
                 val name = entry.commentator.replace('\t', ' ').replace('\n', ' ')
                 "${entry.beinChannel}\t${entry.kickoff.toEpochMilli()}\t$name"
             })
-            .apply()
+        }
     }
 
     private companion object {
