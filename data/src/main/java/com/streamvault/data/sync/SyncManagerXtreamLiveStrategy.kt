@@ -1,6 +1,7 @@
 package com.streamvault.data.sync
 
 import android.util.Log
+import com.streamvault.data.local.entity.SyncContentHashScope
 import com.streamvault.data.mapper.toEntity
 import com.streamvault.data.remote.dto.XtreamCategory
 import com.streamvault.data.remote.dto.XtreamLiveStreamRow
@@ -10,6 +11,7 @@ import com.streamvault.data.remote.xtream.XtreamApiService
 import com.streamvault.data.remote.xtream.XtreamProvider
 import com.streamvault.data.remote.xtream.XtreamParsingException
 import com.streamvault.data.remote.xtream.XtreamUrlFactory
+import com.streamvault.data.util.ContentDigest
 import com.streamvault.domain.model.Channel
 import com.streamvault.domain.model.ContentType
 import com.streamvault.domain.model.LegacyProvider as Provider
@@ -23,6 +25,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
+import java.security.MessageDigest
 import kotlin.system.measureTimeMillis
 
 private const val XTREAM_LIVE_STRATEGY_TAG = "SyncManager"
@@ -61,7 +64,9 @@ internal class SyncManagerXtreamLiveStrategy(
         runtimeProfile: CatalogSyncRuntimeProfile,
         trackInitialLiveOnboarding: Boolean,
         effectiveLiveSyncMethod: EffectiveXtreamLiveSyncMethod = EffectiveXtreamLiveSyncMethod.STREAM_ALL,
-        requiredHiddenLiveCategoryIds: Set<Long> = emptySet()
+        requiredHiddenLiveCategoryIds: Set<Long> = emptySet(),
+        /** Non-null asks for [CatalogSyncPayload.liveContentHashes] seeded with this value. */
+        contentHashSeed: String? = null
     ): CatalogSyncPayload<Channel> = coroutineScope {
         Log.i(XTREAM_LIVE_STRATEGY_TAG, "Xtream live strategy start for provider ${provider.id}.")
         // Recovery runs before entering this strategy. Any other saved batches
@@ -115,11 +120,18 @@ internal class SyncManagerXtreamLiveStrategy(
                     runtimeProfile,
                     beforeMapping = { categoryContext.await() },
                     excludedCategoryIds = hiddenLiveCategoryIds - requiredHiddenLiveCategoryIds,
-                    onProgress = onProgress
+                    onProgress = onProgress,
+                    contentHashSeed = contentHashSeed
                 )
             }
         }
         val (rawLiveCategories, resolvedCategories) = categoryContext.await()
+        // A failed category request leaves the category hash unknown, so nothing can be skipped.
+        val categoriesHash = if (contentHashSeed != null && rawLiveCategories != null) {
+            XtreamLiveContentHashes.categoriesEntry(contentHashSeed, rawLiveCategories)
+        } else null
+        fun withCategoriesHash(streamHashes: Map<LiveContentHashKey, String>?): Map<LiveContentHashKey, String>? =
+            if (categoriesHash == null || streamHashes.isNullOrEmpty()) null else streamHashes + categoriesHash
         val filteredRawLiveCategories = rawLiveCategories.orEmpty().filterNot { category ->
             val id = category.categoryId.toLongOrNull()
             id in hiddenLiveCategoryIds && id !in requiredHiddenLiveCategoryIds
@@ -141,9 +153,11 @@ internal class SyncManagerXtreamLiveStrategy(
                     strategyFeedback = XtreamStrategyFeedback(
                         attemptedFullCatalog = true,
                         fullCatalogUnsafe = false
-                    )
+                    ),
+                    liveContentHashes = withCategoriesHash(fullPayload.liveContentHashes)
                 )
                 is CatalogStrategyResult.Partial -> return@coroutineScope fullPayload.copy(
+                    liveContentHashes = null,
                     categories = catalogStrategySupport.mergePreferredAndFallbackCategories(
                         resolvedCatalogCategories,
                         fullPayload.categories ?: catalogStrategySupport.buildFallbackLiveCategories(provider.id, fullResult.items)
@@ -177,9 +191,11 @@ internal class SyncManagerXtreamLiveStrategy(
             rawCategories = filteredRawLiveCategories,
             onProgress = onProgress,
             preferSequential = existingMetadata.liveSequentialFailuresRemembered || runtimeProfile.maxCategoryConcurrency <= 1,
-            runtimeProfile = runtimeProfile
+            runtimeProfile = runtimeProfile,
+            contentHashSeed = contentHashSeed
         )
         CatalogSyncPayload(
+            liveContentHashes = withCategoriesHash(categoryPayload.liveContentHashes),
             catalogResult = categoryPayload.catalogResult,
             categories = catalogStrategySupport.mergePreferredAndFallbackCategories(
                 resolvedCatalogCategories,
@@ -207,9 +223,31 @@ internal class SyncManagerXtreamLiveStrategy(
         runtimeProfile: CatalogSyncRuntimeProfile,
         beforeMapping: suspend () -> Unit = {},
         excludedCategoryIds: Set<Long> = emptySet(),
-        onProgress: ((String) -> Unit)? = null
+        onProgress: ((String) -> Unit)? = null,
+        contentHashSeed: String? = null
     ): CatalogSyncPayload<Channel> = xtreamAdaptiveSyncPolicy.withLivePipelinePermit {
-        loadXtreamLiveFullWithPermit(provider, api, runtimeProfile, beforeMapping, excludedCategoryIds, onProgress)
+        val digests = LiveResponseDigests(enabled = contentHashSeed != null)
+        val payload = loadXtreamLiveFullWithPermit(provider, api, runtimeProfile, beforeMapping, excludedCategoryIds, onProgress, digests)
+        val rawSha256 = digests.lastCompletedSha256
+        if (contentHashSeed != null && rawSha256 != null && payload.catalogResult is CatalogStrategyResult.Success) {
+            payload.copy(
+                liveContentHashes = mapOf(
+                    XtreamLiveContentHashes.streamsEntry(contentHashSeed, SyncContentHashScope.LIVE_FULL_CATALOG_KEY, rawSha256)
+                )
+            )
+        } else payload
+    }
+
+    /** Hashes each full-catalog response attempt; only the latest finished one counts. */
+    private class LiveResponseDigests(private val enabled: Boolean) {
+        var lastCompletedSha256: String? = null
+            private set
+
+        suspend fun <T> track(block: suspend (MessageDigest?) -> T): T {
+            lastCompletedSha256 = null
+            val digest = if (enabled) ContentDigest.newSha256() else null
+            return block(digest).also { lastCompletedSha256 = digest?.let(ContentDigest::hex) }
+        }
     }
 
     private suspend fun loadXtreamLiveFullWithPermit(
@@ -218,7 +256,8 @@ internal class SyncManagerXtreamLiveStrategy(
         runtimeProfile: CatalogSyncRuntimeProfile,
         beforeMapping: suspend () -> Unit,
         excludedCategoryIds: Set<Long>,
-        onProgress: ((String) -> Unit)?
+        onProgress: ((String) -> Unit)?,
+        digests: LiveResponseDigests
     ): CatalogSyncPayload<Channel> {
         val endpoint = XtreamUrlFactory.buildPlayerApiUrl(
             serverUrl = provider.serverUrl,
@@ -232,7 +271,9 @@ internal class SyncManagerXtreamLiveStrategy(
                 provider = provider,
                 decoderLabel = "legacy",
                 failureNextStep = "category-bulk",
-                streamItems = { item -> xtreamCatalogHttpService.streamLiveStreams(endpoint, onItem = item) },
+                streamItems = { item ->
+                    digests.track { digest -> xtreamCatalogHttpService.streamLiveStreams(endpoint, rawDigest = digest, onItem = item) }
+                },
                 mapRawBatch = { batch -> api.mapLiveStreamsSequence(batch) },
                 estimatedBytes = { it.estimatedBufferBytes() },
                 beforeMapping = beforeMapping,
@@ -246,7 +287,9 @@ internal class SyncManagerXtreamLiveStrategy(
             provider = provider,
             decoderLabel = "thin",
             failureNextStep = "legacy-full",
-            streamItems = { item -> xtreamCatalogHttpService.streamLiveStreamRows(endpoint, onItem = item) },
+            streamItems = { item ->
+                digests.track { digest -> xtreamCatalogHttpService.streamLiveStreamRows(endpoint, rawDigest = digest, onItem = item) }
+            },
             mapRawBatch = { batch -> api.mapLiveStreamRowsSequence(batch) },
             estimatedBytes = { it.estimatedBufferBytes() },
             beforeMapping = beforeMapping,
@@ -266,7 +309,9 @@ internal class SyncManagerXtreamLiveStrategy(
             provider = provider,
             decoderLabel = "legacy",
             failureNextStep = "category-bulk",
-            streamItems = { item -> xtreamCatalogHttpService.streamLiveStreams(endpoint, onItem = item) },
+            streamItems = { item ->
+                digests.track { digest -> xtreamCatalogHttpService.streamLiveStreams(endpoint, rawDigest = digest, onItem = item) }
+            },
             mapRawBatch = { batch -> api.mapLiveStreamsSequence(batch) },
             estimatedBytes = { it.estimatedBufferBytes() },
             beforeMapping = beforeMapping,
@@ -493,7 +538,8 @@ internal class SyncManagerXtreamLiveStrategy(
         rawCategories: List<XtreamCategory>,
         onProgress: ((String) -> Unit)?,
         preferSequential: Boolean,
-        runtimeProfile: CatalogSyncRuntimeProfile
+        runtimeProfile: CatalogSyncRuntimeProfile,
+        contentHashSeed: String? = null
     ): CatalogSyncPayload<Channel> {
         val categories = rawCategories.filter { it.categoryId.isNotBlank() }
         if (categories.isEmpty()) {
@@ -511,6 +557,9 @@ internal class SyncManagerXtreamLiveStrategy(
         val stageMutex = Mutex()
         var stagedSessionId: Long? = null
         var stagedAcceptedCount = 0
+        // Latest raw hash per category ID; a retried category overwrites its earlier result.
+        val categoryRawHashes = java.util.concurrent.ConcurrentHashMap<String, String>()
+        val unhashedCategoryIds = java.util.concurrent.ConcurrentHashMap.newKeySet<String>()
 
         suspend fun fetchCompletedCategory(category: XtreamCategory): TimedCategoryOutcome<Channel> {
             var attemptSessionId = syncCatalogStore.newSessionId()
@@ -543,6 +592,15 @@ internal class SyncManagerXtreamLiveStrategy(
                             stageChannelItems(
                                 provider.id, channels, attemptSeenIds, attemptCategories, attemptSessionId
                             )
+                        }
+                    },
+                    onContentSha256 = if (contentHashSeed == null) null else { sha256 ->
+                        if (sha256 == null) {
+                            categoryRawHashes.remove(category.categoryId)
+                            unhashedCategoryIds += category.categoryId
+                        } else {
+                            categoryRawHashes[category.categoryId] = sha256
+                            unhashedCategoryIds -= category.categoryId
                         }
                     }
                 )
@@ -658,12 +716,21 @@ internal class SyncManagerXtreamLiveStrategy(
                 "Xtream live category strategy summary for provider ${provider.id}: successful=$successfulCategories empty=$emptyCategories failed=$failedCategories stagedChannels=$stagedAcceptedCount concurrency=$concurrency"
             )
 
+            val streamHashes = if (
+                contentHashSeed != null && unhashedCategoryIds.isEmpty() &&
+                categories.all { categoryRawHashes.containsKey(it.categoryId) }
+            ) {
+                categories.associate { category ->
+                    XtreamLiveContentHashes.streamsEntry(contentHashSeed, category.categoryId, categoryRawHashes.getValue(category.categoryId))
+                }
+            } else null
             val payload: CatalogSyncPayload<Channel> = when {
                 stagedAcceptedCount > 0 && failedCategories == 0 && !incompleteCoverage -> CatalogSyncPayload(
                     catalogResult = CatalogStrategyResult.Success("category_bulk", emptyList(), warnings.toList()),
                     categories = fallbackCollector.entities().takeIf { it.isNotEmpty() },
                     stagedSessionId = stagedSessionId,
-                    stagedAcceptedCount = stagedAcceptedCount
+                    stagedAcceptedCount = stagedAcceptedCount,
+                    liveContentHashes = streamHashes
                 )
                 stagedAcceptedCount > 0 -> CatalogSyncPayload(
                     catalogResult = CatalogStrategyResult.Partial("category_bulk", emptyList(), warnings.toList()),

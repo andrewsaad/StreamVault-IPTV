@@ -17,7 +17,9 @@ import com.streamvault.data.remote.NetworkTimeoutConfig
 import com.streamvault.data.remote.http.HttpRequestProfile
 import com.streamvault.data.remote.http.safeRequestIdentitySummary
 import com.streamvault.data.remote.http.withRequestProfile
+import com.streamvault.data.util.DigestingInputStream
 import java.io.IOException
+import java.security.MessageDigest
 import java.io.EOFException
 import java.io.InputStream
 import java.io.InputStreamReader
@@ -134,9 +136,14 @@ class OkHttpXtreamApiService(
             onItem = onItem
         )
 
+    /**
+     * [rawDigest], when given, receives every raw response byte. It covers the whole body
+     * only when this call returns normally.
+     */
     suspend fun streamLiveStreams(
         endpoint: String,
         requestProfile: HttpRequestProfile = HttpRequestProfile(),
+        rawDigest: MessageDigest? = null,
         onItem: suspend (XtreamStream) -> Unit
     ): Int =
         streamArray(
@@ -144,12 +151,15 @@ class OkHttpXtreamApiService(
             profile = RequestProfile.HEAVY_CATALOG,
             requestProfile = requestProfile,
             deserializer = XtreamStream.serializer(),
+            rawDigest = rawDigest,
             onItem = onItem
         )
 
+    /** See [streamLiveStreams] for [rawDigest]. */
     suspend fun streamLiveStreamRows(
         endpoint: String,
         requestProfile: HttpRequestProfile = HttpRequestProfile(),
+        rawDigest: MessageDigest? = null,
         onItem: suspend (XtreamLiveStreamRow) -> Unit
     ): Int =
         streamArray(
@@ -158,6 +168,7 @@ class OkHttpXtreamApiService(
             requestProfile = requestProfile,
             deserializer = XtreamLiveStreamRow.serializer(),
             readItem = { XtreamLiveRowReader.read(it, json.configuration.ignoreUnknownKeys) },
+            rawDigest = rawDigest,
             onItem = onItem
         )
 
@@ -333,6 +344,7 @@ class OkHttpXtreamApiService(
         requestProfile: HttpRequestProfile,
         deserializer: DeserializationStrategy<T>,
         readItem: ((JsonReader) -> T)? = null,
+        rawDigest: MessageDigest? = null,
         onItem: suspend (T) -> Unit
     ): Int = withContext(Dispatchers.IO) {
         val descriptor = describeEndpoint(endpoint)
@@ -378,6 +390,7 @@ class OkHttpXtreamApiService(
                     maxBytes = responseBudgetFor(descriptor),
                     deserializer = deserializer,
                     readItem = readItem,
+                    rawDigest = rawDigest,
                     onItem = if (timingEnabled) { item ->
                         val callbackStart = System.nanoTime()
                         try {
@@ -505,6 +518,7 @@ class OkHttpXtreamApiService(
         maxBytes: Long?,
         deserializer: DeserializationStrategy<T>,
         readItem: ((JsonReader) -> T)?,
+        rawDigest: MessageDigest?,
         onItem: suspend (T) -> Unit
     ): Int {
         val effectiveMaxBytes = maxBytes?.plus(RESPONSE_BUDGET_HEADROOM_BYTES)
@@ -518,14 +532,14 @@ class OkHttpXtreamApiService(
         }
 
         val charset = body.contentType()?.charset(Charsets.UTF_8) ?: Charsets.UTF_8
-        val input = PushbackInputStream(
-            BoundedInputStream(
-                delegate = body.byteStream(),
-                descriptor = descriptor,
-                maxAllowedBytes = effectiveMaxBytes
-            ),
-            PREVIEW_INPUT_LIMIT
+        val bounded = BoundedInputStream(
+            delegate = body.byteStream(),
+            descriptor = descriptor,
+            maxAllowedBytes = effectiveMaxBytes
         )
+        // Hash above the size bound so draining the tail is still budgeted.
+        val digesting = rawDigest?.let { DigestingInputStream(bounded, it) }
+        val input = PushbackInputStream(digesting ?: bounded, PREVIEW_INPUT_LIMIT)
         input.use { stream ->
             val previewBytes = readPreviewBytes(stream)
             if (previewBytes.isEmpty()) {
@@ -573,6 +587,7 @@ class OkHttpXtreamApiService(
                     if (reader.peek() != JsonToken.END_DOCUMENT) {
                         throw XtreamParsingException("Trailing data after JSON array from ${descriptor.hint}")
                     }
+                    digesting?.drainToEnd()
                     emittedCount
                 }
                 JsonToken.NULL -> {
@@ -580,6 +595,7 @@ class OkHttpXtreamApiService(
                     if (reader.peek() != JsonToken.END_DOCUMENT) {
                         throw XtreamParsingException("Trailing data after JSON null from ${descriptor.hint}")
                     }
+                    digesting?.drainToEnd()
                     0
                 }
                 else -> throw XtreamParsingException(

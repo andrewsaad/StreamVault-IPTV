@@ -110,7 +110,9 @@ internal data class CatalogSyncPayload<T>(
     val warnings: List<String> = emptyList(),
     val strategyFeedback: XtreamStrategyFeedback = XtreamStrategyFeedback(),
     val stagedSessionId: Long? = null,
-    val stagedAcceptedCount: Int = 0
+    val stagedAcceptedCount: Int = 0,
+    /** Live payload hashes; set only for a complete Success whose every payload was hashed. */
+    val liveContentHashes: Map<LiveContentHashKey, String>? = null
 )
 
 internal data class LiveCatalogSnapshot(

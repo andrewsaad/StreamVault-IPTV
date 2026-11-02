@@ -8,6 +8,7 @@ import com.streamvault.data.local.dao.ChannelDao
 import com.streamvault.data.local.dao.MovieDao
 import com.streamvault.data.local.dao.SeriesDao
 import com.streamvault.data.local.dao.TmdbIdentityDao
+import com.streamvault.data.local.entity.SyncContentHashScope
 import com.streamvault.data.remote.dto.XtreamAuthResponse
 import com.streamvault.data.remote.dto.XtreamCategory
 import com.streamvault.data.remote.dto.XtreamEpgResponse
@@ -1042,6 +1043,117 @@ class SyncManagerXtreamLiveStrategyTest {
         assertThat(stagedStreamIds).containsExactly(888L)
         assertThat(requestedCategoryIds).containsExactly(null)
         assertThat(requestCount.get()).isEqualTo(1)
+    }
+
+    @Test
+    fun `category sync hashes the category list and every category payload`() = runBlocking {
+        val bodies = mutableMapOf("12" to liveRowJson(701L, "12"), "13" to liveRowJson(702L, "13"))
+        val httpService = OkHttpXtreamApiService(client = bodiesByCategory(bodies), json = json)
+        val apiService = FakeXtreamApiService(listOf(XtreamCategory("12", "News"), XtreamCategory("13", "Sports")))
+        val provider = hashTestProvider()
+        val strategy = createStrategy(apiService, httpService, stageChannelItems = ::acceptAll)
+        suspend fun sync(seed: String?) = strategy.syncXtreamLiveCatalog(
+            provider, XtreamProvider(provider.id, apiService, provider.serverUrl, provider.username, provider.password),
+            SyncMetadata(provider.id), emptySet(), null, testRuntimeProfile(), false,
+            effectiveLiveSyncMethod = EffectiveXtreamLiveSyncMethod.CATEGORY_BY_CATEGORY,
+            contentHashSeed = seed
+        )
+
+        val first = sync("seed").liveContentHashes
+        val repeat = sync("seed").liveContentHashes
+        bodies["13"] = liveRowJson(703L, "13")
+        val changed = sync("seed").liveContentHashes
+
+        assertThat(first!!.keys).containsExactly(
+            LiveContentHashKey(SyncContentHashScope.LIVE_CATEGORIES, SyncContentHashScope.SINGLE_KEY),
+            LiveContentHashKey(SyncContentHashScope.LIVE_CATEGORY, "12"),
+            LiveContentHashKey(SyncContentHashScope.LIVE_CATEGORY, "13")
+        )
+        assertThat(repeat).isEqualTo(first)
+        assertThat(changed!![LiveContentHashKey(SyncContentHashScope.LIVE_CATEGORY, "12")])
+            .isEqualTo(first[LiveContentHashKey(SyncContentHashScope.LIVE_CATEGORY, "12")])
+        assertThat(changed[LiveContentHashKey(SyncContentHashScope.LIVE_CATEGORY, "13")])
+            .isNotEqualTo(first[LiveContentHashKey(SyncContentHashScope.LIVE_CATEGORY, "13")])
+        assertThat(sync("other-seed").liveContentHashes).isNotEqualTo(changed)
+        assertThat(sync(null).liveContentHashes).isNull()
+    }
+
+    @Test
+    fun `category decoded by the legacy fallback leaves the catalog unhashed`() = runBlocking {
+        val bodies = mutableMapOf("12" to liveRowJson(701L, "12"), "13" to """[{"stream_id":""")
+        val httpService = OkHttpXtreamApiService(client = bodiesByCategory(bodies), json = json)
+        val apiService = FakeXtreamApiService(listOf(XtreamCategory("12", "News"), XtreamCategory("13", "Sports")))
+        val provider = hashTestProvider()
+        val payload = createStrategy(apiService, httpService, stageChannelItems = ::acceptAll).syncXtreamLiveCatalog(
+            provider, XtreamProvider(provider.id, apiService, provider.serverUrl, provider.username, provider.password),
+            SyncMetadata(provider.id), emptySet(), null, testRuntimeProfile(), false,
+            effectiveLiveSyncMethod = EffectiveXtreamLiveSyncMethod.CATEGORY_BY_CATEGORY,
+            contentHashSeed = "seed"
+        )
+
+        // Category 13 falls back to the legacy decoder, which exposes no raw bytes to hash.
+        assertThat(payload.stagedAcceptedCount).isEqualTo(1)
+        assertThat(payload.liveContentHashes).isNull()
+    }
+
+    @Test
+    fun `full catalog hash follows the response bytes and is omitted when the download fails`() = runBlocking {
+        var body = liveRowJson(801L, "12")
+        val httpService = OkHttpXtreamApiService(
+            client = OkHttpClient.Builder().addInterceptor { chain ->
+                Response.Builder().request(chain.request()).protocol(Protocol.HTTP_1_1).code(200).message("OK")
+                    .body(body.toResponseBody("application/json".toMediaType())).build()
+            }.build(),
+            json = json
+        )
+        val apiService = FakeXtreamApiService()
+        val provider = hashTestProvider()
+        val xtreamProvider = XtreamProvider(provider.id, apiService, provider.serverUrl, provider.username, provider.password)
+        val strategy = createStrategy(apiService, httpService, stageChannelItems = ::acceptAll)
+        suspend fun load() = strategy.loadXtreamLiveFull(provider, xtreamProvider, testRuntimeProfile(), contentHashSeed = "seed")
+
+        val first = load().liveContentHashes
+        val repeat = load().liveContentHashes
+        body = liveRowJson(802L, "12")
+        val changed = load().liveContentHashes
+        body = """[{"stream_id":"""
+        val failed = load()
+
+        assertThat(first!!.keys).containsExactly(
+            LiveContentHashKey(SyncContentHashScope.LIVE_CATEGORY, SyncContentHashScope.LIVE_FULL_CATALOG_KEY)
+        )
+        assertThat(repeat).isEqualTo(first)
+        assertThat(changed).isNotEqualTo(first)
+        assertThat(failed.catalogResult).isNotInstanceOf(CatalogStrategyResult.Success::class.java)
+        assertThat(failed.liveContentHashes).isNull()
+    }
+
+    private fun hashTestProvider() = Provider(
+        id = 42L, name = "Xtream", type = ProviderType.XTREAM_CODES,
+        serverUrl = "https://example.test", username = "user", password = "pass",
+        allowedOutputFormats = listOf("m3u8", "ts")
+    )
+
+    private fun liveRowJson(streamId: Long, categoryId: String): String =
+        """[{"num":"1","name":"Channel $streamId","stream_id":"$streamId","category_id":"$categoryId"}]"""
+
+    private fun bodiesByCategory(bodies: Map<String, String>): OkHttpClient =
+        OkHttpClient.Builder().addInterceptor { chain ->
+            val body = bodies[chain.request().url.queryParameter("category_id")] ?: "[]"
+            Response.Builder().request(chain.request()).protocol(Protocol.HTTP_1_1).code(200).message("OK")
+                .body(body.toResponseBody("application/json".toMediaType())).build()
+        }.build()
+
+    @Suppress("UNUSED_PARAMETER")
+    private fun acceptAll(
+        providerId: Long,
+        channels: List<Channel>,
+        seen: MutableSet<Long>,
+        collector: FallbackCategoryCollector,
+        sessionId: Long?
+    ): StagedCatalogSnapshot {
+        channels.forEach { collector.record(it.categoryId, it.categoryName, it.isAdult) }
+        return StagedCatalogSnapshot(sessionId = sessionId ?: 1L, acceptedCount = channels.size, fallbackCategories = collector.entities())
     }
 
     private fun createStrategy(

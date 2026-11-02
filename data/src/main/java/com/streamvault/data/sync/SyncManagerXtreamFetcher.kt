@@ -10,12 +10,14 @@ import com.streamvault.data.remote.xtream.XtreamApiService
 import com.streamvault.data.remote.xtream.XtreamProvider
 import com.streamvault.data.remote.xtream.XtreamParsingException
 import com.streamvault.data.remote.xtream.XtreamUrlFactory
+import com.streamvault.data.util.ContentDigest
 import com.streamvault.data.util.runSuspendCatching
 import com.streamvault.domain.model.Channel
 import com.streamvault.domain.model.Movie
 import com.streamvault.domain.model.LegacyProvider as Provider
 import com.streamvault.domain.model.Series
 import kotlinx.coroutines.CancellationException
+import java.security.MessageDigest
 import kotlin.system.measureTimeMillis
 
 private const val XTREAM_FETCHER_TAG = "SyncManager"
@@ -46,7 +48,12 @@ internal class SyncManagerXtreamFetcher(
         category: XtreamCategory,
         stageBatchSize: Int? = null,
         onMappedBatch: (suspend (List<Channel>) -> Unit)? = null,
-        onAttemptReset: suspend () -> Unit = {}
+        onAttemptReset: suspend () -> Unit = {},
+        /**
+         * Receives the hex SHA-256 of the raw response that produced a non-failed outcome, or
+         * null when it is unknown (failure or legacy decode). Called once per fetch.
+         */
+        onContentSha256: ((String?) -> Unit)? = null
     ): TimedCategoryOutcome<Channel> {
         val endpoint = XtreamUrlFactory.buildPlayerApiUrl(
             serverUrl = provider.serverUrl,
@@ -58,7 +65,10 @@ internal class SyncManagerXtreamFetcher(
         var mappedChannels: List<Channel> = emptyList()
         var rawCount = 0
         var categoryFailure: Throwable? = null
+        var attemptSha256: String? = null
         val streamingStageBatchSize = stageBatchSize?.takeIf { it > 0 }
+
+        fun newAttemptDigest(): MessageDigest? = if (onContentSha256 != null) ContentDigest.newSha256() else null
 
         suspend fun emitMappedChannels(channels: List<Channel>) {
             if (channels.isEmpty()) return
@@ -72,7 +82,9 @@ internal class SyncManagerXtreamFetcher(
             val batchSize = streamingStageBatchSize
             if (batchSize == null || onMappedBatch == null) {
                 val rows = ArrayList<XtreamLiveStreamRow>()
-                val streamedCount = xtreamCatalogHttpService.streamLiveStreamRows(endpoint) { row -> rows += row }
+                val digest = newAttemptDigest()
+                val streamedCount = xtreamCatalogHttpService.streamLiveStreamRows(endpoint, rawDigest = digest) { row -> rows += row }
+                attemptSha256 = digest?.let(ContentDigest::hex)
                 return streamedCount to api.mapLiveStreamRowsSequence(rows.asSequence()).toList()
             }
 
@@ -85,7 +97,8 @@ internal class SyncManagerXtreamFetcher(
                 rawBatch.clear()
             }
 
-            xtreamCatalogHttpService.streamLiveStreamRows(endpoint) { row ->
+            val digest = newAttemptDigest()
+            xtreamCatalogHttpService.streamLiveStreamRows(endpoint, rawDigest = digest) { row ->
                 rawBatch += row
                 streamedCount++
                 if (rawBatch.size >= batchSize) {
@@ -93,6 +106,7 @@ internal class SyncManagerXtreamFetcher(
                 }
             }
             flushRawBatch()
+            attemptSha256 = digest?.let(ContentDigest::hex)
             return streamedCount to emptyList()
         }
 
@@ -102,6 +116,7 @@ internal class SyncManagerXtreamFetcher(
                     runLiveWriter(onAttemptReset)
                     rawCount = 0
                     mappedChannels = emptyList()
+                    attemptSha256 = null
                     xtreamSupport.executeXtreamRequest(provider.id, XtreamAdaptiveSyncPolicy.Stage.LIVE_CATEGORY) {
                         val thinResult = runSuspendCatching {
                             streamThinRowsInBatches()
@@ -120,6 +135,8 @@ internal class SyncManagerXtreamFetcher(
                                 )
                             }
                             runLiveWriter(onAttemptReset)
+                            // The legacy decoder does not expose raw bytes; leave the hash unknown.
+                            attemptSha256 = null
                             val legacyStreams = xtreamCatalogApiService.getLiveStreams(endpoint)
                             rawCount = legacyStreams.size
                             emitMappedChannels(api.mapLiveStreamsResponse(legacyStreams))
@@ -158,6 +175,7 @@ internal class SyncManagerXtreamFetcher(
                 CategoryFetchOutcome.Success(category.categoryName, mappedChannels, rawCount)
             }
         }
+        onContentSha256?.invoke(if (outcome is CategoryFetchOutcome.Failure) null else attemptSha256)
         return TimedCategoryOutcome(category, outcome, elapsedMs)
     }
 

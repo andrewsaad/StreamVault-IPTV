@@ -226,7 +226,8 @@ class SyncManager @Inject constructor(
     private val providerSyncWorkScheduler: ProviderSyncWorkScheduler,
     private val m3uClassificationDao: M3uClassificationDao? = null,
     private val m3uClassificationRepository: M3uClassificationRepository? = null,
-    private val pendingBackupRestoreCoordinator: PendingBackupRestoreCoordinator? = null
+    private val pendingBackupRestoreCoordinator: PendingBackupRestoreCoordinator? = null,
+    private val syncContentHashDao: com.streamvault.data.local.dao.SyncContentHashDao? = null
 ) : ProviderSyncCommands, CatalogHydrationCommands, ProviderSyncStateSource, ProviderSyncLifecycle {
     private val syncProviderSnapshotAdapter = SyncProviderSnapshotAdapter(providerSnapshotRepository)
     private val syncStatusPublicationCoordinator = SyncStatusPublicationCoordinator(
@@ -664,6 +665,7 @@ class SyncManager @Inject constructor(
                     completedCategories = update.completedCategories,
                     indexedRows = update.indexedRows,
                     lastAttemptAt = update.lastAttemptAt,
+                    lastSuccessAt = update.lastSuccessAt,
                     lastError = update.lastError
                 )
             },
@@ -675,9 +677,16 @@ class SyncManager @Inject constructor(
             userMessage = { error, fallback -> syncErrorSanitizer.userMessage(error, fallback) },
             requiredHiddenCategoryIds = { providerId, type ->
                 pendingBackupRestoreCoordinator?.requiredHiddenCategoryIds(providerId, type).orEmpty()
-            }
+            },
+            syncContentHashDao = syncContentHashDao,
+            liveIndexJobState = { providerId -> xtreamIndexJobDao.get(providerId, ContentType.LIVE.name)?.state },
+            contentHashAppBuild = ::installedAppBuild
         )
     }
+    // Any reinstall or update changes this, so hashes from older mapping code never match.
+    private fun installedAppBuild(): String = runCatching {
+        applicationContext.packageManager.getPackageInfo(applicationContext.packageName, 0).lastUpdateTime.toString()
+    }.getOrDefault("")
     private val stalkerSyncExecutor by lazy {
         StalkerCatalogSyncExecutor(
             applicationContext = applicationContext,

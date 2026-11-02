@@ -244,6 +244,23 @@ class OkHttpXtreamApiServiceTest {
     }
 
     @Test
+    fun `streamLiveStreamRows raw digest covers the whole response body`() = runTest {
+        // Trailing whitespace after the array is never read by the JSON reader; it must still be hashed.
+        val body = """[{"stream_id":"101","name":"Live One"}]""" + "\n\n   "
+        val service = OkHttpXtreamApiService(client = clientReturning(statusCode = 200, body = body), json = json)
+        val digest = java.security.MessageDigest.getInstance("SHA-256")
+
+        val count = service.streamLiveStreamRows(
+            "https://example.test/player_api.php?action=get_live_streams",
+            rawDigest = digest
+        ) { }
+
+        assertThat(count).isEqualTo(1)
+        assertThat(digest.digest())
+            .isEqualTo(java.security.MessageDigest.getInstance("SHA-256").digest(body.toByteArray(Charsets.UTF_8)))
+    }
+
+    @Test
     fun `streamLiveStreamRows cancels the underlying call when coroutine times out`() = runTest {
         val requestStarted = CountDownLatch(1)
         val cancellationObserved = CountDownLatch(1)

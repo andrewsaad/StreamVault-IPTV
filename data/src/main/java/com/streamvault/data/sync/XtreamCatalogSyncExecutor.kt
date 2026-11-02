@@ -4,6 +4,7 @@ import android.content.Context
 import android.util.Log
 import com.streamvault.data.local.dao.CategoryDao
 import com.streamvault.data.local.dao.ChannelDao
+import com.streamvault.data.local.dao.SyncContentHashDao
 import com.streamvault.data.local.dao.XtreamLiveOnboardingDao
 import com.streamvault.data.local.entity.CategoryEntity
 import com.streamvault.data.local.entity.ChannelEntity
@@ -36,8 +37,20 @@ internal data class XtreamIndexJobUpdate(
     val completedCategories: Int? = null,
     val indexedRows: Int? = null,
     val lastAttemptAt: Long? = null,
-    val lastError: String? = null
+    val lastError: String? = null,
+    val lastSuccessAt: Long? = null
 )
+
+/**
+ * Whether an automatic Live sync may keep the committed catalog because every downloaded
+ * payload hashed the same as the one behind it. Manual, forced and onboarding syncs always
+ * apply what they downloaded.
+ */
+internal fun allowsLiveContentDelta(
+    syncReason: XtreamLiveSyncReason,
+    force: Boolean,
+    trackInitialLiveOnboarding: Boolean
+): Boolean = syncReason == XtreamLiveSyncReason.BACKGROUND_STALE && !force && !trackInitialLiveOnboarding
 
 /**
  * Owns Xtream full-sync and Live repair orchestration.
@@ -66,7 +79,11 @@ internal class XtreamCatalogSyncExecutor(
     private val emitProgress: (Long, SyncProgress) -> Unit,
     private val sanitizeThrowableMessage: (Throwable?) -> String,
     private val userMessage: (Throwable, String) -> String,
-    private val requiredHiddenCategoryIds: suspend (Long, ContentType) -> Set<Long> = { _, _ -> emptySet() }
+    private val requiredHiddenCategoryIds: suspend (Long, ContentType) -> Set<Long> = { _, _ -> emptySet() },
+    private val syncContentHashDao: SyncContentHashDao? = null,
+    private val liveIndexJobState: suspend (Long) -> String? = { null },
+    /** Changes whenever the installed app changes, so new mapping code never reuses old hashes. */
+    private val contentHashAppBuild: () -> String = { "" }
 ) {
     suspend fun syncFull(
         provider: Provider,
@@ -96,6 +113,11 @@ internal class XtreamCatalogSyncExecutor(
         val runtimeProfile = CatalogSyncRuntimeProfile.from(applicationContext)
         val now = System.currentTimeMillis()
         var metadata = syncMetadataRepository.getMetadata(provider.id) ?: SyncMetadata(provider.id)
+        val liveHashSeed = liveContentHashSeed(mappingProfile, hiddenLiveCategoryIds, requiredHiddenLiveCategoryIds)
+        val allowLiveDelta = allowsLiveContentDelta(syncReason, force, trackInitialLiveOnboarding)
+        // Read before this sync marks the job RUNNING: an unchanged catalog keeps a finished index.
+        val previousLiveIndexState = if (allowLiveDelta) liveIndexJobState(provider.id) else null
+        var liveCatalogUnchanged = false
 
         if (trackInitialLiveOnboarding) {
             recordOnboardingState(
@@ -174,7 +196,8 @@ internal class XtreamCatalogSyncExecutor(
                 onProgress = onProgress,
                 runtimeProfile = runtimeProfile,
                 trackInitialLiveOnboarding = trackInitialLiveOnboarding,
-                syncReason = syncReason
+                syncReason = syncReason,
+                contentHashSeed = liveHashSeed
             )
             if (trackInitialLiveOnboarding) {
                 val stagedAcceptedCount = liveSyncResult.stagedAcceptedCount
@@ -241,11 +264,13 @@ internal class XtreamCatalogSyncExecutor(
                         liveSyncResult = liveSyncResult,
                         hiddenLiveCategoryIds = hiddenLiveCategoryIds,
                         onProgress = onProgress,
-                        afterCatalogApply = afterCatalogApply
+                        afterCatalogApply = afterCatalogApply,
+                        allowUnchangedSkip = allowLiveDelta
                     ).also {
                         warnings += it.warnings
                         activatedLiveMutations = it.acceptedCount
                         catalogActivated = true
+                        liveCatalogUnchanged = it.unchanged
                     }.committedChannelCount
                 }
                 is CatalogStrategyResult.Partial -> {
@@ -325,24 +350,28 @@ internal class XtreamCatalogSyncExecutor(
             )
             throw error
         }
-        updateIndexJob(
-            XtreamIndexJobUpdate(
-                providerId = provider.id,
-                section = ContentType.LIVE.name,
-                state = "QUEUED",
-                now = now,
-                totalCategories = 1,
-                completedCategories = 0,
-                indexedRows = liveCount,
-                lastAttemptAt = now,
-                lastError = null
+        if (liveCatalogUnchanged && previousLiveIndexState == LIVE_INDEX_STATE_SUCCESS) {
+            markUnchangedLiveIndexCurrent(provider.id, now, liveCount)
+        } else {
+            updateIndexJob(
+                XtreamIndexJobUpdate(
+                    providerId = provider.id,
+                    section = ContentType.LIVE.name,
+                    state = "QUEUED",
+                    now = now,
+                    totalCategories = 1,
+                    completedCategories = 0,
+                    indexedRows = liveCount,
+                    lastAttemptAt = now,
+                    lastError = null
+                )
             )
-        )
-        continuationWork += SyncContinuation(
-            operation = SyncContinuationOperation.INDEX_CATALOG,
-            section = ContentType.LIVE,
-            reason = "activated live catalog requires durable search-index backfill"
-        )
+            continuationWork += SyncContinuation(
+                operation = SyncContinuationOperation.INDEX_CATALOG,
+                section = ContentType.LIVE,
+                reason = "activated live catalog requires durable search-index backfill"
+            )
+        }
         emitProgress(
             provider.id,
             SyncProgress(
@@ -535,6 +564,9 @@ internal class XtreamCatalogSyncExecutor(
         val currentMetadata = syncMetadataRepository.getMetadata(provider.id) ?: SyncMetadata(provider.id)
         val runtimeProfile = CatalogSyncRuntimeProfile.from(applicationContext)
         var activatedMutations = 0
+        val allowLiveDelta = allowsLiveContentDelta(syncReason, force = false, trackInitialLiveOnboarding = false)
+        val previousLiveIndexState = if (allowLiveDelta) liveIndexJobState(provider.id) else null
+        var liveCatalogUnchanged = false
         val liveSyncResult = syncLiveCatalog(
             provider,
             api,
@@ -544,7 +576,12 @@ internal class XtreamCatalogSyncExecutor(
             onProgress,
             runtimeProfile,
             trackInitialLiveOnboarding = false,
-            syncReason = syncReason
+            syncReason = syncReason,
+            contentHashSeed = liveContentHashSeed(
+                "text=$useTextClassification;base64=$enableBase64TextCompatibility",
+                hiddenLiveCategoryIds,
+                requiredHiddenLiveCategoryIds
+            )
         )
         val liveSequentialStress = liveSyncResult.strategyFeedback.segmentedStressDetected
         val liveProviderAdaptation = updateSequentialProviderAdaptation(
@@ -563,9 +600,11 @@ internal class XtreamCatalogSyncExecutor(
                     provider.id,
                     liveSyncResult,
                     hiddenLiveCategoryIds,
-                    onProgress
+                    onProgress,
+                    allowUnchangedSkip = allowLiveDelta
                 )
                 activatedMutations = commitResult.acceptedCount
+                liveCatalogUnchanged = commitResult.unchanged
                 syncMetadataRepository.updateMetadata(
                     currentMetadata.copy(
                         lastLiveSync = now,
@@ -629,6 +668,14 @@ internal class XtreamCatalogSyncExecutor(
                 )
             }
         }
+        if (liveCatalogUnchanged) {
+            // Nothing was written, so a finished search index is still current. Any other
+            // index state keeps its own pending work; this sync adds none.
+            if (previousLiveIndexState == LIVE_INDEX_STATE_SUCCESS) {
+                markUnchangedLiveIndexCurrent(provider.id, now, channelDao.countByProvider(provider.id))
+                return SyncOutcome(activation = SyncActivation.NO_CATALOG_CHANGE)
+            }
+        }
         updateIndexJob(
             XtreamIndexJobUpdate(
                 providerId = provider.id,
@@ -666,7 +713,8 @@ internal class XtreamCatalogSyncExecutor(
         onProgress: ((String) -> Unit)?,
         runtimeProfile: CatalogSyncRuntimeProfile,
         trackInitialLiveOnboarding: Boolean,
-        syncReason: XtreamLiveSyncReason
+        syncReason: XtreamLiveSyncReason,
+        contentHashSeed: String? = null
     ): CatalogSyncPayload<Channel> {
         val hiddenLiveChannelFraction = if (
             provider.xtreamLiveSyncMode == ProviderXtreamLiveSyncMode.AUTO &&
@@ -714,7 +762,8 @@ internal class XtreamCatalogSyncExecutor(
             runtimeProfile,
             trackInitialLiveOnboarding,
             effectiveMethod,
-            requiredHiddenLiveCategoryIds
+            requiredHiddenLiveCategoryIds,
+            contentHashSeed
         )
     }
 
@@ -794,7 +843,11 @@ internal class XtreamCatalogSyncExecutor(
             providerId = provider.id,
             sessionId = sessionId,
             categories = stagedState.categories.takeIf { it.isNotEmpty() },
-            afterCatalogApply = afterCatalogApply
+            afterCatalogApply = {
+                afterCatalogApply()
+                // The resumed snapshot was never hashed; stored hashes no longer describe the rows.
+                syncContentHashDao?.let { XtreamLiveContentHashes.replace(it, provider.id, null, System.currentTimeMillis()) }
+            }
         )
         val committedChannelCount = stagedState.channelCount
         emitProgress(
@@ -888,8 +941,26 @@ internal class XtreamCatalogSyncExecutor(
         hiddenLiveCategoryIds: Set<Long>,
         onProgress: ((String) -> Unit)?,
         partialCompletionWarning: String? = null,
-        afterCatalogApply: suspend () -> Unit = {}
+        afterCatalogApply: suspend () -> Unit = {},
+        allowUnchangedSkip: Boolean = false
     ): XtreamLiveCommitResult {
+        val freshHashes = liveSyncResult.liveContentHashes
+            .takeIf { liveSyncResult.catalogResult is CatalogStrategyResult.Success }
+        val stagedSession = liveSyncResult.stagedSessionId
+        val hashDao = syncContentHashDao
+        if (allowUnchangedSkip && hashDao != null && stagedSession != null &&
+            XtreamLiveContentHashes.isUnchanged(freshHashes, XtreamLiveContentHashes.read(hashDao, providerId)) {
+                channelDao.countByProvider(providerId)
+            }
+        ) {
+            return keepUnchangedLiveCatalog(providerId, stagedSession, liveSyncResult, onProgress, afterCatalogApply)
+        }
+        // Hashes are replaced in the same transaction as the rows they describe. Anything but a
+        // fully hashed success clears them, so the next sync cannot skip against stale rows.
+        val commitWithHashes: suspend () -> Unit = {
+            afterCatalogApply()
+            hashDao?.let { XtreamLiveContentHashes.replace(it, providerId, freshHashes, System.currentTimeMillis()) }
+        }
         progress(providerId, onProgress, XtreamLiveProgressLabels.SAVING)
         emitProgress(
             providerId,
@@ -915,7 +986,7 @@ internal class XtreamCatalogSyncExecutor(
                         hiddenLiveCategoryIds
                     )
                     if (hiddenLiveCategoryIds.isNotEmpty()) mergeHiddenChannelsIntoStaging(providerId, sessionId, hiddenLiveCategoryIds)
-                    syncCatalogStore.applyStagedLiveCatalog(providerId, sessionId, mergedCategories, afterCatalogApply)
+                    syncCatalogStore.applyStagedLiveCatalog(providerId, sessionId, mergedCategories, commitWithHashes)
                     liveSyncResult.stagedAcceptedCount
                 } ?: run {
                     val liveCatalog = mergeVisibleLiveSyncWithHiddenStoredContent(
@@ -924,7 +995,7 @@ internal class XtreamCatalogSyncExecutor(
                         liveResult.items.map { it.toEntity() },
                         hiddenLiveCategoryIds
                     )
-                    syncCatalogStore.replaceLiveCatalog(providerId, liveCatalog.categories, liveCatalog.channels, afterCatalogApply)
+                    syncCatalogStore.replaceLiveCatalog(providerId, liveCatalog.categories, liveCatalog.channels, commitWithHashes)
                 }
             }
             is CatalogStrategyResult.Partial -> {
@@ -935,7 +1006,7 @@ internal class XtreamCatalogSyncExecutor(
                         hiddenLiveCategoryIds
                     )
                     if (hiddenLiveCategoryIds.isNotEmpty()) mergeHiddenChannelsIntoStaging(providerId, sessionId, hiddenLiveCategoryIds)
-                    syncCatalogStore.applyStagedLiveCatalogUpsertOnly(providerId, sessionId, mergedCategories, afterCatalogApply)
+                    syncCatalogStore.applyStagedLiveCatalogUpsertOnly(providerId, sessionId, mergedCategories, commitWithHashes)
                     liveSyncResult.stagedAcceptedCount
                 } ?: run {
                     val liveCatalog = mergeVisibleLiveSyncWithHiddenStoredContent(
@@ -944,7 +1015,7 @@ internal class XtreamCatalogSyncExecutor(
                         liveResult.items.map { it.toEntity() },
                         hiddenLiveCategoryIds
                     )
-                    syncCatalogStore.upsertLiveCatalog(providerId, liveCatalog.categories, liveCatalog.channels, afterCatalogApply)
+                    syncCatalogStore.upsertLiveCatalog(providerId, liveCatalog.categories, liveCatalog.channels, commitWithHashes)
                 }
             }
             is CatalogStrategyResult.EmptyValid,
@@ -1043,14 +1114,82 @@ internal class XtreamCatalogSyncExecutor(
         return "${catalogResult.strategyNameOrNull() ?: "unknown"};$fullPolicy"
     }
 
+    /**
+     * Drops a staged import whose payload hashes match the committed catalog. The commit
+     * callback still runs inside the catalog fence so workflow ownership is checked exactly as
+     * for a real apply, but no row, category or search-index content changes.
+     */
+    private suspend fun keepUnchangedLiveCatalog(
+        providerId: Long,
+        sessionId: Long,
+        liveSyncResult: CatalogSyncPayload<Channel>,
+        onProgress: ((String) -> Unit)?,
+        afterCatalogApply: suspend () -> Unit
+    ): XtreamLiveCommitResult {
+        try {
+            syncCatalogStore.withLiveCatalogFence(providerId) { afterCatalogApply() }
+        } finally {
+            syncCatalogStore.discardStagedImport(providerId, sessionId)
+        }
+        val committedChannelCount = channelDao.countByProvider(providerId)
+        Log.i(TAG, "Xtream live payload unchanged for provider $providerId; kept $committedChannelCount committed channels.")
+        emitProgress(
+            providerId,
+            SyncProgress(
+                section = Section.LIVE,
+                current = 1,
+                total = 1,
+                currentLabel = XtreamLiveProgressLabels.READY,
+                itemsIndexed = committedChannelCount
+            )
+        )
+        progress(providerId, onProgress, XtreamLiveProgressLabels.READY)
+        return XtreamLiveCommitResult(
+            acceptedCount = 0,
+            committedChannelCount = committedChannelCount,
+            warnings = liveSyncResult.warnings + catalogStrategySupport.strategyWarnings(liveSyncResult.catalogResult),
+            unchanged = true
+        )
+    }
+
+    private suspend fun markUnchangedLiveIndexCurrent(providerId: Long, now: Long, indexedRows: Int) {
+        updateIndexJob(
+            XtreamIndexJobUpdate(
+                providerId = providerId,
+                section = ContentType.LIVE.name,
+                state = LIVE_INDEX_STATE_SUCCESS,
+                now = now,
+                totalCategories = 1,
+                completedCategories = 1,
+                indexedRows = indexedRows,
+                lastAttemptAt = now,
+                lastError = null,
+                lastSuccessAt = now
+            )
+        )
+    }
+
+    private fun liveContentHashSeed(
+        mappingProfile: String,
+        hiddenLiveCategoryIds: Set<Long>,
+        requiredHiddenLiveCategoryIds: Set<Long>
+    ): String? = if (syncContentHashDao == null) null else XtreamLiveContentHashes.seed(
+        appBuild = contentHashAppBuild(),
+        mappingProfile = mappingProfile,
+        hiddenCategoryIds = hiddenLiveCategoryIds,
+        requiredHiddenCategoryIds = requiredHiddenLiveCategoryIds
+    )
+
     private data class XtreamLiveCommitResult(
         val acceptedCount: Int,
         val committedChannelCount: Int,
-        val warnings: List<String>
+        val warnings: List<String>,
+        val unchanged: Boolean = false
     )
 
     private companion object {
         const val TAG = "XtreamCatalogSync"
+        const val LIVE_INDEX_STATE_SUCCESS = "SUCCESS"
         const val XTREAM_FALLBACK_STAGE_BATCH_SIZE = 500
         const val XTREAM_ONBOARDING_PHASE_STARTING = "STARTING"
         const val XTREAM_ONBOARDING_PHASE_FETCHING = "FETCHING"
