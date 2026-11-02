@@ -123,6 +123,8 @@ internal data class SportsEvent(
     val leagueInfo: SportsLeague? = null,
     val metadataAttributionName: String? = null,
     val providerAttributions: List<ProviderAttribution> = emptyList(),
+    /** Arabic commentator for a beIN broadcast, from btolat.com; null when unknown. */
+    val commentator: String? = null,
     val provenance: SportsEventProvenance = SportsEventProvenance(
         timing = com.streamvault.domain.sports.provider.SportsEventTiming(
             broadcastStart = Instant.ofEpochMilli(startTime),
