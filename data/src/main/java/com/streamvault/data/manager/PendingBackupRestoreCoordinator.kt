@@ -1,6 +1,8 @@
 package com.streamvault.data.manager
 
 import com.google.gson.Gson
+import com.streamvault.data.local.DatabaseTransactionRunner
+import com.streamvault.data.local.DirectTransactionRunner
 import com.streamvault.data.local.dao.BackupRestoreLedgerDao
 import com.streamvault.data.local.dao.ChannelDao
 import com.streamvault.data.local.dao.ChannelPreferenceDao
@@ -89,7 +91,9 @@ class PendingBackupRestoreCoordinator @Inject constructor(
     private val gson: Gson,
     private val categoryDao: CategoryDao? = null,
     private val favoriteSyncRecorder: FavoriteSyncChangeRecorder = FavoriteSyncChangeRecorder.NONE,
-    private val favoriteSyncCatalogListener: FavoriteSyncCatalogListener = FavoriteSyncCatalogListener.NONE
+    private val favoriteSyncCatalogListener: FavoriteSyncCatalogListener = FavoriteSyncCatalogListener.NONE,
+    // Hilt always supplies the Room runner; the default only serves tests that build this by hand.
+    private val transactionRunner: DatabaseTransactionRunner = DirectTransactionRunner
 ) {
     private data class ReplaceScopePayload(
         val provider: BackupProviderReference?,
@@ -118,7 +122,9 @@ class PendingBackupRestoreCoordinator @Inject constructor(
         val scopes = generateSequence { restoredSyncScopes.poll() }.toList()
         if (scopes.isEmpty()) return
         try {
-            favoriteSyncRecorder.restoreApplied(scopes)
+            // The recorder reads, edits and writes the replica; a transaction keeps a concurrent
+            // sync merge from overwriting that edit in between.
+            transactionRunner.inTransaction { favoriteSyncRecorder.restoreApplied(scopes) }
             favoriteSyncRecorder.changesCommitted()
         } catch (cancelled: CancellationException) {
             throw cancelled
