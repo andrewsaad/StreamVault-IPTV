@@ -85,9 +85,21 @@ internal object SportsLeagueRegistry {
         val aliases: List<String>,
     )
 
+    // Arabic aliases are the exact category names beIN's Arabic guide uses; bare forms such as
+    // "دوري أبطال أوروبا" are left out because they would also match the youth and lower leagues.
     private val definitions = listOf(
-        Definition("UEFA Champions League", SportType.FOOTBALL, listOf("UEFA Champions League", "Champions League", "UCL")),
-        Definition("UEFA Europa League", SportType.FOOTBALL, listOf("UEFA Europa League", "Europa League", "UEL")),
+        Definition(
+            "UEFA Champions League",
+            SportType.FOOTBALL,
+            listOf("UEFA Champions League", "Champions League", "UCL", "دوري أبطال أوروبا لكرة القدم"),
+        ),
+        Definition(
+            "AFC Champions League",
+            SportType.FOOTBALL,
+            listOf("AFC Champions League Elite", "AFC Champions League Two", "AFC Champions League", "دوري أبطال آسيا"),
+        ),
+        Definition("UEFA Youth League", SportType.FOOTBALL, listOf("UEFA Youth League", "دوري أبطال أوروبا للشباب")),
+        Definition("UEFA Europa League", SportType.FOOTBALL, listOf("UEFA Europa League", "Europa League", "UEL", "الدوري الأوروبي")),
         Definition(
             "UEFA Conference League",
             SportType.FOOTBALL,
@@ -100,10 +112,21 @@ internal object SportsLeagueRegistry {
                 "EFL Championship", "English Football League Championship",
                 "Sky Bet Championship", "SkyBet Championship",
                 "EFL English Football League SkyBet Championship",
+                "English League - Championship", "دوري البطولة الإنجليزية - الدرجة الأولى",
             ),
         ),
-        Definition("Premier League", SportType.FOOTBALL, listOf("Premier League", "English Premier League", "EPL")),
-        Definition("La Liga", SportType.FOOTBALL, listOf("La Liga", "LaLiga")),
+        Definition("EFL Cup", SportType.FOOTBALL, listOf("Carabao Cup", "English League - Cup", "كأس الرابطة الإنكليزي")),
+        Definition(
+            "Premier League",
+            SportType.FOOTBALL,
+            listOf("Premier League", "English Premier League", "EPL", "الدوري الإنجليزي الممتاز"),
+        ),
+        Definition(
+            "Segunda División",
+            SportType.FOOTBALL,
+            listOf("Segunda División", "Spanish League - Segunda Division", "الدوري الأسباني للدرجة الثانية"),
+        ),
+        Definition("La Liga", SportType.FOOTBALL, listOf("La Liga", "LaLiga", "الدوري الإسباني لكرة القدم")),
         Definition("Serie A", SportType.FOOTBALL, listOf("Serie A")),
         // Série B precedes Série A: equal longest aliases keep list order, and Série A owns the bare "Brasileirão".
         Definition(
@@ -134,12 +157,13 @@ internal object SportsLeagueRegistry {
             listOf("Copa Sul-Americana", "Sul-Americana", "Sulamericana", "Copa Sudamericana", "CONMEBOL Sudamericana"),
         ),
         Definition("Bundesliga", SportType.FOOTBALL, listOf("Bundesliga", "1 Bundesliga")),
-        Definition("Ligue 1", SportType.FOOTBALL, listOf("Ligue 1")),
+        Definition("Ligue 2", SportType.FOOTBALL, listOf("Ligue 2", "الدوري الفرنسي - الدرجة الثانية")),
+        Definition("Ligue 1", SportType.FOOTBALL, listOf("Ligue 1", "الدوري الفرنسي")),
         Definition("FA Cup", SportType.FOOTBALL, listOf("FA Cup")),
         Definition("Eredivisie", SportType.FOOTBALL, listOf("Eredivisie")),
         Definition("Primeira Liga", SportType.FOOTBALL, listOf("Primeira Liga")),
         Definition("Major League Soccer", SportType.FOOTBALL, listOf("Major League Soccer", "MLS")),
-        Definition("NBA", SportType.BASKETBALL, listOf("NBA")),
+        Definition("NBA", SportType.BASKETBALL, listOf("NBA", "الدوري الأميركي لكرة السلة")),
         Definition("WNBA", SportType.BASKETBALL, listOf("WNBA")),
         Definition("EuroLeague", SportType.BASKETBALL, listOf("EuroLeague", "Euro League")),
         Definition("LNB Pro A", SportType.BASKETBALL, listOf("LNB Pro A")),
@@ -160,23 +184,34 @@ internal object SportsLeagueRegistry {
         Definition("World Surf League", SportType.OTHER, listOf("World Surf League", "WSL")),
     ).map { definition ->
         definition to definition.aliases.map(SportsTextNormalizer::normalize)
-    }.sortedByDescending { (_, aliases) -> aliases.maxOf(String::length) }
-
-    fun detect(text: String): SportsLeague? {
-        val normalizedText = " ${SportsTextNormalizer.normalize(text)} "
-        val definition = definitions.firstOrNull { (_, aliases) ->
-            aliases.any { alias -> normalizedText.contains(" $alias ") }
-        } ?: return null
-        return definition.toLeague()
+    }.sortedByDescending { (_, aliases) ->
+        // Priority comes from the Latin aliases only, so adding a long Arabic name does not reorder leagues.
+        aliases.filter { alias -> alias.all { it.code < ARABIC_BLOCK_START } }.maxOfOrNull(String::length) ?: 0
     }
 
+    fun detect(text: String): SportsLeague? = detectNormalized(SportsTextNormalizer.normalize(text))
+
+    /**
+     * First matching league in priority order, except that a match whose alias sits inside another
+     * match's alias is dropped: "AFC Champions League" beats the bare "Champions League", and
+     * "Ligue 2"'s full Arabic name beats Ligue 1's prefix of it.
+     */
     fun detectNormalized(normalizedText: String): SportsLeague? {
         val searchableText = " " + normalizedText + " "
-        val definition = definitions.firstOrNull { (_, aliases) ->
-            aliases.any { alias -> searchableText.contains(" $alias ") }
-        } ?: return null
-        return definition.toLeague()
+        val matches = definitions.mapNotNull { entry ->
+            entry.second.filter { alias -> searchableText.contains(" $alias ") }
+                .maxByOrNull(String::length)
+                ?.let { matchedAlias -> entry to matchedAlias }
+        }
+        return matches
+            .firstOrNull { (_, alias) ->
+                matches.none { (_, other) -> other.length > alias.length && " $other ".contains(" $alias ") }
+            }
+            ?.first
+            ?.toLeague()
     }
+
+    private const val ARABIC_BLOCK_START = 0x0600
 
     fun aliasesFor(displayName: String?): Set<String> {
         val normalized = displayName?.let(SportsTextNormalizer::normalize).orEmpty()

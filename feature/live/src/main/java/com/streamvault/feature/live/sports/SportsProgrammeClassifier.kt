@@ -22,7 +22,7 @@ internal object SportsProgrammeClassifier {
         ),
         SportType.FOOTBALL to listOf(
             "football", "soccer", "futbol", "fútbol", "futebol", "fußball", "fussball", "fudbal",
-            "رياضة كرة القدم", "كرة القدم", "premier league", "champions league", "la liga",
+            "رياضة كرة القدم", "كرة القدم", "كرة قدم", "premier league", "champions league", "la liga",
             "laliga", "serie a", "bundesliga", "ligue 1", "mls", "fa cup", "europa league",
             "eredivisie", "primeira liga", "copa del rey", "copa libertadores", "copa america",
             "uefa nations league", "carabao cup", "efl cup", "saudi pro league",
@@ -30,11 +30,11 @@ internal object SportsProgrammeClassifier {
             "brasileirao", "copa do brasil", "libertadores", "sul americana", "sulamericana", "sudamericana",
         ),
         SportType.BASKETBALL to listOf(
-            "basketball", "basket-ball", "nba", "wnba", "euroleague", "basquete", "basquetebol",
+            "basketball", "basket-ball", "nba", "wnba", "euroleague", "basquete", "basquetebol", "كرة السلة",
         ),
         SportType.BASEBALL to listOf("baseball", "mlb"),
         SportType.HOCKEY to listOf("ice hockey", "hockey", "nhl", "hoquei"),
-        SportType.TENNIS to listOf("tennis", "tenis", "atp", "wta", "grand slam"),
+        SportType.TENNIS to listOf("tennis", "tenis", "atp", "wta", "grand slam", "كرة التنس", "التنس"),
         SportType.MOTORSPORT to listOf(
             "motorsport", "formula 1", "formula one", "f1", "grand prix", "nascar", "motogp", "rally",
             "automobilismo", "stock car",

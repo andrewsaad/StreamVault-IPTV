@@ -376,6 +376,53 @@ class SportsProgrammeClassifierTest {
         assertThat(show.isCompetitiveEvent).isFalse()
     }
 
+    @Test
+    fun `beIN Arabic guide categories name the league and sport`() {
+        val bein = channel("beIN Sport 1 FHD Q")
+        fun arabic(title: String, category: String) = classify(title = title, category = category, channel = bein)
+
+        val premier = arabic("Tottenham Hotspur vs Crystal Palace", "الدوري الإنجليزي الممتاز")
+        assertThat(premier.sport).isEqualTo(SportType.FOOTBALL)
+        assertThat(premier.league).isEqualTo("Premier League")
+        assertThat(premier.isCompetitiveEvent).isTrue()
+
+        assertThat(arabic("Athletic Bilbao vs Real Sociedad", "الدوري الإسباني لكرة القدم").league).isEqualTo("La Liga")
+        assertThat(arabic("Valladolid vs Leganes", "الدوري الأسباني للدرجة الثانية").league).isEqualTo("Segunda División")
+        assertThat(arabic("Havre AC vs PSG", "الدوري الفرنسي").league).isEqualTo("Ligue 1")
+        assertThat(arabic("Annecy vs Montpellier", "الدوري الفرنسي - الدرجة الثانية").league).isEqualTo("Ligue 2")
+        assertThat(arabic("AEK Athens vs Real Madrid", "دوري أبطال أوروبا لكرة القدم").league).isEqualTo("UEFA Champions League")
+        assertThat(arabic("Atlético de Madrid vs FC Bayern München", "دوري أبطال أوروبا للشباب").league)
+            .isEqualTo("UEFA Youth League")
+        assertThat(arabic("Rennes vs Olympiacos", "الدوري الأوروبي").league).isEqualTo("UEFA Europa League")
+        assertThat(arabic("Bristol City vs Wolverhampton Wanderers", "دوري البطولة الإنجليزية - الدرجة الأولى").league)
+            .isEqualTo("EFL Championship")
+        assertThat(arabic("Everton vs Newcastle United", "كأس الرابطة الإنكليزي").league).isEqualTo("EFL Cup")
+
+        val asia = arabic("Naegohyang Women's FC (PRK) vs Ayeyawady FC", "دوري أبطال آسيا")
+        assertThat(asia.league).isEqualTo("AFC Champions League")
+        assertThat(asia.sport).isEqualTo(SportType.FOOTBALL)
+
+        val nba = arabic("Memphis vs Portland", "الدوري الأميركي لكرة السلة")
+        assertThat(nba.league).isEqualTo("NBA")
+        assertThat(nba.sport).isEqualTo(SportType.BASKETBALL)
+
+        assertThat(arabic("Brazil vs Poland", "كرة قدم").sport).isEqualTo(SportType.FOOTBALL)
+        assertThat(arabic("Atlanta vs Golden State", "كرة السلة").sport).isEqualTo(SportType.BASKETBALL)
+        assertThat(arabic("Alex De Minaur (AUS) vs Carlos Alcaraz (ESP)", "كرة التنس - فئة 500").sport)
+            .isEqualTo(SportType.TENNIS)
+        assertThat(arabic("Tractor vs Neftchi", "الرياضة العام").sport).isEqualTo(SportType.UNKNOWN)
+    }
+
+    @Test
+    fun `the longest matching league name wins over a shorter one it contains`() {
+        assertThat(classify("Al Gharafa vs Al Qadsiah - AFC Champions League Elite").league)
+            .isEqualTo("AFC Champions League")
+        assertThat(classify("Atletico Madrid vs Bayern Munich", category = "UEFA Champions League").league)
+            .isEqualTo("UEFA Champions League")
+        assertThat(classify("Annecy vs Montpellier", category = "French League - Ligue 2").league).isEqualTo("Ligue 2")
+        assertThat(classify("Everton vs Newcastle United", category = "English League - Cup").league).isEqualTo("EFL Cup")
+    }
+
     private fun classify(
         title: String,
         description: String = "",
