@@ -211,7 +211,7 @@ data class SettingsUiState(
     val refreshingEpgSourceIds: Set<Long> = emptySet(),
     val epgPendingDeleteSourceId: Long? = null,
     val epgTimeShiftMinutesByProvider: Map<Long, Int> = emptyMap(),
-    val autoCheckAppUpdates: Boolean = true,
+    val autoCheckAppUpdates: Boolean = false,
     val autoDownloadAppUpdates: Boolean = false,
     val isCheckingForUpdates: Boolean = false,
     val appUpdate: AppUpdateUiModel = AppUpdateUiModel(),

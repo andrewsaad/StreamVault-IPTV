@@ -64,6 +64,10 @@ private fun observeCatalogUpdateNotice(
     }
 
     return cachedRelease.combine(updateInstaller.downloadState) { release, downloadState ->
+        release to downloadState
+    }.combine(preferencesRepository.autoCheckAppUpdates) { (release, downloadState), autoCheckEnabled ->
+        // A release cached by an earlier check must not keep the banner up once checks are off.
+        if (!autoCheckEnabled) return@combine null
         val latestVersionName = release.latestVersionName ?: return@combine null
         val updateAvailable = isRemoteVersionNewer(
             release.latestVersionCode,

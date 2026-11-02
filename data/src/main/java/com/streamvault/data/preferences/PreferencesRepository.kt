@@ -1143,7 +1143,8 @@ class PreferencesRepository @Inject constructor(
     }
 
     override val autoCheckAppUpdates: Flow<Boolean> = context.dataStore.data.map { preferences ->
-        preferences[PreferencesKeys.AUTO_CHECK_APP_UPDATES] ?: true
+        // Off by default in this fork: an upstream release would replace the fork's own features.
+        preferences[PreferencesKeys.AUTO_CHECK_APP_UPDATES] ?: false
     }
 
     override val autoDownloadAppUpdates: Flow<Boolean> = context.dataStore.data.map { preferences ->

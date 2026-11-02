@@ -129,7 +129,7 @@ fun observeSettingsPreferenceSnapshot(
             preventStandbyDuringPlayback = true,
             zapAutoRevert = true,
             autoPlayNextEpisode = true,
-            autoCheckAppUpdates = true,
+            autoCheckAppUpdates = false,
             autoDownloadAppUpdates = false,
             lastAppUpdateCheckAt = null,
             cachedAppUpdateVersionName = null,
