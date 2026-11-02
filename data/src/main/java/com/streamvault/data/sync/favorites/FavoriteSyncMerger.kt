@@ -21,10 +21,15 @@ object FavoriteSyncMerger {
 
     /**
      * Drops tombstones older than [TOMBSTONE_TTL_MS] and advances the horizon so peers that still
-     * hold those entries discard them on their next merge. Run before every upload.
+     * hold those tombstones discard them on their next merge. Run before every upload.
+     *
+     * Time is measured against the newest stamp in the document, never against this TV's wall
+     * clock alone: a TV whose clock runs ahead must not push the horizon past what the household
+     * has actually written.
      */
     fun compact(document: FavoriteSyncDocument, nowMs: Long): FavoriteSyncDocument {
-        val cutoff = nowMs - TOMBSTONE_TTL_MS
+        val newest = maxTimestamp(document)?.wallMs ?: return document
+        val cutoff = minOf(nowMs, newest) - TOMBSTONE_TTL_MS
         val providers = document.providers.mapValues { (_, provider) ->
             val expiredGroups = provider.groups.filterValues { group ->
                 group.isDeleted && (group.deleted?.ts?.wallMs ?: Long.MAX_VALUE) < cutoff
@@ -70,7 +75,7 @@ object FavoriteSyncMerger {
     ): FavoriteSyncProviderDoc {
         val left = a ?: FavoriteSyncProviderDoc()
         val right = b ?: FavoriteSyncProviderDoc()
-        val groups = mergeKeyed(left.groups, aHorizon, right.groups, bHorizon, { it.latestTs() }, ::mergeGroup)
+        val groups = mergeKeyed(left.groups, aHorizon, right.groups, bHorizon, { it.latestTs() }, { !it.isDeleted }, ::mergeGroup)
         val lists = (left.lists.keys + right.lists.keys).associateWith { key ->
             mergeList(left.lists[key], aHorizon, right.lists[key], bHorizon)
         }.filterValues { it.members.isNotEmpty() || it.order != null }
@@ -83,7 +88,7 @@ object FavoriteSyncMerger {
         b: FavoriteSyncListDoc?,
         bHorizon: Long
     ): FavoriteSyncListDoc {
-        val members = mergeKeyed(a?.members.orEmpty(), aHorizon, b?.members.orEmpty(), bHorizon, { it.ts }) { x, y ->
+        val members = mergeKeyed(a?.members.orEmpty(), aHorizon, b?.members.orEmpty(), bHorizon, { it.ts }, { it.present }) { x, y ->
             if (x.ts >= y.ts) x else y
         }
         val order = when {
@@ -112,8 +117,10 @@ object FavoriteSyncMerger {
     }
 
     /**
-     * Union of two keyed maps. An entry only one side has is kept unless it is older than the
-     * other side's horizon, in which case the other side compacted it away as a tombstone.
+     * Union of two keyed maps. A tombstone only one side has is dropped when it is older than the
+     * other side's horizon, because the other side already compacted it away. A live entry is
+     * never dropped this way: losing a real favorite to a skewed clock is worse than a removal
+     * coming back on a TV that stayed offline longer than the tombstone lifetime.
      */
     private inline fun <V> mergeKeyed(
         a: Map<String, V>,
@@ -121,6 +128,7 @@ object FavoriteSyncMerger {
         b: Map<String, V>,
         bHorizon: Long,
         ts: (V) -> FavoriteSyncHlc?,
+        live: (V) -> Boolean,
         both: (V, V) -> V
     ): Map<String, V> {
         val result = LinkedHashMap<String, V>()
@@ -129,8 +137,8 @@ object FavoriteSyncMerger {
             val right = b[key]
             val merged = when {
                 left != null && right != null -> both(left, right)
-                left != null -> left.takeUnless { (ts(it)?.wallMs ?: 0L) < bHorizon }
-                else -> right?.takeUnless { (ts(it)?.wallMs ?: 0L) < aHorizon }
+                left != null -> left.takeUnless { !live(it) && (ts(it)?.wallMs ?: 0L) < bHorizon }
+                else -> right?.takeUnless { !live(it) && (ts(it)?.wallMs ?: 0L) < aHorizon }
             }
             if (merged != null) result[key] = merged
         }

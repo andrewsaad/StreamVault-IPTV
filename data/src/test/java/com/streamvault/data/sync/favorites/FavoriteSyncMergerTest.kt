@@ -105,16 +105,19 @@ class FavoriteSyncMergerTest {
     }
 
     @Test
-    fun `compaction drops old tombstones and a stale peer cannot resurrect them`() {
+    fun `compaction drops old tombstones and a stale peer cannot bring the tombstone back`() {
         val oldRemove = FavoriteSyncMember(false, ts(now - 100 * day, "b"))
-        val server = FavoriteSyncMerger.compact(doc(mapOf(global to members("L:1" to oldRemove, "L:2" to FavoriteSyncMember(true, ts(now - 100 * day, "b"))))), now)
+        val server = FavoriteSyncMerger.compact(
+            doc(mapOf(global to members("L:1" to oldRemove, "L:2" to FavoriteSyncMember(true, ts(now - day, "b"))))),
+            now
+        )
 
         assertThat(server.providers.getValue("p").lists.getValue(global).members.keys).containsExactly("L:2")
-        assertThat(server.horizon).isEqualTo(now - FavoriteSyncMerger.TOMBSTONE_TTL_MS)
+        assertThat(server.horizon).isEqualTo(now - day - FavoriteSyncMerger.TOMBSTONE_TTL_MS)
 
-        // A TV offline for months still holds the old add of L:1; the horizon tells it L:1 was removed.
+        // A TV offline for months still holds an expired tombstone; the horizon drops it on merge.
         val stalePeer = doc(mapOf(global to members(
-            "L:1" to FavoriteSyncMember(true, ts(now - 120 * day, "c")),
+            "L:5" to FavoriteSyncMember(false, ts(now - 120 * day, "c")),
             "L:9" to FavoriteSyncMember(true, ts(now - 1 * day, "c"))
         )))
         val merged = FavoriteSyncMerger.merge(stalePeer, server)
@@ -124,17 +127,56 @@ class FavoriteSyncMergerTest {
     }
 
     @Test
+    fun `a live add older than the other side's horizon is kept`() {
+        // Accepted trade-off: an add the other side never saw survives, even if that means a removal
+        // made more than 90 days ago comes back on a TV that was offline the whole time.
+        val server = doc(mapOf(global to members("L:2" to FavoriteSyncMember(true, ts(now, "b")))), horizon = now - day)
+        val peer = doc(mapOf(global to members("L:1" to FavoriteSyncMember(true, ts(now - 10 * day, "c")))))
+
+        val merged = FavoriteSyncMerger.merge(peer, server)
+
+        assertThat(merged.providers.getValue("p").lists.getValue(global).members.keys).containsExactly("L:1", "L:2")
+        assertThat(FavoriteSyncMerger.merge(server, peer)).isEqualTo(merged)
+    }
+
+    @Test
+    fun `a fast wall clock cannot move the horizon past the newest stamp in the document`() {
+        val newest = now - 10 * day
+        val document = doc(mapOf(global to members(
+            "L:1" to FavoriteSyncMember(true, ts(newest)),
+            "L:2" to FavoriteSyncMember(false, ts(newest - 50 * day))
+        )))
+
+        val compacted = FavoriteSyncMerger.compact(document, nowMs = now + 300 * day)
+
+        assertThat(compacted.horizon).isEqualTo(newest - FavoriteSyncMerger.TOMBSTONE_TTL_MS)
+        assertThat(compacted.providers.getValue("p").lists.getValue(global).members.keys).containsExactly("L:1", "L:2")
+    }
+
+    @Test
+    fun `compaction of an empty document keeps its horizon`() {
+        val empty = FavoriteSyncDocument(horizon = 5L)
+
+        assertThat(FavoriteSyncMerger.compact(empty, now)).isEqualTo(empty)
+    }
+
+    @Test
     fun `compaction removes expired deleted groups and their lists`() {
         val groupKey = FavoriteSyncListKey.group("LIVE", "g")
         val compacted = FavoriteSyncMerger.compact(
             doc(
-                mapOf(groupKey to members("L:1" to FavoriteSyncMember(true, ts(now - 200 * day)))),
+                mapOf(
+                    groupKey to members("L:1" to FavoriteSyncMember(true, ts(now - 200 * day))),
+                    global to members("L:2" to FavoriteSyncMember(true, ts(now)))
+                ),
                 mapOf("g" to FavoriteSyncGroupDoc("LIVE", deleted = FavoriteSyncLww(true, ts(now - 95 * day))))
             ),
             now
         )
 
-        assertThat(compacted.providers).isEmpty()
+        val provider = compacted.providers.getValue("p")
+        assertThat(provider.groups).isEmpty()
+        assertThat(provider.lists.keys).containsExactly(global)
     }
 
     @Test
