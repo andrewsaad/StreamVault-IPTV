@@ -42,6 +42,9 @@ import com.streamvault.domain.manager.ScheduledRecordingBackup
 import com.streamvault.domain.model.RecordingStatus
 import com.streamvault.domain.model.Result
 import com.streamvault.data.provider.toLegacyProvider
+import com.streamvault.data.sync.favorites.FavoriteSyncCatalogListener
+import com.streamvault.data.sync.favorites.FavoriteSyncChangeRecorder
+import com.streamvault.data.sync.favorites.FavoriteSyncRestoreScope
 import java.net.URI
 import com.streamvault.data.preferences.PreferencesRepository
 import com.streamvault.domain.manager.PortableSearchHistoryBackup
@@ -50,6 +53,7 @@ import com.streamvault.domain.model.ProviderType
 import com.streamvault.domain.settings.VodTrackPreferenceScope
 import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.ConcurrentLinkedQueue
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CancellationException
@@ -83,7 +87,9 @@ class PendingBackupRestoreCoordinator @Inject constructor(
     private val providerSnapshotRepository: ProviderSnapshotRepository,
     private val recordingManager: RecordingManager,
     private val gson: Gson,
-    private val categoryDao: CategoryDao? = null
+    private val categoryDao: CategoryDao? = null,
+    private val favoriteSyncRecorder: FavoriteSyncChangeRecorder = FavoriteSyncChangeRecorder.NONE,
+    private val favoriteSyncCatalogListener: FavoriteSyncCatalogListener = FavoriteSyncCatalogListener.NONE
 ) {
     private data class ReplaceScopePayload(
         val provider: BackupProviderReference?,
@@ -93,14 +99,43 @@ class PendingBackupRestoreCoordinator @Inject constructor(
 
     private val providerLocks = ConcurrentHashMap<Long, Mutex>()
 
+    /** Favorites scopes written by restore items, recorded for favorites sync after each pass. */
+    private val restoredSyncScopes = ConcurrentLinkedQueue<FavoriteSyncRestoreScope>()
+
     suspend fun applyForProvider(providerId: Long): RestoreResolutionSummary {
         val providerSummary = providerLocks.getOrPut(providerId) { Mutex() }.withLock {
             providerDao.getById(providerId) ?: return@withLock RestoreResolutionSummary()
             applyItems(retryableItemsForProvider(providerId), providerId)
         }
+        recordRestoredFavoritesForSync()
+        notifyFavoriteSyncCatalogCommitted(providerId)
         // Global records such as multiview presets can span providers. Retry them after every
         // provider commit so the final required catalog becoming available applies the preset.
         return providerSummary + applyGlobal()
+    }
+
+    private suspend fun recordRestoredFavoritesForSync() {
+        val scopes = generateSequence { restoredSyncScopes.poll() }.toList()
+        if (scopes.isEmpty()) return
+        try {
+            favoriteSyncRecorder.restoreApplied(scopes)
+            favoriteSyncRecorder.changesCommitted()
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (_: Exception) {
+            // Sync bookkeeping must never fail a restore; the next local edit or join catches up.
+        }
+    }
+
+    /** The catalog this hook follows may now contain synced favorites that were unmatched before. */
+    private suspend fun notifyFavoriteSyncCatalogCommitted(providerId: Long) {
+        try {
+            favoriteSyncCatalogListener.onCatalogCommitted(providerId)
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (_: Exception) {
+            // Best effort; the next sync round re-applies the document anyway.
+        }
     }
 
     suspend fun applyGlobal(): RestoreResolutionSummary = providerLocks.getOrPut(0L) { Mutex() }.withLock {
@@ -300,8 +335,14 @@ class PendingBackupRestoreCoordinator @Inject constructor(
 
     private suspend fun clearScope(providerId: Long, scope: ReplaceScopePayload) {
         when (scope.targetSection) {
-            SECTION_FAVORITES -> scope.contentType?.let { favoriteDao.deleteGlobalByProviderAndType(providerId, it.name) }
-            SECTION_CUSTOM_GROUPS -> scope.contentType?.let { virtualGroupDao.deleteByProviderAndType(providerId, it.name) }
+            SECTION_FAVORITES -> scope.contentType?.let {
+                favoriteDao.deleteGlobalByProviderAndType(providerId, it.name)
+                restoredSyncScopes += FavoriteSyncRestoreScope(providerId, it, replaceGlobal = true)
+            }
+            SECTION_CUSTOM_GROUPS -> scope.contentType?.let {
+                virtualGroupDao.deleteByProviderAndType(providerId, it.name)
+                restoredSyncScopes += FavoriteSyncRestoreScope(providerId, it, replaceGroups = true)
+            }
             SECTION_PLAYBACK_HISTORY -> scope.contentType?.let { playbackHistoryDao.deleteByProviderAndType(providerId, it.name) }
             SECTION_PROTECTED_CONTENT -> when (scope.contentType) {
                 ContentType.LIVE -> channelDao.resetProtectionToCategoryState(providerId)
@@ -342,6 +383,7 @@ class PendingBackupRestoreCoordinator @Inject constructor(
                     addedAt = backup.addedAt
                 )
             )
+            restoredSyncScopes += FavoriteSyncRestoreScope(providerId, resolved.favoriteType)
         }
         return true
     }
@@ -382,6 +424,7 @@ class PendingBackupRestoreCoordinator @Inject constructor(
                 )
             }
         }
+        restoredSyncScopes += FavoriteSyncRestoreScope(providerId, backup.contentType)
         return true
     }
 

@@ -6,12 +6,14 @@ import com.streamvault.data.local.dao.VirtualGroupDao
 import com.streamvault.data.local.entity.CategoryCount
 import com.streamvault.data.mapper.toDomain
 import com.streamvault.data.mapper.toEntity
+import com.streamvault.data.sync.favorites.FavoriteSyncChangeRecorder
 import com.streamvault.domain.model.*
 import kotlinx.coroutines.flow.first
 import com.streamvault.domain.repository.FavoriteRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -19,7 +21,9 @@ import javax.inject.Singleton
 class FavoriteRepositoryImpl @Inject constructor(
     private val favoriteDao: FavoriteDao,
     private val virtualGroupDao: VirtualGroupDao,
-    private val transactionRunner: DatabaseTransactionRunner
+    private val transactionRunner: DatabaseTransactionRunner,
+    /** Every user edit is recorded here, inside the same transaction, for favorites sync. */
+    private val syncRecorder: FavoriteSyncChangeRecorder = FavoriteSyncChangeRecorder.NONE
 ) : FavoriteRepository {
     private companion object {
         const val POSITION_STEP = 1_024
@@ -103,14 +107,20 @@ class FavoriteRepositoryImpl @Inject constructor(
                 groupId = groupId
             )
             favoriteDao.insert(favorite.toEntity())
+            syncRecorder.favoriteAdded(providerId, contentId, contentType, groupId)
         }
+        syncRecorder.changesCommitted()
         Result.success(Unit)
     } catch (e: Exception) {
         Result.error("Failed to add favorite: ${e.message}", e)
     }
 
     override suspend fun removeFavorite(providerId: Long, contentId: Long, contentType: ContentType, groupId: Long?): Result<Unit> = try {
-        favoriteDao.delete(providerId, contentId, contentType.name, groupId)
+        transactionRunner.inTransaction {
+            syncRecorder.favoriteRemoved(providerId, contentId, contentType, groupId)
+            favoriteDao.delete(providerId, contentId, contentType.name, groupId)
+        }
+        syncRecorder.changesCommitted()
         Result.success(Unit)
     } catch (e: Exception) {
         Result.error("Failed to remove favorite: ${e.message}", e)
@@ -138,7 +148,10 @@ class FavoriteRepositoryImpl @Inject constructor(
             } else {
                 favoriteDao.updateGroup(sourceFavorite.id, targetGroupId)
             }
+            syncRecorder.favoriteRemoved(providerId, contentId, contentType, fromGroupId)
+            syncRecorder.favoriteAdded(providerId, contentId, contentType, targetGroupId)
         }
+        syncRecorder.changesCommitted()
         Result.success(Unit)
     } catch (e: Exception) {
         Result.error("Failed to move favorite: ${e.message}", e)
@@ -173,10 +186,13 @@ class FavoriteRepositoryImpl @Inject constructor(
                 } else {
                     favoriteDao.updateGroup(favorite.id, targetGroupId)
                 }
+                syncRecorder.favoriteAdded(favorite.providerId, favorite.contentId, favorite.contentType, targetGroupId)
             }
 
+            syncRecorder.groupDeleted(sourceGroup)
             virtualGroupDao.delete(sourceGroupId)
         }
+        syncRecorder.changesCommitted()
         Result.success(Unit)
     } catch (e: Exception) {
         Result.error("Failed to merge groups: ${e.message}", e)
@@ -186,7 +202,16 @@ class FavoriteRepositoryImpl @Inject constructor(
         validateReorderPartition(favorites)
         val updates = buildReorderUpdates(favorites)
         if (updates.isNotEmpty()) {
-            favoriteDao.updateAll(updates.map(Favorite::toEntity))
+            transactionRunner.inTransaction {
+                favoriteDao.updateAll(updates.map(Favorite::toEntity))
+                val first = favorites.first()
+                syncRecorder.favoritesReordered(
+                    providerId = first.providerId,
+                    groupId = first.groupId,
+                    ordered = favorites.map { it.contentId to it.contentType }
+                )
+            }
+            syncRecorder.changesCommitted()
         }
         Result.success(Unit)
     } catch (e: Exception) {
@@ -202,15 +227,19 @@ class FavoriteRepositoryImpl @Inject constructor(
 
     override suspend fun createGroup(providerId: Long, name: String, iconEmoji: String?, contentType: ContentType): Result<VirtualGroup> = try {
         val position = (virtualGroupDao.getMaxPosition(providerId, contentType.name) ?: -POSITION_STEP) + POSITION_STEP
-        val id = virtualGroupDao.insert(
-            com.streamvault.data.local.entity.VirtualGroupEntity(
-                providerId = providerId,
-                name = name,
-                iconEmoji = iconEmoji,
-                position = position,
-                contentType = contentType
-            )
-        )
+        val id = transactionRunner.inTransaction {
+            virtualGroupDao.insert(
+                com.streamvault.data.local.entity.VirtualGroupEntity(
+                    providerId = providerId,
+                    name = name,
+                    iconEmoji = iconEmoji,
+                    position = position,
+                    contentType = contentType,
+                    syncUuid = UUID.randomUUID().toString()
+                )
+            ).also { syncRecorder.groupSaved(it) }
+        }
+        syncRecorder.changesCommitted()
         Result.success(
             VirtualGroup(
                 id = id,
@@ -227,6 +256,7 @@ class FavoriteRepositoryImpl @Inject constructor(
 
     override suspend fun deleteGroup(groupId: Long): Result<Unit> = try {
         transactionRunner.inTransaction {
+            val group = virtualGroupDao.getById(groupId)
             favoriteDao.getByGroup(groupId).first().forEach { favorite ->
                 val globalFavorite = favoriteDao.get(
                     providerId = favorite.providerId,
@@ -239,16 +269,24 @@ class FavoriteRepositoryImpl @Inject constructor(
                 } else {
                     favoriteDao.updateGroup(favorite.id, null)
                 }
+                // Members fall back to the global list on every TV, not only this one.
+                syncRecorder.favoriteAdded(favorite.providerId, favorite.contentId, favorite.contentType, null)
             }
+            group?.let { syncRecorder.groupDeleted(it) }
             virtualGroupDao.delete(groupId)
         }
+        syncRecorder.changesCommitted()
         Result.success(Unit)
     } catch (e: Exception) {
         Result.error("Failed to delete group: ${e.message}", e)
     }
 
     override suspend fun renameGroup(groupId: Long, newName: String): Result<Unit> = try {
-        virtualGroupDao.rename(groupId, newName)
+        transactionRunner.inTransaction {
+            virtualGroupDao.rename(groupId, newName)
+            syncRecorder.groupSaved(groupId)
+        }
+        syncRecorder.changesCommitted()
         Result.success(Unit)
     } catch (e: Exception) {
         Result.error("Failed to rename group: ${e.message}", e)

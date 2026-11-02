@@ -7,6 +7,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.streamvault.feature.catalog.R
 import com.streamvault.domain.playback.associateByAnyRawId
+import com.streamvault.domain.manager.FavoriteSyncManager
 import com.streamvault.domain.model.Channel
 import com.streamvault.domain.model.ContentType
 import com.streamvault.domain.model.Favorite
@@ -144,6 +145,7 @@ class FavoritesViewModel @Inject constructor(
     private val preferencesRepository: PreferencesRepository,
     private val getContinueWatching: GetContinueWatching,
     private val traktFavorites: TraktFavorites,
+    private val favoriteSyncManager: FavoriteSyncManager? = null,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(FavoritesUiState())
@@ -151,6 +153,8 @@ class FavoritesViewModel @Inject constructor(
     private var reorderOriginalSections: List<FavoriteSectionUiModel>? = null
 
     init {
+        // Opening Favorites pulls edits from the other TVs when the last check is stale.
+        favoriteSyncManager?.onFavoritesScreenShown()
         val providerIdsFlow = providerRepository.getProviders()
             .map { providers -> providers.map { it.id } }
 
