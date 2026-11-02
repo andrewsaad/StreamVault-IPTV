@@ -126,16 +126,24 @@ internal object SportsCommentatorMatcher {
         return event.broadcasts.asSequence()
             .mapNotNull { broadcast -> beinChannelNumber(broadcast.channel.name) }
             .distinct()
-            .mapNotNull { channel ->
-                entries.asSequence()
-                    .filter { it.beinChannel == channel }
-                    .map { it to Duration.between(it.kickoff, kickoff).abs() }
-                    .filter { (_, gap) -> gap <= KICKOFF_TOLERANCE }
-                    .minByOrNull { (_, gap) -> gap }
-                    ?.first?.commentator
-            }
+            .mapNotNull { channel -> commentatorFor(channel, kickoff, entries) }
             .firstOrNull()
     }
+
+    /** The commentator for one channel's broadcast, or null when it is not an Arabic beIN N feed. */
+    fun commentatorFor(channelName: String, kickoff: Instant, entries: List<SportsCommentatorEntry>): String? {
+        if (entries.isEmpty()) return null
+        val channel = beinChannelNumber(channelName) ?: return null
+        return commentatorFor(channel, kickoff, entries)
+    }
+
+    private fun commentatorFor(beinChannel: Int, kickoff: Instant, entries: List<SportsCommentatorEntry>): String? =
+        entries.asSequence()
+            .filter { it.beinChannel == beinChannel }
+            .map { it to Duration.between(it.kickoff, kickoff).abs() }
+            .filter { (_, gap) -> gap <= KICKOFF_TOLERANCE }
+            .minByOrNull { (_, gap) -> gap }
+            ?.first?.commentator
 
     fun apply(events: List<SportsEvent>, entries: List<SportsCommentatorEntry>): List<SportsEvent> =
         events.map { event ->
