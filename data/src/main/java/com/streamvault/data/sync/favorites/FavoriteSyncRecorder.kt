@@ -86,7 +86,8 @@ class FavoriteSyncRecorder @Inject constructor(
     private val state: FavoriteSyncStateStore,
     private val identity: FavoriteSyncIdentity,
     private val dao: FavoriteSyncDao,
-    private val signal: FavoriteSyncChangeSignal
+    private val signal: FavoriteSyncChangeSignal,
+    private val keyring: FavoriteSyncKeyring
 ) : FavoriteSyncChangeRecorder {
 
     override suspend fun favoriteAdded(providerId: Long, contentId: Long, contentType: ContentType, groupId: Long?) {
@@ -185,12 +186,24 @@ class FavoriteSyncRecorder @Inject constructor(
         }
 
         val localLists = LinkedHashMap<String, MutableList<String>>()
+        // Lists holding a favorite this TV cannot identify yet: what is absent there proves nothing.
+        val incompleteLists = HashSet<String>()
+        val incompleteTypes = HashSet<String>()
         dao.localFavorites(providerId).forEach { row ->
             val listType = FavoriteSyncItemKeys.listType(row.contentType) ?: return@forEach
             if (listType !in listTypes) return@forEach
-            val groupUuid = row.groupId?.let { groupUuids[it] ?: return@forEach }
-            val itemKey = FavoriteSyncItemKeys.of(row) ?: return@forEach
-            localLists.getOrPut(listKey(listType, groupUuid)) { mutableListOf() } += itemKey
+            val groupUuid = row.groupId?.let { groupId ->
+                groupUuids[groupId] ?: run {
+                    incompleteTypes += listType
+                    return@forEach
+                }
+            }
+            val listKey = listKey(listType, groupUuid)
+            val itemKey = FavoriteSyncItemKeys.of(row) ?: run {
+                incompleteLists += listKey
+                return@forEach
+            }
+            localLists.getOrPut(listKey) { mutableListOf() } += itemKey
         }
         localLists.forEach { (listKey, keys) ->
             keys.forEach { setMember(listKey, it, present = true) }
@@ -201,11 +214,16 @@ class FavoriteSyncRecorder @Inject constructor(
         provider.lists.keys.filter { FavoriteSyncListKey.type(it) in listTypes }.forEach { listKey ->
             val isGlobal = FavoriteSyncListKey.groupUuid(listKey) == null
             val remove = if (isGlobal) policy.removeMissingGlobal else policy.removeMissingGroups
-            if (!remove) return@forEach
+            if (!remove || listKey in incompleteLists || FavoriteSyncListKey.type(listKey) in incompleteTypes) return@forEach
             val local = localLists[listKey].orEmpty().toSet()
-            provider.lists[listKey]?.members.orEmpty()
+            val missing = provider.lists[listKey]?.members.orEmpty()
                 .filter { (key, member) -> member.present && key !in local }
-                .keys.forEach { setMember(listKey, it, present = false) }
+                .keys
+            if (missing.isEmpty()) return@forEach
+            // Only items this TV's catalog has are known removals; the rest may simply not be
+            // indexed yet (fresh install, catalog still loading), so they stay for the other TVs.
+            val known = identity.resolve(providerId, missing).keys
+            missing.filter { it in known }.forEach { setMember(listKey, it, present = false) }
         }
     }
 
@@ -236,10 +254,12 @@ class FavoriteSyncRecorder @Inject constructor(
      */
     private suspend fun edit(providerId: Long, block: suspend FavoriteSyncProviderEditor.() -> Unit) {
         val config = secretStore.load()
-        val masterKey = config.masterKey
-        if (!config.enabled || !config.isComplete || masterKey == null) return
+        if (!config.enabled || !config.isComplete) return
         if (state.joinMode() != null) return
-        val wireKey = identity.providerWireKey(providerId, FavoriteSyncKeys(masterKey)) ?: return
+        // The salt is known from the first join on; keys are cached by then, so this does not derive.
+        val salt = state.salt() ?: return
+        val keys = keyring.keys(config, salt) ?: return
+        val wireKey = identity.providerWireKey(providerId, keys) ?: return
         val document = state.replica()
         val editor = FavoriteSyncProviderEditor(document.providers[wireKey] ?: FavoriteSyncProviderDoc(), state.clock())
         editor.block()

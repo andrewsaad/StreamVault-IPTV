@@ -6,6 +6,8 @@ import com.streamvault.domain.manager.FavoriteSyncJoinMode
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.SerializationException
@@ -38,7 +40,8 @@ class FavoriteSyncEngine @Inject constructor(
     private val applier: FavoriteSyncApplier,
     private val recorder: FavoriteSyncRecorder,
     private val transactionRunner: DatabaseTransactionRunner,
-    private val transportFactory: FavoriteSyncTransportFactory
+    private val transportFactory: FavoriteSyncTransportFactory,
+    private val keyring: FavoriteSyncKeyring
 ) {
     private val mutex = Mutex()
 
@@ -55,6 +58,9 @@ class FavoriteSyncEngine @Inject constructor(
             FavoriteSyncOutcome.Failed(FavoriteSyncError.UNSUPPORTED_DOCUMENT)
         } catch (error: IllegalArgumentException) {
             FavoriteSyncOutcome.Failed(FavoriteSyncError.UNSUPPORTED_DOCUMENT)
+        } catch (error: Exception) {
+            // Damaged gzip, database or state errors: sync is background work and must never crash the app.
+            FavoriteSyncOutcome.Failed(FavoriteSyncError.SERVER_ERROR)
         }
         when (outcome) {
             FavoriteSyncOutcome.Synced -> {
@@ -69,17 +75,17 @@ class FavoriteSyncEngine @Inject constructor(
 
     /** Re-applies the replica without network, e.g. after a catalog commit added missing items. */
     suspend fun applyLocal() = mutex.withLock {
-        val keys = pairedKeys() ?: return@withLock
+        val config = pairedConfig() ?: return@withLock
         if (state.joinMode() != null) return@withLock
+        val salt = state.salt() ?: return@withLock
+        val keys = keysFor(config, salt)
         state.setUnmatchedCount(applier.apply(state.replica(), identity.localProviderKeys(keys)))
     }
 
     private suspend fun syncLocked(): FavoriteSyncOutcome {
-        val config = secretStore.load()
-        val keys = pairedKeys(config) ?: return FavoriteSyncOutcome.NotConfigured
+        val config = pairedConfig() ?: return FavoriteSyncOutcome.NotConfigured
         val transport = transportFactory.create(config.serverUrl, config.token)
             ?: return FavoriteSyncOutcome.Failed(FavoriteSyncError.SERVER_UNREACHABLE)
-        val providerKeys = identity.localProviderKeys(keys)
         var forceFetch = false
         repeat(MAX_ATTEMPTS) {
             val joinMode = state.joinMode()
@@ -90,18 +96,31 @@ class FavoriteSyncEngine @Inject constructor(
                     is FavoriteSyncFetchResult.NotModified -> {
                         if (!state.isDirty()) return FavoriteSyncOutcome.Synced
                     }
-                    FavoriteSyncFetchResult.Missing -> integrate(FavoriteSyncDocument.EMPTY, null, joinMode, providerKeys)
+                    FavoriteSyncFetchResult.Missing -> {
+                        // No server copy: keep this household's salt, or pick one for the first upload.
+                        val salt = state.salt() ?: FavoriteSyncCrypto.newSalt()
+                        integrate(FavoriteSyncDocument.EMPTY, null, salt, keysFor(config, salt), rejoin = false)
+                    }
                     is FavoriteSyncFetchResult.Found -> {
+                        val salt = FavoriteSyncCrypto.saltOf(fetched.body)
+                        val keys = keysFor(config, salt)
+                        // Decrypt before touching local state, so a wrong passphrase changes nothing.
                         val remote = decode(FavoriteSyncCrypto.decrypt(keys, fetched.body))
-                        integrate(remote, fetched.etag, joinMode, providerKeys)
+                        // Another salt means the server copy was re-created (or another TV won the
+                        // first upload): the replica's provider keys no longer match, so join again.
+                        val rejoin = state.salt()?.contentEquals(salt) == false
+                        integrate(remote, fetched.etag, salt, keys, rejoin)
                     }
                 }
                 forceFetch = false
             }
             if (!state.isDirty()) return FavoriteSyncOutcome.Synced
 
+            val keys = keysFor(config, state.salt() ?: error("Favorites sync salt missing after merge"))
             val version = state.localVersion()
-            val payload = FavoriteSyncMerger.compact(state.replica(), state.nowMs())
+            // One clock read per round, so the stored replica compacts exactly like the upload did.
+            val nowMs = state.nowMs()
+            val payload = FavoriteSyncMerger.compact(state.replica(), nowMs)
             if (payload.providers.values.any { provider -> provider.lists.values.sumOf { it.members.size } > MAX_ITEMS_PER_PROVIDER }) {
                 return FavoriteSyncOutcome.Failed(FavoriteSyncError.TOO_LARGE)
             }
@@ -110,13 +129,17 @@ class FavoriteSyncEngine @Inject constructor(
                 is FavoriteSyncStoreResult.Stored -> {
                     val clean = transactionRunner.inTransaction {
                         state.setEtag(stored.etag)
-                        state.saveReplica(FavoriteSyncMerger.compact(state.replica(), state.nowMs()))
+                        state.saveReplica(FavoriteSyncMerger.compact(state.replica(), nowMs))
                         // An edit recorded while uploading keeps the replica dirty for the next pass.
                         (state.localVersion() == version).also { if (it) state.setDirty(false) }
                     }
                     if (clean) return FavoriteSyncOutcome.Synced
                 }
-                FavoriteSyncStoreResult.Conflict -> forceFetch = true
+                FavoriteSyncStoreResult.Conflict -> {
+                    // 412, or 404 because the document vanished: the stored version is stale either way.
+                    state.setEtag(null)
+                    forceFetch = true
+                }
             }
         }
         return FavoriteSyncOutcome.Failed(FavoriteSyncError.CONFLICT)
@@ -125,26 +148,40 @@ class FavoriteSyncEngine @Inject constructor(
     private suspend fun integrate(
         remote: FavoriteSyncDocument,
         remoteEtag: String?,
-        joinMode: FavoriteSyncJoinMode?,
-        providerKeys: Map<Long, String>
+        salt: ByteArray,
+        keys: FavoriteSyncKeys,
+        rejoin: Boolean
     ) {
+        val providerKeys = identity.localProviderKeys(keys)
         val clock = state.clock()
         FavoriteSyncMerger.maxTimestamp(remote)?.let(clock::observe)
-        val authoritative = joinMode == FavoriteSyncJoinMode.USE_SERVER
-        val merged = transactionRunner.inTransaction {
+        val (merged, joinMode) = transactionRunner.inTransaction {
+            if (rejoin) {
+                state.resetReplica()
+                if (state.joinMode() == null) state.setJoinMode(FavoriteSyncJoinMode.MERGE)
+            }
+            val joinMode = state.joinMode()
             val merged = when (joinMode) {
                 null -> FavoriteSyncMerger.merge(state.replica(), remote)
-                FavoriteSyncJoinMode.USE_SERVER -> remote
+                // Providers the server has never seen keep this TV's favorites rather than losing them.
+                FavoriteSyncJoinMode.USE_SERVER -> capture(
+                    remote,
+                    providerKeys.filterValues { it !in remote.providers },
+                    FavoriteSyncCapturePolicy.MERGE
+                )
                 FavoriteSyncJoinMode.MERGE -> capture(remote, providerKeys, FavoriteSyncCapturePolicy.MERGE)
                 FavoriteSyncJoinMode.UPLOAD_THIS_TV -> capture(remote, providerKeys, FavoriteSyncCapturePolicy.UPLOAD)
             }
             state.saveReplica(merged)
             state.setEtag(remoteEtag)
+            state.setSalt(salt)
             // The replica was read inside this transaction, so equality means nothing is left to upload.
             state.setDirty(merged != remote)
             state.saveClock()
-            merged
+            merged to joinMode
         }
+        // "Use the server's copy" only overrides providers the server copy actually has.
+        val authoritative = if (joinMode == FavoriteSyncJoinMode.USE_SERVER) remote.providers.keys else emptySet()
         state.setUnmatchedCount(applier.apply(merged, providerKeys, authoritative))
         if (joinMode != null) state.setJoinMode(null)
     }
@@ -173,11 +210,12 @@ class FavoriteSyncEngine @Inject constructor(
         return document
     }
 
-    private fun pairedKeys(config: FavoriteSyncConfig = secretStore.load()): FavoriteSyncKeys? {
-        val masterKey = config.masterKey
-        if (!config.enabled || !config.isComplete || masterKey == null) return null
-        return FavoriteSyncKeys(masterKey)
-    }
+    private fun pairedConfig(): FavoriteSyncConfig? = secretStore.load().takeIf { it.enabled && it.isComplete }
+
+    /** PBKDF2 runs at most once per passphrase and salt; keep it off the IO pool anyway. */
+    private suspend fun keysFor(config: FavoriteSyncConfig, salt: ByteArray): FavoriteSyncKeys =
+        withContext(Dispatchers.Default) { keyring.keys(config, salt) }
+            ?: throw IllegalStateException("Favorites sync is not paired")
 
     private fun FavoriteSyncFailure.toError(): FavoriteSyncError = when (this) {
         FavoriteSyncFailure.UNREACHABLE -> FavoriteSyncError.SERVER_UNREACHABLE

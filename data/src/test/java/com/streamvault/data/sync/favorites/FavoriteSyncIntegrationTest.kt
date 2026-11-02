@@ -211,7 +211,7 @@ class FavoriteSyncIntegrationTest {
         // B uploads between A's fetch and A's upload, so A's first PUT gets 412 and must merge B's change.
         server.beforeNextStore = { b.engine.sync() }
         assertThat(a.engine.sync()).isEqualTo(FavoriteSyncOutcome.Synced)
-        assertThat(server.conflicts).isAtLeast(1)
+        assertThat(server.conflicts).isEqualTo(1)
         b.engine.sync()
 
         assertThat(a.globalLiveStreams()).containsExactly(1L, 2L)
@@ -259,10 +259,114 @@ class FavoriteSyncIntegrationTest {
         assertThat(a.state.replica()).isEqualTo(FavoriteSyncDocument.EMPTY)
 
         a.pair(); a.engine.sync()
-        val plaintext = String(FavoriteSyncCrypto.decrypt(a.keys, server.body!!))
+        val plaintext = String(FavoriteSyncCrypto.decrypt(a.keysFor(server.body!!), server.body!!))
         assertThat(plaintext).contains("L:1")
         assertThat(plaintext).doesNotContain("provider.example")
         assertThat(plaintext).doesNotContain("user")
+    }
+
+    @Test
+    fun `an unexpected failure becomes a status error instead of a crash`() = runTest {
+        val a = tv(1, listOf(1))
+        a.pair()
+        server.crash = true
+
+        assertThat(a.engine.sync()).isEqualTo(FavoriteSyncOutcome.Failed(FavoriteSyncError.SERVER_ERROR))
+        assertThat(a.state.lastError()).isEqualTo(FavoriteSyncError.SERVER_ERROR)
+    }
+
+    @Test
+    fun `a TV with a fast clock does not erase adds from a TV with a correct clock`() = runTest {
+        val a = tv(1, listOf(1, 2))
+        val b = tv(7, listOf(1, 2))
+        a.state.nowMs = { BASE_MS + 200 * DAY_MS }
+        b.state.nowMs = { BASE_MS }
+        a.pair(); b.pair()
+        a.engine.sync(); b.engine.sync()
+
+        // A's compaction runs with a clock 200 days ahead; B adds before it has seen A's stamps.
+        a.addLive(1)
+        a.engine.sync()
+        b.addLive(2)
+        b.engine.sync(); a.engine.sync()
+
+        assertThat(a.globalLiveStreams()).containsExactly(1L, 2L)
+        assertThat(b.globalLiveStreams()).containsExactly(1L, 2L)
+    }
+
+    @Test
+    fun `upload this TV does not remove items while a local favorite is still unidentified`() = runTest {
+        val a = tv(1, listOf(1, 2, 3))
+        a.addLive(1); a.addLive(2)
+        a.pair(); a.engine.sync()
+
+        val b = tv(7, listOf(1, 2, 3))
+        b.addLive(3)
+        // A favorite whose channel row is not indexed on this TV yet.
+        b.database.favoriteDao().insert(FavoriteEntity(providerId = 7L, contentId = 99_999L, contentType = ContentType.LIVE))
+        b.pair(FavoriteSyncJoinMode.UPLOAD_THIS_TV)
+        b.engine.sync(); a.engine.sync()
+
+        assertThat(a.globalLiveStreams()).containsExactly(1L, 2L, 3L)
+    }
+
+    @Test
+    fun `upload this TV keeps server items this TV's catalog has not indexed`() = runTest {
+        val a = tv(1, listOf(1, 2, 3))
+        a.addLive(1); a.addLive(2)
+        a.pair(); a.engine.sync()
+
+        // B's catalog only has stream 3 so far: it cannot know whether 1 and 2 were removed.
+        val b = tv(7, listOf(3))
+        b.addLive(3)
+        b.pair(FavoriteSyncJoinMode.UPLOAD_THIS_TV)
+        b.engine.sync(); a.engine.sync()
+
+        assertThat(a.globalLiveStreams()).containsExactly(1L, 2L, 3L)
+        assertThat(b.state.unmatchedCount()).isEqualTo(2)
+    }
+
+    @Test
+    fun `use the server copy with an empty server keeps and uploads this TV's favorites`() = runTest {
+        val b = tv(7, listOf(3))
+        b.addLive(3)
+        b.pair(FavoriteSyncJoinMode.USE_SERVER)
+        assertThat(b.engine.sync()).isEqualTo(FavoriteSyncOutcome.Synced)
+        assertThat(b.globalLiveStreams()).containsExactly(3L)
+
+        val a = tv(1, listOf(3))
+        a.pair(); a.engine.sync()
+        assertThat(a.globalLiveStreams()).containsExactly(3L)
+    }
+
+    @Test
+    fun `a document deleted on the server is recreated after the conditional upload fails`() = runTest {
+        val a = tv(1, listOf(1, 2))
+        a.addLive(1)
+        a.pair(); a.engine.sync()
+        a.addLive(2)
+
+        // The server copy disappears between A's fetch and A's upload; the PUT's If-Match then fails.
+        server.beforeNextStore = { server.body = null; server.etag = null }
+        assertThat(a.engine.sync()).isEqualTo(FavoriteSyncOutcome.Synced)
+
+        assertThat(server.conflicts).isEqualTo(1)
+        val plaintext = String(FavoriteSyncCrypto.decrypt(a.keysFor(server.body!!), server.body!!))
+        assertThat(plaintext).contains("L:1")
+        assertThat(plaintext).contains("L:2")
+    }
+
+    @Test
+    fun `every TV reads the household salt from the server copy`() = runTest {
+        val a = tv(1, listOf(1))
+        val b = tv(7, listOf(1))
+        a.addLive(1)
+        a.pair(); a.engine.sync()
+        b.pair(); b.engine.sync()
+
+        assertThat(b.state.salt()).isEqualTo(a.state.salt())
+        assertThat(FavoriteSyncCrypto.saltOf(server.body!!)).isEqualTo(a.state.salt())
+        assertThat(b.globalLiveStreams()).containsExactly(1L)
     }
 
     // ---- harness ---------------------------------------------------------------------------
@@ -282,18 +386,19 @@ class FavoriteSyncIntegrationTest {
         mode: FavoriteSyncJoinMode = FavoriteSyncJoinMode.MERGE,
         passphrase: String = PASSPHRASE
     ) {
-        secrets.config = FavoriteSyncConfig(true, "http://sync.test", "token", FavoriteSyncCrypto.deriveMasterKey(passphrase, 10))
+        secrets.config = FavoriteSyncConfig(true, "http://sync.test", "token", passphrase)
         state.setJoinMode(mode)
     }
 
     private class Tv(val database: StreamVaultDatabase, val providerId: Long, server: FakeSyncServer) {
         val secrets = InMemorySecretStore()
-        val keys: FavoriteSyncKeys get() = FavoriteSyncKeys(secrets.config.masterKey!!)
+        // Few PBKDF2 rounds keep the tests fast; production uses FavoriteSyncCrypto.PBKDF2_ITERATIONS.
+        private val keyring = FavoriteSyncKeyring(secrets, 10)
         val dao = database.favoriteSyncDao()
         val state = FavoriteSyncStateStore(dao)
         private val identity = FavoriteSyncIdentity(database.providerDao(), { IDENTITY }, dao)
         private val runner = RoomDatabaseTransactionRunner(database)
-        val recorder = FavoriteSyncRecorder(secrets, state, identity, dao, FavoriteSyncChangeSignal())
+        val recorder = FavoriteSyncRecorder(secrets, state, identity, dao, FavoriteSyncChangeSignal(), keyring)
         val engine = FavoriteSyncEngine(
             secrets,
             state,
@@ -301,8 +406,11 @@ class FavoriteSyncIntegrationTest {
             FavoriteSyncApplier(dao, database.favoriteDao(), identity, runner),
             recorder,
             runner,
-            { _, _ -> server.transport }
+            { _, _ -> server.transport },
+            keyring
         )
+
+        fun keysFor(blob: ByteArray): FavoriteSyncKeys = keyring.keys(secrets.config, FavoriteSyncCrypto.saltOf(blob))!!
         val repository = FavoriteRepositoryImpl(database.favoriteDao(), database.virtualGroupDao(), runner, recorder)
 
         suspend fun insertChannels(streams: List<Long>) {
@@ -342,12 +450,16 @@ class FavoriteSyncIntegrationTest {
         }
     }
 
+    /** Thrown by the fake server to stand in for any unexpected runtime failure. */
+    private class UnexpectedFailure : RuntimeException("unexpected")
+
     /** In-memory implementation of the v1 server contract. */
     private class FakeSyncServer {
         var body: ByteArray? = null
         var etag: String? = null
         var conflicts = 0
         var failure: FavoriteSyncFailure? = null
+        var crash = false
 
         /** Runs once before the next store is checked, to simulate another TV writing in between. */
         var beforeNextStore: (suspend () -> Unit)? = null
@@ -355,6 +467,7 @@ class FavoriteSyncIntegrationTest {
         val transport = object : FavoriteSyncTransport {
             override suspend fun fetch(ifNoneMatch: String?): FavoriteSyncFetchResult {
                 failure?.let { throw FavoriteSyncTransportException(it, "fake failure") }
+                if (crash) throw UnexpectedFailure()
                 val current = body ?: return FavoriteSyncFetchResult.Missing
                 val currentEtag = etag!!
                 return if (ifNoneMatch == currentEtag) {
@@ -384,6 +497,8 @@ class FavoriteSyncIntegrationTest {
 
     private companion object {
         const val PASSPHRASE = "household passphrase"
+        const val BASE_MS = 1_700_000_000_000L
+        const val DAY_MS = 24L * 60 * 60 * 1000
         const val IDENTITY = "http://provider.example|user|XTREAM_CODES|"
     }
 }

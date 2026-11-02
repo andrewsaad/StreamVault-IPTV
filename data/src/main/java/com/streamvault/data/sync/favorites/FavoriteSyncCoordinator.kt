@@ -1,6 +1,7 @@
 package com.streamvault.data.sync.favorites
 
 import android.os.SystemClock
+import android.util.Log
 import com.streamvault.domain.manager.FavoriteSyncJoinMode
 import com.streamvault.domain.manager.FavoriteSyncManager
 import com.streamvault.domain.manager.FavoriteSyncSetupResult
@@ -8,6 +9,7 @@ import com.streamvault.domain.manager.FavoriteSyncStatus
 import com.streamvault.domain.sync.AutomaticSyncActivity
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -44,7 +46,12 @@ class FavoriteSyncCoordinator @Inject constructor(
     private val workScheduler: FavoriteSyncWorkScheduler
 ) : FavoriteSyncManager, FavoriteSyncCatalogListener {
 
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    // Last line of defence: a sync bug must surface as a status error, never as an app crash.
+    private val exceptionHandler = CoroutineExceptionHandler { _, error ->
+        Log.w(TAG, "Favorites sync task failed: ${error.javaClass.simpleName}")
+        mutableStatus.update { it.copy(running = false) }
+    }
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO + exceptionHandler)
     private val mutableStatus = MutableStateFlow(FavoriteSyncStatus())
     override val status: StateFlow<FavoriteSyncStatus> = mutableStatus.asStateFlow()
 
@@ -80,18 +87,25 @@ class FavoriteSyncCoordinator @Inject constructor(
         val trimmedToken = token.trim()
         if (trimmedToken.isEmpty()) return FavoriteSyncSetupResult.MISSING_TOKEN
         val previous = withContext(Dispatchers.IO) { secretStore.load() }
-        val masterKey = when {
+        val effectivePassphrase = when {
             passphrase.isNotEmpty() && passphrase.length < MIN_PASSPHRASE_LENGTH -> return FavoriteSyncSetupResult.PASSPHRASE_TOO_SHORT
-            passphrase.isNotEmpty() -> withContext(Dispatchers.Default) { FavoriteSyncCrypto.deriveMasterKey(passphrase) }
-            else -> previous.masterKey ?: return FavoriteSyncSetupResult.PASSPHRASE_TOO_SHORT
+            passphrase.isNotEmpty() -> passphrase
+            else -> previous.passphrase?.takeIf { it.isNotEmpty() } ?: return FavoriteSyncSetupResult.PASSPHRASE_TOO_SHORT
         }
-        val pairingChanged = previous.serverUrl != url || previous.masterKey?.contentEquals(masterKey) != true
+        val pairingChanged = previous.serverUrl != url || previous.passphrase != effectivePassphrase
         withContext(Dispatchers.IO) {
             // A new server or passphrase means a different document: start from a clean replica.
             if (pairingChanged) state.resetReplica()
             // Turning sync on, or pairing anew, always goes through the first-join choice.
             if (pairingChanged || !previous.enabled) state.setJoinMode(joinMode)
-            secretStore.save(FavoriteSyncConfig(enabled = true, serverUrl = url, token = trimmedToken, masterKey = masterKey))
+            // A cached key belongs to the old passphrase; keys are derived again on the first sync.
+            val config = FavoriteSyncConfig(enabled = true, serverUrl = url, token = trimmedToken, passphrase = effectivePassphrase)
+            val keepKey = previous.passphrase == effectivePassphrase
+            val derivedKey = previous.derivedKey
+            val derivedKeySalt = previous.derivedKeySalt
+            secretStore.save(
+                if (keepKey && derivedKey != null && derivedKeySalt != null) config.withDerivedKey(derivedKey, derivedKeySalt) else config
+            )
             workScheduler.schedulePeriodic()
         }
         refreshStatus()
@@ -102,7 +116,7 @@ class FavoriteSyncCoordinator @Inject constructor(
     override suspend fun disable() {
         withContext(Dispatchers.IO) {
             val current = secretStore.load()
-            secretStore.save(FavoriteSyncConfig(false, current.serverUrl, current.token, current.masterKey))
+            secretStore.save(current.withEnabled(false))
             workScheduler.cancelPeriodic()
         }
         pushJob?.cancel()
@@ -184,6 +198,7 @@ class FavoriteSyncCoordinator @Inject constructor(
     }
 
     private companion object {
+        const val TAG = "FavoriteSync"
         const val MIN_PASSPHRASE_LENGTH = 8
         const val PUSH_DELAY_MS = 3_000L
         const val PULL_STALE_MS = 30_000L

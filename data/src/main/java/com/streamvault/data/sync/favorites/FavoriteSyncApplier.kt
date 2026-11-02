@@ -24,16 +24,17 @@ class FavoriteSyncApplier @Inject constructor(
 ) {
     /**
      * Applies [document] to the providers in [providerKeys] (local id to wire key) and returns the
-     * number of present items that could not be matched. Providers the document does not mention
-     * are never touched, even when [authoritative].
+     * number of present items that could not be matched. Providers whose wire key is in
+     * [authoritativeProviders] drop local favorites and groups the document does not have.
+     * Providers the document does not mention are never touched.
      */
     suspend fun apply(
         document: FavoriteSyncDocument,
         providerKeys: Map<Long, String>,
-        authoritative: Boolean = false
+        authoritativeProviders: Set<String> = emptySet()
     ): Int = providerKeys.entries.sumOf { (providerId, wireKey) ->
         val providerDoc = document.providers[wireKey] ?: return@sumOf 0
-        transactionRunner.inTransaction { applyProvider(providerId, providerDoc, authoritative) }
+        transactionRunner.inTransaction { applyProvider(providerId, providerDoc, wireKey in authoritativeProviders) }
     }
 
     private suspend fun applyProvider(
@@ -113,7 +114,8 @@ class FavoriteSyncApplier @Inject constructor(
         }
         if (authoritative) {
             // Lists the server copy does not have at all are emptied when this TV adopts it.
-            rowsByList.values.flatten().forEach { (rowId, _) -> dao.deleteFavorite(rowId) }
+            // Rows this TV cannot identify yet are kept, as they are in lists the copy does have.
+            rowsByList.values.flatten().forEach { (rowId, itemKey) -> if (itemKey != null) dao.deleteFavorite(rowId) }
         }
         return unmatched
     }
