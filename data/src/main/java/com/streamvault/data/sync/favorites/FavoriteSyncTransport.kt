@@ -46,7 +46,7 @@ interface FavoriteSyncTransport {
 }
 
 /**
- * HTTP client for the NUC sync server contract (v1). Uses a private OkHttp client without
+ * HTTP client for the home sync server contract (v1). Uses a private OkHttp client without
  * logging interceptors so the bearer token can never reach logcat.
  */
 class HttpFavoriteSyncTransport(
@@ -84,7 +84,8 @@ class HttpFavoriteSyncTransport(
         execute(request) { code, etag, _ ->
             when (code) {
                 200, 201 -> FavoriteSyncStoreResult.Stored(etag ?: missingEtag())
-                412 -> FavoriteSyncStoreResult.Conflict
+                // 404: the version named in If-Match no longer exists (document deleted on the server).
+                404, 412 -> FavoriteSyncStoreResult.Conflict
                 else -> throw failure(code)
             }
         }

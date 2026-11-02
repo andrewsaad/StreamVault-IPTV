@@ -31,7 +31,7 @@ class HttpFavoriteSyncTransportTest {
     fun `document url appends the v1 document path`() {
         assertThat(HttpFavoriteSyncTransport.documentUrl("http://192.168.1.10:8787/")?.toString())
             .isEqualTo("http://192.168.1.10:8787/v1/docs/streamvault-favorites")
-        assertThat(HttpFavoriteSyncTransport.documentUrl("nuc:8787")).isNull()
+        assertThat(HttpFavoriteSyncTransport.documentUrl("sync-box:8787")).isNull()
     }
 
     @Test
@@ -87,6 +87,13 @@ class HttpFavoriteSyncTransportTest {
         assertThat(first.getHeader("If-Match")).isEqualTo("\"v1\"")
         assertThat(first.getHeader("If-None-Match")).isNull()
         assertThat(transport.store(byteArrayOf(1), ifMatch = "\"v1\"")).isEqualTo(FavoriteSyncStoreResult.Stored("\"v2\""))
+    }
+
+    @Test
+    fun `replace of a document deleted on the server maps 404 to conflict`() = runTest {
+        server.enqueue(MockResponse().setResponseCode(404))
+
+        assertThat(transport.store(byteArrayOf(1), ifMatch = "\"gone\"")).isEqualTo(FavoriteSyncStoreResult.Conflict)
     }
 
     @Test
