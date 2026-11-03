@@ -104,8 +104,21 @@ class PlaybackJournalTest {
         assertThat(text).doesNotContain("http://")
         assertThat(text).doesNotContain("https://")
         assertThat(text).contains("target=provider.example/live/<redacted>/<redacted>/1234.ts")
-        assertThat(text).contains("target=cdn.example/<redacted>/99")
+        assertThat(text).contains("target=cdn.example/<redacted>/<redacted>/99")
         assertThat(text).contains("load-error http=403 error=InvalidResponseCodeException")
+    }
+
+    @Test
+    fun `non-http stream urls and two-segment paths are scrubbed too`() {
+        val message = PlaybackJournal.journalMessage("connect rtmp://live.example/alice/s3cret failed; also rtsp://cam.example:554/alice/s3cret")
+
+        assertThat(message).doesNotContain("alice")
+        assertThat(message).doesNotContain("s3cret")
+        assertThat(message).doesNotContain("rtmp://")
+        assertThat(message).doesNotContain("rtsp://")
+        assertThat(PlaybackJournal.journalTarget("https://cdn.example/alice/s3cret")).isEqualTo("cdn.example/<redacted>/<redacted>")
+        assertThat(PlaybackJournal.journalTarget("https://cdn.example/hls/index.m3u8")).isEqualTo("cdn.example/<redacted>/index.m3u8")
+        assertThat(PlaybackJournal.journalTarget("https://cdn.example/index.m3u8")).isEqualTo("cdn.example/index.m3u8")
     }
 
     @Test

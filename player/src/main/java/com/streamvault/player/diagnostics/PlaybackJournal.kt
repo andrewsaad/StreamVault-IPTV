@@ -359,12 +359,14 @@ class PlaybackJournal internal constructor(
         const val FLUSH_INTERVAL_MS = 30_000L
         private const val MAX_MESSAGE_CHARS = 160
         private val TIMESTAMP_FORMAT: DateTimeFormatter = DateTimeFormatter.ISO_OFFSET_DATE_TIME
-        private val urlRegex = Regex("""https?://[^\s"'<>]+""", RegexOption.IGNORE_CASE)
+        // Any scheme: rtmp/rtsp/udp stream URLs can carry credentials too.
+        private val urlRegex = Regex("""[a-z][a-z0-9+.-]*://[^\s"'<>]+""", RegexOption.IGNORE_CASE)
+        private val mediaSegmentRegex = Regex("""\d+(\.[A-Za-z0-9]{1,5})?|[\w-]+\.(m3u8|mpd|ts|m4s|mp4|mkv|aac)""", RegexOption.IGNORE_CASE)
 
         /**
-         * Host plus a credential-free path. Xtream-style URLs also appear as
-         * `/user/pass/id` without a `/live/` prefix, which the shared sanitizer keeps,
-         * so any unredacted path with three or more segments is collapsed to its last one.
+         * Host plus a credential-free path. A path the shared sanitizer left untouched may still
+         * hold a login (e.g. `host/user/pass` or unusual Xtream shapes), so any unredacted path
+         * with two or more segments is collapsed to its last one.
          */
         fun journalTarget(url: String?): String {
             val sanitized = PlaybackLogSanitizer.sanitizeUrl(url)
@@ -372,9 +374,10 @@ class PlaybackJournal internal constructor(
             val slash = sanitized.indexOf('/')
             if (slash < 0) return sanitized
             val segments = sanitized.substring(slash + 1).split('/').filter(String::isNotEmpty)
-            return if (segments.size >= 3) {
-                "${sanitized.substring(0, slash)}/<redacted>/${segments.last()}"
-            } else sanitized
+            if (segments.size < 2) return sanitized
+            // Keep the last part only when it is a media file or numeric id; in `host/user/pass` it is the password.
+            val last = segments.last().takeIf { mediaSegmentRegex.matches(it) } ?: "<redacted>"
+            return "${sanitized.substring(0, slash)}/<redacted>/$last"
         }
 
         fun journalMessage(message: String?): String {
