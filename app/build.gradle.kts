@@ -187,6 +187,24 @@ android {
             }
             matchingFallbacks += listOf("release")
         }
+        create("sideload") {
+            // Release-optimized (R8, non-debuggable) build that installs over the debug app on
+            // personal TVs: same package and debug key, so app data survives the upgrade.
+            // Inherits the empty dev-seeding defaults, so no local.properties values ship.
+            initWith(getByName("release"))
+            applicationIdSuffix = ".debug"
+            versionNameSuffix = "-sideload"
+            isDebuggable = false
+            // Set explicitly: initWith runs before the release block below configures R8.
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+            signingConfig = signingConfigs.getByName("debug")
+            matchingFallbacks += listOf("release")
+        }
         release {
             isMinifyEnabled = true
             isShrinkResources = true
