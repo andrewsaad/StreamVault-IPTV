@@ -604,6 +604,9 @@ class PreferencesRepository @Inject constructor(
 
         fun emptyGuideKeys(providerId: Long) =
             stringPreferencesKey("guide_empty_keys_v1_$providerId")
+
+        fun providerXmltvUnavailable(providerId: Long) =
+            stringPreferencesKey("provider_xmltv_unavailable_v1_$providerId")
     }
 
     private object ParentalSessionKeys {
@@ -694,6 +697,34 @@ class PreferencesRepository @Inject constructor(
             } else {
                 preferences[key] = encoded
             }
+        }
+    }
+
+    /**
+     * When the provider's auto-built XMLTV endpoint last answered 404/410, or null. [sourceKey]
+     * is a non-reversible fingerprint of the provider endpoint, so a reconfigured provider is
+     * probed again; the XMLTV URL itself (which embeds credentials) is never stored.
+     */
+    suspend fun getProviderXmltvUnavailableSince(providerId: Long, sourceKey: String): Long? {
+        if (providerId <= 0L) return null
+        return decodeProviderXmltvUnavailable(
+            context.dataStore.data.first()[PreferencesKeys.providerXmltvUnavailable(providerId)],
+            sourceKey
+        )
+    }
+
+    suspend fun markProviderXmltvUnavailable(providerId: Long, sourceKey: String, at: Long) {
+        if (providerId <= 0L || at <= 0L) return
+        context.dataStore.edit { preferences ->
+            preferences[PreferencesKeys.providerXmltvUnavailable(providerId)] =
+                encodeProviderXmltvUnavailable(at, sourceKey)
+        }
+    }
+
+    suspend fun clearProviderXmltvUnavailable(providerId: Long) {
+        if (providerId <= 0L) return
+        context.dataStore.edit { preferences ->
+            preferences.remove(PreferencesKeys.providerXmltvUnavailable(providerId))
         }
     }
 

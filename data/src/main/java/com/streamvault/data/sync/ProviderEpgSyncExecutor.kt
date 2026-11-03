@@ -8,6 +8,7 @@ import com.streamvault.data.local.entity.ChannelGuideSyncEntity
 import com.streamvault.data.mapper.toEntity
 import com.streamvault.data.preferences.PreferencesRepository
 import com.streamvault.data.remote.stalker.StalkerApiError
+import com.streamvault.data.repository.EpgEndpointMissingException
 import com.streamvault.data.remote.stalker.StalkerPortalStateStore
 import com.streamvault.data.remote.stalker.StalkerProvider
 import com.streamvault.data.remote.stalker.StalkerRequestCoordinator
@@ -27,6 +28,7 @@ import com.streamvault.domain.repository.EpgSourceRepository
 import com.streamvault.domain.repository.SyncMetadataRepository
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.first
+import java.security.MessageDigest
 
 /** Owns provider-neutral guide policy and the provider-specific XMLTV/native guide handoffs. */
 internal class ProviderEpgSyncExecutor(
@@ -52,9 +54,24 @@ internal class ProviderEpgSyncExecutor(
         onProgress: ((String) -> Unit)?
     ): ProviderGuideSyncResult = syncProviderEpg(provider, metadata, now, force, onProgress) { warnings ->
         var retryable = false
+        // Only the auto-built xmltv.php endpoint is learned; a user-entered URL always reports failures.
+        val autoBuiltXmltv = provider.epgUrl.isBlank()
+        val xmltvSourceKey = if (autoBuiltXmltv) providerXmltvSourceKey(provider) else ""
         if (shouldUseProviderGuide(provider.guideSourcePolicy) &&
             (force || ContentCachePolicy.shouldRefresh(metadata.lastEpgSuccess, ContentCachePolicy.EPG_TTL_MILLIS, now))
         ) {
+            val unavailableSince = if (autoBuiltXmltv) {
+                runSuspendCatching {
+                    preferencesRepository.getProviderXmltvUnavailableSince(provider.id, xmltvSourceKey)
+                }.getOrNull()
+            } else null
+            if (provider.guideSourcePolicy == GuideSourcePolicy.AUTO &&
+                unavailableSince != null && now >= unavailableSince &&
+                now - unavailableSince < PROVIDER_XMLTV_REPROBE_MILLIS
+            ) {
+                Log.i(TAG, "Skipping provider XMLTV for provider ${provider.id}: endpoint was missing at last probe; using external guide sources.")
+                return@syncProviderEpg false
+            }
             try {
                 progress(provider.id, onProgress, "Downloading EPG...")
                 val xmltvUrl = provider.epgUrl.ifBlank {
@@ -68,6 +85,9 @@ internal class ProviderEpgSyncExecutor(
                 xtreamSupport.retryTransient {
                     requireResult(epgRepository.refreshEpg(provider.id, xmltvUrl), "Failed to refresh EPG")
                 }
+                if (unavailableSince != null) {
+                    runSuspendCatching { preferencesRepository.clearProviderXmltvUnavailable(provider.id) }
+                }
                 val epgCount = programDao.countByProvider(provider.id)
                 syncMetadataRepository.updateMetadata(
                     metadata.copy(lastEpgSync = now, lastEpgSuccess = now, epgCount = epgCount)
@@ -76,9 +96,21 @@ internal class ProviderEpgSyncExecutor(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                Log.e(TAG, "EPG sync failed (non-fatal): ${sanitizeThrowableMessage(e)}")
-                retryable = isRetryableEpgException(e)
-                warnings += "EPG XMLTV sync failed."
+                if (autoBuiltXmltv && e.hasMissingEpgEndpoint()) {
+                    runSuspendCatching {
+                        preferencesRepository.markProviderXmltvUnavailable(provider.id, xmltvSourceKey, now)
+                    }
+                    Log.i(TAG, "Provider ${provider.id} does not offer XMLTV (endpoint missing); re-probing in 7 days.")
+                    if (provider.guideSourcePolicy != GuideSourcePolicy.AUTO) {
+                        warnings += "EPG XMLTV sync failed."
+                    } else if (!hasEnabledExternalGuide(provider.id)) {
+                        warnings += "This provider does not offer a TV guide. Add an external EPG source to see programs."
+                    }
+                } else {
+                    Log.e(TAG, "EPG sync failed (non-fatal): ${sanitizeThrowableMessage(e)}")
+                    retryable = isRetryableEpgException(e)
+                    warnings += "EPG XMLTV sync failed."
+                }
             }
         }
         retryable
@@ -479,7 +511,12 @@ internal class ProviderEpgSyncExecutor(
                 )
             },
             validateUrl = UrlSecurityPolicy::validateXtreamEpgUrl,
-            onProgress = onProgress
+            onProgress = onProgress,
+            onProviderGuideImported = {
+                if (provider.epgUrl.isBlank()) {
+                    runSuspendCatching { preferencesRepository.clearProviderXmltvUnavailable(provider.id) }
+                }
+            }
         )
 
     suspend fun syncM3uEpgOnly(provider: Provider, onProgress: ((String) -> Unit)?) =
@@ -514,7 +551,8 @@ internal class ProviderEpgSyncExecutor(
         provider: Provider,
         epgUrl: String,
         validateUrl: (String) -> String?,
-        onProgress: ((String) -> Unit)?
+        onProgress: ((String) -> Unit)?,
+        onProviderGuideImported: suspend () -> Unit = {}
     ) {
         progress(provider.id, onProgress, "Retrying EPG...")
         val hiddenLiveCategoryIds = preferencesRepository.getHiddenCategoryIds(provider.id, ContentType.LIVE).first()
@@ -535,6 +573,7 @@ internal class ProviderEpgSyncExecutor(
         xtreamSupport.retryTransient {
             requireResult(epgRepository.refreshEpg(provider.id, epgUrl), "Failed to refresh EPG")
         }
+        onProviderGuideImported()
         val now = System.currentTimeMillis()
         val metadata = (syncMetadataRepository.getMetadata(provider.id) ?: SyncMetadata(provider.id)).copy(
             lastEpgSync = now,
@@ -616,6 +655,21 @@ internal class ProviderEpgSyncExecutor(
     private fun shouldUseExternalGuide(policy: GuideSourcePolicy): Boolean =
         policy == GuideSourcePolicy.AUTO || policy == GuideSourcePolicy.EXTERNAL_ONLY
 
+    private fun Throwable.hasMissingEpgEndpoint(): Boolean =
+        generateSequence(this as Throwable?) { it.cause }
+            .any { it is EpgEndpointMissingException }
+
+    private suspend fun hasEnabledExternalGuide(providerId: Long): Boolean =
+        runSuspendCatching {
+            epgSourceRepository.getAssignmentsForProvider(providerId).first().any { it.enabled }
+        }.getOrDefault(true)
+
+    /** Fingerprints the provider endpoint without credentials so a reconfigured server is probed again. */
+    private fun providerXmltvSourceKey(provider: Provider): String = MessageDigest.getInstance("SHA-256")
+        .digest(provider.serverUrl.trim().trimEnd('/').lowercase().toByteArray(Charsets.UTF_8))
+        .take(12)
+        .joinToString("") { byte -> "%02x".format(byte.toInt() and 0xff) }
+
     private fun Throwable.hasStalkerRateLimit(): Boolean =
         generateSequence(this as Throwable?) { it.cause }
             .any { it is StalkerApiError.RateLimited }
@@ -648,5 +702,6 @@ internal class ProviderEpgSyncExecutor(
         const val STALKER_PER_CHANNEL_RECORD_SANITY_CAP = 5_000
         const val STALKER_PER_CHANNEL_EPG_REQUESTS_PER_RUN = 48
         const val MILLIS_PER_DAY = 24L * 60L * 60L * 1000L
+        const val PROVIDER_XMLTV_REPROBE_MILLIS = 7L * MILLIS_PER_DAY
     }
 }
