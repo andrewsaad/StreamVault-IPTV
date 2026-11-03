@@ -87,7 +87,8 @@ internal object PreferenceBackupRegistry {
     private val runtimeStoragePrefixes = setOf(
         "xtream_text_import_applied_generation_", "last_live_category_id_",
         "last_split_catalog_type_", "aspect_ratio_", "guide_empty_keys_v1_", "automatic_sync_status_",
-        "sports_event_channel_pick_", "catalog_sync_engine_", "catalog_sync_upgrade_started_"
+        "sports_event_channel_pick_", "catalog_sync_engine_", "catalog_sync_upgrade_started_",
+        "provider_xmltv_unavailable_v1_"
     )
 
     private val providerKeys = setOf(
