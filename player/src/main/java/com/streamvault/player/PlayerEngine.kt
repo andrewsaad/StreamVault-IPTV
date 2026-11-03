@@ -201,6 +201,13 @@ interface PlayerEngine {
     fun clearRenderBinding()
     fun releaseRenderView(renderView: View)
     fun resetLiveHandoffGrace() {}
+    /**
+     * Turns the playback journal on when a preview engine takes over fullscreen playback,
+     * and off when it goes back to a preview. Engines without a journal ignore it.
+     */
+    fun setJournalingEnabled(enabled: Boolean) {}
+    /** Records the app moving to the background or foreground in the playback journal. */
+    fun onAppVisibilityChanged(foreground: Boolean) {}
 }
 
 data class PlayerRetryStatus(

@@ -77,6 +77,9 @@ class PlaybackJournal internal constructor(
     private var sessionActive = false
     private var sessionStartElapsedMs = 0L
     private var playbackStartedOnce = false
+    private var firstFrameLogged = false
+    // The engine that started the current session; several engines share this journal.
+    private var sessionOwner: Any? = null
     private var activeBufferingCause: PlaybackBufferingTracker.Cause? = null
     private var bufferingStartElapsedMs = 0L
     private var stallCount = 0
@@ -103,12 +106,16 @@ class PlaybackJournal internal constructor(
         decoderPolicy: String,
         audioOutputPath: String,
         upmix: Boolean,
-        bufferPolicy: String?
+        bufferPolicy: String?,
+        origin: String? = null,
+        owner: Any? = null
     ) = guard {
         if (sessionActive) endSession("replaced")
         sessionActive = true
+        sessionOwner = owner
         sessionStartElapsedMs = elapsedMs()
         playbackStartedOnce = false
+        firstFrameLogged = false
         activeBufferingCause = null
         stallCount = 0
         stallTotalMs = 0L
@@ -120,21 +127,37 @@ class PlaybackJournal internal constructor(
         enqueue(
             "session-start channel=${quote(channelName.orEmpty())} mediaId=$mediaId type=$streamType " +
                 "target=${journalTarget(url)} decoderPolicy=$decoderPolicy audioPath=$audioOutputPath " +
-                "upmix=$upmix policy=${quote(bufferPolicy.orEmpty())}",
+                "upmix=$upmix policy=${quote(bufferPolicy.orEmpty())}" +
+                origin?.let { " origin=$it" }.orEmpty(),
             flush = true,
             appendNetwork = true
         )
     }
 
+    /** True when [owner] started the current session, or no session has been started yet. */
+    fun acceptsEventsFrom(owner: Any): Boolean = sessionOwner == null || sessionOwner === owner
+
     /** A retry or recovery re-prepare of the same media keeps the session and its counters. */
     fun onReprepare(reason: String, streamType: String) = guard {
         if (!sessionActive) return@guard
+        firstFrameLogged = false
         enqueue("reprepare reason=$reason type=$streamType")
     }
 
+    /**
+     * Logs time to first frame once per prepare. A surface re-attached later (for example
+     * after returning from the background) renders a "first" frame again whose time since
+     * prepare is meaningless, so it is ignored.
+     */
     fun onFirstFrame(ttffMs: Long) = guard {
-        if (!sessionActive) return@guard
+        if (!sessionActive || firstFrameLogged) return@guard
+        firstFrameLogged = true
         enqueue("first-frame ttffMs=$ttffMs")
+    }
+
+    fun onAppVisibility(foreground: Boolean) = guard {
+        if (!sessionActive) return@guard
+        enqueue(if (foreground) "app-foreground" else "app-background", flush = true)
     }
 
     fun onPlaybackStarted() {
@@ -259,7 +282,8 @@ class PlaybackJournal internal constructor(
         sampleTicks = 0
         enqueue(
             "sample state=${if (state == PlaybackState.BUFFERING) "buffering" else "playing"} " +
-                "${statsFields(stats.bufferedDurationMs, stats)} rebuffers=${stats.rebufferCount} " +
+                // The session's own stall count: the engine's counter restarts on a re-prepare.
+                "${statsFields(stats.bufferedDurationMs, stats)} rebuffers=$stallCount " +
                 "drops=${stats.droppedFrames}",
             flush = true,
             appendNetwork = true
@@ -279,6 +303,7 @@ class PlaybackJournal internal constructor(
         }
         activeBufferingCause = null
         sessionActive = false
+        sessionOwner = null
         enqueue(
             "session-end reason=$reason watchMs=${now - sessionStartElapsedMs} started=$playbackStartedOnce " +
                 "rebuffers=$stallCount rebufferMs=$stallTotalMs worstStallMs=$worstStallMs",

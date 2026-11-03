@@ -306,6 +306,12 @@ class Media3PlayerEngine @Inject constructor(
     }
     private var currentRetryContext: PlaybackRetryContext? = null
     private var journalSessionPending = false
+    // Auxiliary engines start with journaling off; a fullscreen handoff turns it on.
+    private var journalingEnabled = true
+    // Events go only to a session this engine started, so a late release of an engine
+    // that handed playback on cannot end or pollute another engine's session.
+    private val journal: PlaybackJournal?
+        get() = playbackJournal?.takeIf { journalingEnabled && it.acceptsEventsFrom(this) }
     private var playbackStarted = false
     private var liveBufferingRecoveryArmed = false
     private var playbackStartedRecoveryArmed = false
@@ -555,7 +561,7 @@ class Media3PlayerEngine @Inject constructor(
                             "policy=${currentBufferPolicyLabel.orEmpty()}"
                     )
                 }
-                playbackJournal?.onStatsTick(_playbackState.value, _isPlaying.value, stats)
+                journal?.onStatsTick(_playbackState.value, _isPlaying.value, stats)
                 updateBufferingHint(stats)
                 val liveStream = isCurrentStreamLive()
                 val selectedVideo = exoPlayer?.currentTracks?.isTypeSelected(C.TRACK_TYPE_VIDEO) == true
@@ -824,7 +830,7 @@ class Media3PlayerEngine @Inject constructor(
         pendingRetrySeekPositionOverrideMs = null
         _retryStatus.value = null
         exoPlayer?.stop()
-        playbackJournal?.endSession("stop")
+        journal?.endSession("stop")
         _playbackState.value = PlaybackState.IDLE
         _isPlaying.value = false
         _mediaTitle.value = null
@@ -1422,6 +1428,36 @@ class Media3PlayerEngine @Inject constructor(
         retryAttempt = 0
     }
 
+    override fun setJournalingEnabled(enabled: Boolean) {
+        if (isDisposed || enabled == journalingEnabled) return
+        if (!enabled) journal?.endSession("handoff")
+        journalingEnabled = enabled
+        if (!enabled) return
+        // An adopted preview is already playing, so its session starts at the handoff.
+        val streamInfo = lastStreamInfo ?: return
+        startJournalSession(streamInfo, lastMediaId.orEmpty(), origin = "preview")
+    }
+
+    override fun onAppVisibilityChanged(foreground: Boolean) {
+        journal?.onAppVisibility(foreground)
+    }
+
+    private fun startJournalSession(streamInfo: StreamInfo, mediaId: String, origin: String?) {
+        if (!journalingEnabled) return
+        playbackJournal?.startSession(
+            channelName = streamInfo.title,
+            mediaId = mediaId,
+            streamType = currentResolvedStreamType.name,
+            url = streamInfo.url,
+            decoderPolicy = activeVideoDecoderPolicy.name,
+            audioOutputPath = audioOutputPath,
+            upmix = audioOutputPreference == AudioOutputPreference.SURROUND_UPMIX,
+            bufferPolicy = currentBufferPolicyLabel,
+            origin = origin,
+            owner = this
+        )
+    }
+
     override fun release() {
         com.streamvault.domain.sync.AutomaticSyncActivity.stopped(this)
         if (isDisposed) return
@@ -1447,7 +1483,7 @@ class Media3PlayerEngine @Inject constructor(
         pendingPreloadWindow = null
         retryGeneration++
         pendingRetrySeekPositionOverrideMs = null
-        playbackJournal?.endSession(if (restartCollectors) "reset" else "release")
+        journal?.endSession(if (restartCollectors) "reset" else "release")
         statsCollector.stop()
         audioFocusController.release()
         mediaSession?.release()
@@ -1689,18 +1725,9 @@ class Media3PlayerEngine @Inject constructor(
             recentLoadErrors.clear()
             recentDroppedFrames.clear()
             lastVideoStallAtMs = 0L
-            playbackJournal?.startSession(
-                channelName = streamInfo.title,
-                mediaId = mediaId,
-                streamType = currentResolvedStreamType.name,
-                url = streamInfo.url,
-                decoderPolicy = activeVideoDecoderPolicy.name,
-                audioOutputPath = audioOutputPath,
-                upmix = audioOutputPreference == AudioOutputPreference.SURROUND_UPMIX,
-                bufferPolicy = currentBufferPolicyLabel
-            )
+            startJournalSession(streamInfo, mediaId, origin = null)
         } else {
-            playbackJournal?.onReprepare("retry-or-recovery", currentResolvedStreamType.name)
+            journal?.onReprepare("retry-or-recovery", currentResolvedStreamType.name)
         }
 
         try {
@@ -2141,7 +2168,7 @@ class Media3PlayerEngine @Inject constructor(
                 decoderReuseEvaluation: DecoderReuseEvaluation?
             ) {
                 statsCollector.onVideoFormatChanged(format)
-                playbackJournal?.onVideoFormat(format.bitrate, format.width, format.height)
+                journal?.onVideoFormat(format.bitrate, format.width, format.height)
                 refreshKnownBadCompatibilityRecords()
             }
 
@@ -2154,7 +2181,7 @@ class Media3PlayerEngine @Inject constructor(
                 selectedVideoDecoderName = decoderName
                 _playerStats.value = _playerStats.value.copy(videoDecoderName = decoderName)
                 Log.i(TAG, "video-decoder name=$decoderName policy=$activeVideoDecoderPolicy surface=${_renderSurfaceType.value}")
-                playbackJournal?.onVideoDecoder(decoderName)
+                journal?.onVideoDecoder(decoderName)
                 refreshKnownBadCompatibilityRecords()
             }
 
@@ -2171,7 +2198,7 @@ class Media3PlayerEngine @Inject constructor(
                     audioOutputPath = audioOutputPath
                 )
                 Log.i(TAG, "audio-decoder name=$decoderName policy=$activeAudioDecoderPolicy outputPath=$audioOutputPath")
-                playbackJournal?.onAudioDecoder(decoderName, audioOutputPath)
+                journal?.onAudioDecoder(decoderName, audioOutputPath)
             }
 
             override fun onAudioInputFormatChanged(
@@ -2214,7 +2241,7 @@ class Media3PlayerEngine @Inject constructor(
                 elapsedMs: Long
             ) {
                 statsCollector.onDroppedFrames(droppedFrames)
-                playbackJournal?.onDroppedFrames(droppedFrames, elapsedMs)
+                journal?.onDroppedFrames(droppedFrames, elapsedMs)
                 recentDroppedFrames.addLast(SystemClock.elapsedRealtime() to droppedFrames)
             }
 
@@ -2237,7 +2264,7 @@ class Media3PlayerEngine @Inject constructor(
                         timeout = causes.any { it is java.net.SocketTimeoutException }
                     )
                 )
-                playbackJournal?.onLoadError(httpCode, error::class.java.simpleName, error.message, mediaLoadData.dataType)
+                journal?.onLoadError(httpCode, error::class.java.simpleName, error.message, mediaLoadData.dataType)
             }
 
             override fun onBandwidthEstimate(
@@ -2261,7 +2288,7 @@ class Media3PlayerEngine @Inject constructor(
                 if (prepareStartMs > 0L) {
                     val ttff = System.currentTimeMillis() - prepareStartMs
                     _playerStats.value = _playerStats.value.copy(ttffMs = ttff)
-                    playbackJournal?.onFirstFrame(ttff)
+                    journal?.onFirstFrame(ttff)
                 }
                 videoStallDetector.onVideoFrameRendered(eventTime.currentPlaybackPositionMs)
                 markPlaybackStarted("first-frame-success")
@@ -2299,7 +2326,7 @@ class Media3PlayerEngine @Inject constructor(
                             "selectedBps=${exoPlayer?.videoFormat?.bitrate} " +
                             "estimateBps=${lastBandwidthEstimateBps.get()} decoder=$selectedVideoDecoderName"
                     )
-                    playbackJournal?.onBufferingEvent(event, player.totalBufferedDuration, _playerStats.value)
+                    journal?.onBufferingEvent(event, player.totalBufferedDuration, _playerStats.value)
                 }
             }
 
@@ -2357,7 +2384,7 @@ class Media3PlayerEngine @Inject constructor(
             }
 
             override fun onPlayerError(error: PlaybackException) {
-                playbackJournal?.onPlayerError(
+                journal?.onPlayerError(
                     errorCodeName = error.errorCodeName,
                     category = PlayerErrorClassifier.classify(error).name,
                     message = error.message
@@ -2536,7 +2563,7 @@ class Media3PlayerEngine @Inject constructor(
     private fun markPlaybackStarted(reason: String) {
         if (playbackStarted) return
         playbackStarted = true
-        playbackJournal?.onPlaybackStarted()
+        journal?.onPlaybackStarted()
         liveBufferingRecoveryArmed = false
         playbackStartedRecoveryArmed = false
         retryAttempt = resolveRetryAttemptAfterPlaybackStarted(retryAttempt)
@@ -2841,7 +2868,7 @@ class Media3PlayerEngine @Inject constructor(
                     recentTimeouts = recentLoadErrors.count { it.timeout },
                     estimateBps = stats.bandwidthEstimate,
                     bufferMs = stats.bufferedDurationMs,
-                    rssiDbm = playbackJournal?.lastRssiDbm,
+                    rssiDbm = journal?.lastRssiDbm,
                     recentDroppedFrames = recentDroppedFrames.sumOf { it.second },
                     recentDecoderStall = lastVideoStallAtMs >= windowStart && lastVideoStallAtMs > 0L
                 )
@@ -2849,13 +2876,13 @@ class Media3PlayerEngine @Inject constructor(
         }
         if (hint != _bufferingHint.value) {
             _bufferingHint.value = hint
-            playbackJournal?.onBufferingHint(hint)
+            journal?.onBufferingHint(hint)
         }
     }
 
     private fun journalVideoStall(action: String) {
         lastVideoStallAtMs = SystemClock.elapsedRealtime()
-        playbackJournal?.onVideoStall(
+        journal?.onVideoStall(
             action = action,
             stallCount = videoStallCount,
             decoder = selectedVideoDecoderName,
@@ -3390,7 +3417,7 @@ class Media3PlayerEngine @Inject constructor(
                     "errorCode=${error.errorCodeName} causeChain=${formatErrorCauseChain(error)} " +
                     "target=${PlaybackLogSanitizer.sanitizeUrl(streamInfo.url)}"
             )
-            playbackJournal?.onRetry(
+            journal?.onRetry(
                 attempt = nextAttempt,
                 maxAttempts = retryPolicy.maxWholeSourceRetryAttempts(error, effectivePlaybackStarted),
                 delayMs = delayMs,

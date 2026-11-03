@@ -140,6 +140,31 @@ class PlayerPreviewCoordinatorTest {
         verify(previewEngine).release()
     }
 
+    @Test
+    fun `an adopted preview engine starts journaling`() = runTest(testDispatcher) {
+        val coordinator = coordinator()
+
+        assertThat(adopt(coordinator, channel(id = 15L, providerId = 3L), PreviewHandoffSource.HOME)).isTrue()
+
+        verify(engineCoordinator.currentEngine).setJournalingEnabled(true)
+    }
+
+    @Test
+    fun `a reverse handoff stops journaling on the preview engine`() = runTest(testDispatcher) {
+        val coordinator = coordinator()
+        val engine = mock<PlayerEngine>()
+        val channel = channel(id = 16L, providerId = 3L)
+
+        coordinator.beginReverseHandoff(
+            channel = channel,
+            streamInfo = StreamInfo(url = "https://example.com/live.m3u8", title = channel.name),
+            engine = engine,
+            source = PreviewHandoffSource.HOME
+        )
+
+        verify(engine).setJournalingEnabled(false)
+    }
+
     private fun channel(id: Long, providerId: Long): Channel = Channel(
         id = id,
         name = "Preview $id",

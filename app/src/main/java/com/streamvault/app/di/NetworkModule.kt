@@ -187,15 +187,20 @@ object NetworkModule {
         okHttpClient: OkHttpClient,
         playbackCompatibilityRepository: com.streamvault.domain.repository.PlaybackCompatibilityRepository,
         audioCompatibilityMemoryStore: AudioCompatibilityMemoryStore,
-        playbackSupportSnapshotStore: PlaybackSupportSnapshotStore
+        playbackSupportSnapshotStore: PlaybackSupportSnapshotStore,
+        playbackJournal: PlaybackJournal
     ): PlayerEngine = Media3PlayerEngine(
         context,
         okHttpClient,
         playbackCompatibilityRepository,
         audioCompatibilityMemoryStore,
-        playbackSupportSnapshotStore
+        playbackSupportSnapshotStore,
+        LivePlaybackByteTap(),
+        playbackJournal
     ).apply {
         enableMediaSession = false
         bypassAudioFocus = true
+        // Journals only after a fullscreen handoff adopts it; previews stay out of the log.
+        setJournalingEnabled(false)
     }
 }

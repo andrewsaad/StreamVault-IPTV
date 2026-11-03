@@ -244,6 +244,7 @@ internal fun PlayerViewModel.startTokenRenewalMonitoring(
 fun PlayerViewModel.onAppBackgrounded(): Job? {
     if (!isAppInForeground) return null
     isAppInForeground = false
+    playerEngine.onAppVisibilityChanged(foreground = false)
     shouldResumeAfterForeground = playerEngine.isPlaying.value
     if (shouldResumeAfterForeground) {
         playerEngine.pause()
@@ -263,6 +264,7 @@ fun PlayerViewModel.onAppBackgrounded(): Job? {
 fun PlayerViewModel.onAppForegrounded() {
     if (isAppInForeground) return
     isAppInForeground = true
+    playerEngine.onAppVisibilityChanged(foreground = true)
     if (backgroundStreamReleaser.onForegrounded()) {
         shouldResumeAfterForeground = false
         retryStream(currentStreamUrl, currentChannelFlow.value?.epgChannelId)

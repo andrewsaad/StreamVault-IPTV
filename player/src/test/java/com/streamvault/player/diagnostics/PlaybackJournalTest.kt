@@ -157,14 +157,92 @@ class PlaybackJournalTest {
         repeat(10) { journal.onStatsTick(PlaybackState.READY, isPlaying = false, stats = stats) }
         repeat(10) { journal.onStatsTick(PlaybackState.IDLE, isPlaying = false, stats = stats) }
         journal.onStatsTick(PlaybackState.BUFFERING, isPlaying = false, stats = stats)
+        journal.onBufferingEvent(Event(Cause.REBUFFER, Outcome.STARTED, 0), 0, stats)
+        elapsedMs += 1_000
+        journal.onBufferingEvent(Event(Cause.REBUFFER, Outcome.RESUMED, 1_000), 2_000, stats)
         repeat(30) { journal.onStatsTick(PlaybackState.READY, isPlaying = true, stats = stats) }
 
         val samples = journal.drain().filter { " sample " in it }
 
         assertThat(samples).hasSize(2)
         assertThat(samples[0]).contains("sample state=buffering bufferMs=12000")
+        assertThat(samples[0]).contains("rebuffers=0 drops=3")
         assertThat(samples[1]).contains("sample state=playing")
+        // The session's stall count, not the engine's counter (which restarts on re-prepare).
         assertThat(samples[1]).contains("rebuffers=1 drops=3 net=wifi rssi=-58")
+    }
+
+    @Test
+    fun `sample rebuffers ignore the engine counter`() {
+        val journal = journal()
+        journal.start()
+        repeat(30) { journal.onStatsTick(PlaybackState.READY, isPlaying = true, stats = stats.copy(rebufferCount = 7)) }
+
+        assertThat(journal.drain().single { " sample " in it }).contains("rebuffers=0 ")
+    }
+
+    @Test
+    fun `preview handoff sessions are tagged with their origin`() {
+        val journal = journal()
+        journal.startSession("beIN 5", "m", "HLS", null, "AUTO", "AUTO", false, null, origin = "preview")
+        journal.start()
+
+        val starts = journal.drain().filter { " session-start " in it }
+
+        assertThat(starts[0]).contains("policy=\"\" origin=preview net=wifi")
+        assertThat(starts[1]).doesNotContain("origin=")
+    }
+
+    @Test
+    fun `first frame is logged once per prepare`() {
+        val journal = journal()
+        journal.start()
+        journal.onFirstFrame(2_900L)
+        journal.onFirstFrame(3_666_087L)
+        journal.onReprepare("retry-or-recovery", "HLS")
+        journal.onFirstFrame(2_460L)
+
+        val frames = journal.drain().filter { " first-frame " in it }
+
+        assertThat(frames).hasSize(2)
+        assertThat(frames[0]).endsWith("first-frame ttffMs=2900")
+        assertThat(frames[1]).endsWith("first-frame ttffMs=2460")
+    }
+
+    @Test
+    fun `app visibility changes are logged inside a session only`() {
+        val journal = journal()
+        journal.onAppVisibility(foreground = false)
+        journal.start()
+        journal.onAppVisibility(foreground = false)
+        journal.onAppVisibility(foreground = true)
+
+        val lines = journal.drain()
+
+        assertThat(lines).hasSize(3)
+        assertThat(lines[1]).endsWith(" app-background")
+        assertThat(lines[2]).endsWith(" app-foreground")
+    }
+
+    @Test
+    fun `only the engine that started the session owns it`() {
+        val journal = journal()
+        val main = Any()
+        val preview = Any()
+        assertThat(journal.acceptsEventsFrom(main)).isTrue()
+
+        journal.startSession("x", "m", "HLS", null, "AUTO", "AUTO", false, null, owner = main)
+
+        assertThat(journal.acceptsEventsFrom(main)).isTrue()
+        assertThat(journal.acceptsEventsFrom(preview)).isFalse()
+        journal.endSession("stop")
+        assertThat(journal.acceptsEventsFrom(preview)).isTrue()
+    }
+
+    @Test
+    fun `missing default network is blocked when the device is still online`() {
+        assertThat(describeMissingDefaultNetwork(deviceOnline = true)).isEqualTo("net=blocked")
+        assertThat(describeMissingDefaultNetwork(deviceOnline = false)).isEqualTo("net=none")
     }
 
     @Test

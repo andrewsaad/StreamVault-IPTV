@@ -20,7 +20,8 @@ internal class PlaybackNetworkProbe(context: Context) {
 
     fun describe(): String {
         val manager = connectivityManager ?: return "net=unknown"
-        val capabilities = manager.activeNetwork?.let(manager::getNetworkCapabilities) ?: return "net=none"
+        val capabilities = manager.activeNetwork?.let(manager::getNetworkCapabilities)
+            ?: return describeMissingDefaultNetwork(hasValidatedInternetNetwork(manager))
         val downKbps = capabilities.linkDownstreamBandwidthKbps
         return when {
             capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> {
@@ -33,6 +34,17 @@ internal class PlaybackNetworkProbe(context: Context) {
         }
     }
 
+    // activeNetwork is also null while Android blocks a backgrounded app's traffic, even
+    // though the device is still online; allNetworks is not filtered that way.
+    @Suppress("DEPRECATION")
+    private fun hasValidatedInternetNetwork(manager: ConnectivityManager): Boolean =
+        manager.allNetworks.any { network ->
+            manager.getNetworkCapabilities(network)?.let {
+                it.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
+                    it.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
+            } == true
+        }
+
     private fun wifiInfo(capabilities: NetworkCapabilities): WifiInfo? {
         val fromCapabilities = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             capabilities.transportInfo as? WifiInfo
@@ -41,3 +53,7 @@ internal class PlaybackNetworkProbe(context: Context) {
         return fromCapabilities ?: wifiManager?.connectionInfo
     }
 }
+
+/** `net=blocked` means the device is online but this app's traffic is blocked (backgrounded). */
+internal fun describeMissingDefaultNetwork(deviceOnline: Boolean): String =
+    if (deviceOnline) "net=blocked" else "net=none"

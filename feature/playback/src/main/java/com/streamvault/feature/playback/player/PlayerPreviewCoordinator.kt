@@ -64,6 +64,8 @@ class PlayerPreviewCoordinator @Inject constructor(
         engine: PlayerEngine,
         source: PreviewHandoffSource
     ) {
+        // Back to a preview: end its fullscreen journal session.
+        engine.setJournalingEnabled(false)
         handoffManager.beginReverseHandoff(channel, streamInfo, engine, source)
     }
 
@@ -111,6 +113,7 @@ class PlayerPreviewCoordinator @Inject constructor(
                 false
             } else {
                 onAdopted(session.streamInfo)
+                adoptedEngine.setJournalingEnabled(true)
                 adoptedEngine.resetLiveHandoffGrace()
                 engineCoordinator.currentEngine.play()
                 onStarted(session.streamInfo)
