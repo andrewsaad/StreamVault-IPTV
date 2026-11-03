@@ -31,12 +31,16 @@ internal object PlaybackLogSanitizer {
     private fun sanitizePath(path: String): String = sanitizePathSegments(path).take(120)
 
     private fun sanitizePathSegments(value: String): String {
-        return opaqueSegmentPathRegex.replace(
+        val typed = opaqueSegmentPathRegex.replace(
             credentialPathRegex.replace(value) { match ->
                 "${match.groupValues[1]}${match.groupValues[2]}/<redacted>/<redacted>${match.groupValues[3]}"
             }
         ) { match ->
             "${match.groupValues[1]}${match.groupValues[2]}/<redacted>${match.groupValues[3]}"
+        }
+        // Xtream also serves live streams as /<user>/<pass>/<id> with no type segment.
+        return shortXtreamPathRegex.replace(typed) { match ->
+            "${match.groupValues[1]}/<redacted>/<redacted>/${match.groupValues[2]}"
         }
     }
 
@@ -45,4 +49,6 @@ internal object PlaybackLogSanitizer {
         Regex("""(/)(live|movie|series|timeshift|timeshifts)/[^/\s]+/[^/\s]+([^?\s#]*)""", RegexOption.IGNORE_CASE)
     private val opaqueSegmentPathRegex =
         Regex("""(/)(r)/[^/\s]+([^?\s#]*)""", RegexOption.IGNORE_CASE)
+    private val shortXtreamPathRegex =
+        Regex("""(^|://[^/\s]+)/[^/\s]+/[^/\s]+/(\d+(?:\.[A-Za-z0-9]{1,5})?)(?=$|[?#\s"'])""")
 }
