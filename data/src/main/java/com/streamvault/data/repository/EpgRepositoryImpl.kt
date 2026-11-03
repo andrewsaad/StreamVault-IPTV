@@ -310,8 +310,11 @@ class EpgRepositoryImpl @Inject constructor(
                             val message = "Failed to download EPG: HTTP ${response.code}"
                             // Preserve transient HTTP failures through the guide executor's result wrapper.
                             // Authentication and other permanent client errors must not enter retry backoff.
+                            // Missing-endpoint statuses keep a typed, non-IO cause so sync can learn them.
                             val cause = if (response.code == 408 || response.code == 429 || response.code in 500..599) {
                                 IOException(message)
+                            } else if (response.code == 404 || response.code == 410) {
+                                EpgEndpointMissingException(response.code)
                             } else null
                             return@withLock Result.error(message, cause)
                         }
@@ -467,3 +470,6 @@ class EpgRepositoryImpl @Inject constructor(
     }
 
 }
+
+/** The XMLTV endpoint answered 404/410: it does not exist, so retrying sooner will not help. */
+internal class EpgEndpointMissingException(val statusCode: Int) : Exception("HTTP $statusCode")

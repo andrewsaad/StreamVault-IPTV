@@ -16,6 +16,7 @@ import com.streamvault.data.provider.ProviderCapabilityResolver
 import com.streamvault.domain.model.Program
 import com.streamvault.domain.model.Provider
 import com.streamvault.domain.model.ProviderSnapshot
+import com.streamvault.domain.model.Result
 import com.streamvault.domain.model.StalkerConfig
 import com.streamvault.domain.model.StalkerDeviceIdentity
 import com.streamvault.domain.model.ProviderType
@@ -569,6 +570,28 @@ class EpgRepositoryImplTest {
     }
 
     @Test
+    fun `refreshEpg marks missing XMLTV endpoint with a typed non-retryable cause`() = runTest {
+        for ((code, missing) in listOf(404 to true, 410 to true, 401 to false)) {
+            val repository = EpgRepositoryImpl(
+                programDao = programDao,
+                providerDao = providerDao,
+                xmltvParser = xmltvParser,
+                okHttpClient = okHttpClientReturningBody(ByteArray(0), code = code),
+                transactionRunner = transactionRunner,
+                epgSourceRepository = epgSourceRepository,
+                preferencesRepository = preferencesRepository
+            )
+
+            val result = repository.refreshEpg(7L, "https://example.com/xmltv.php")
+
+            assertThat(result.errorMessageOrNull()).isEqualTo("Failed to download EPG: HTTP $code")
+            val cause = (result as Result.Error).exception
+            assertThat(cause is EpgEndpointMissingException).isEqualTo(missing)
+            assertThat(cause is IOException).isFalse()
+        }
+    }
+
+    @Test
     fun `refreshEpg stages batches in short transactions outside parser transaction`() = runTest {
         val insertTransactionDepths = mutableListOf<Int>()
         val parserCallbackTransactionDepths = mutableListOf<Int>()
@@ -762,6 +785,7 @@ class EpgRepositoryImplTest {
         body: ByteArray,
         contentType: String = "application/xml",
         headers: Map<String, String> = emptyMap(),
+        code: Int = 200,
         onRequest: ((Request) -> Unit)? = null
     ): OkHttpClient =
         OkHttpClient.Builder()
@@ -772,8 +796,8 @@ class EpgRepositoryImplTest {
                 }
                     .request(chain.request())
                     .protocol(Protocol.HTTP_1_1)
-                    .code(200)
-                    .message("OK")
+                    .code(code)
+                    .message(if (code == 200) "OK" else "Error")
                     .body(body.toResponseBody(contentType.toMediaType()))
                     .build()
             }
