@@ -21,6 +21,7 @@ import androidx.media3.common.Player
 import androidx.media3.common.Timeline
 import androidx.media3.common.Tracks
 import androidx.media3.common.util.UnstableApi
+import androidx.media3.datasource.HttpDataSource
 import androidx.media3.exoplayer.DecoderReuseEvaluation
 import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
@@ -32,6 +33,8 @@ import androidx.media3.exoplayer.audio.AudioSink
 import androidx.media3.exoplayer.audio.AudioRendererEventListener
 import androidx.media3.exoplayer.mediacodec.MediaCodecInfo
 import androidx.media3.exoplayer.mediacodec.MediaCodecSelector
+import androidx.media3.exoplayer.source.LoadEventInfo
+import androidx.media3.exoplayer.source.MediaLoadData
 import androidx.media3.exoplayer.video.MediaCodecVideoRenderer
 import androidx.media3.exoplayer.video.VideoRendererEventListener
 import androidx.media3.exoplayer.upstream.DefaultBandwidthMeter
@@ -52,6 +55,7 @@ import com.streamvault.domain.model.VideoFormat
 import com.streamvault.player.stats.PlaybackBufferingTracker
 import com.streamvault.domain.repository.PlaybackCompatibilityRepository
 import com.streamvault.player.audio.PlayerAudioFocusController
+import com.streamvault.player.diagnostics.PlaybackJournal
 import com.streamvault.player.playback.ActiveDecoderPolicy
 import com.streamvault.player.playback.AudioRendererRecoveryPolicy
 import com.streamvault.player.playback.AdaptiveDecodePressurePolicy
@@ -122,6 +126,7 @@ import com.streamvault.player.ui.PlayerViewBinder
 import com.streamvault.player.ui.SubtitleStyleController
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
+import java.io.IOException
 import java.util.concurrent.atomic.AtomicLong
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -149,8 +154,27 @@ class Media3PlayerEngine @Inject constructor(
     private val playbackCompatibilityRepository: PlaybackCompatibilityRepository,
     private val audioCompatibilityMemoryStore: AudioCompatibilityMemoryStore,
     private val playbackSupportSnapshotStore: PlaybackSupportSnapshotStore,
-    private val livePlaybackByteTap: LivePlaybackByteTap
+    private val livePlaybackByteTap: LivePlaybackByteTap,
+    // Only the main (foreground) engine journals; preview and multiview engines pass null.
+    private val playbackJournal: PlaybackJournal?
 ) : PlayerEngine {
+
+    constructor(
+        context: Context,
+        okHttpClient: OkHttpClient,
+        playbackCompatibilityRepository: PlaybackCompatibilityRepository,
+        audioCompatibilityMemoryStore: AudioCompatibilityMemoryStore,
+        playbackSupportSnapshotStore: PlaybackSupportSnapshotStore,
+        livePlaybackByteTap: LivePlaybackByteTap
+    ) : this(
+        context,
+        okHttpClient,
+        playbackCompatibilityRepository,
+        audioCompatibilityMemoryStore,
+        playbackSupportSnapshotStore,
+        livePlaybackByteTap,
+        null
+    )
 
     constructor(
         context: Context,
@@ -164,7 +188,8 @@ class Media3PlayerEngine @Inject constructor(
         playbackCompatibilityRepository,
         audioCompatibilityMemoryStore,
         playbackSupportSnapshotStore,
-        LivePlaybackByteTap()
+        LivePlaybackByteTap(),
+        null
     )
 
     companion object {
@@ -276,6 +301,7 @@ class Media3PlayerEngine @Inject constructor(
             scheduleQualityPolicyRefresh()
     }
     private var currentRetryContext: PlaybackRetryContext? = null
+    private var journalSessionPending = false
     private var playbackStarted = false
     private var liveBufferingRecoveryArmed = false
     private var playbackStartedRecoveryArmed = false
@@ -516,6 +542,7 @@ class Media3PlayerEngine @Inject constructor(
                             "policy=${currentBufferPolicyLabel.orEmpty()}"
                     )
                 }
+                playbackJournal?.onStatsTick(_playbackState.value, _isPlaying.value, stats)
                 val liveStream = isCurrentStreamLive()
                 val selectedVideo = exoPlayer?.currentTracks?.isTypeSelected(C.TRACK_TYPE_VIDEO) == true
                 val effectivePlaybackStarted = isEffectivelyPlaybackStarted()
@@ -678,6 +705,7 @@ class Media3PlayerEngine @Inject constructor(
             trackController.setVodTrackPreferences(exoPlayer, null)
         }
         vodTrackPreferencesConfiguredForNextPrepare = false
+        journalSessionPending = true
         prepareInternal(streamInfo = streamInfo, preserveRetryState = false, seekPositionMs = null, autoPlay = true)
     }
 
@@ -782,6 +810,7 @@ class Media3PlayerEngine @Inject constructor(
         pendingRetrySeekPositionOverrideMs = null
         _retryStatus.value = null
         exoPlayer?.stop()
+        playbackJournal?.endSession("stop")
         _playbackState.value = PlaybackState.IDLE
         _isPlaying.value = false
         _mediaTitle.value = null
@@ -1404,6 +1433,7 @@ class Media3PlayerEngine @Inject constructor(
         pendingPreloadWindow = null
         retryGeneration++
         pendingRetrySeekPositionOverrideMs = null
+        playbackJournal?.endSession(if (restartCollectors) "reset" else "release")
         statsCollector.stop()
         audioFocusController.release()
         mediaSession?.release()
@@ -1638,6 +1668,22 @@ class Media3PlayerEngine @Inject constructor(
             "prepare resolvedStreamType=$currentResolvedStreamType timeoutProfile=$currentTimeoutProfile audioDecoderPreference=$activeAudioDecoderMode videoDecoderPreference=$activeVideoDecoderMode audioPolicy=$activeAudioDecoderPolicy videoPolicy=$activeVideoDecoderPolicy requestedAudioDecoderMode=$requestedAudioDecoderMode requestedVideoDecoderMode=$requestedVideoDecoderMode audioOutputPreference=$audioOutputPreference compatibilitySource=$compatibilityDecisionSource surface=${_renderSurfaceType.value} target=${PlaybackLogSanitizer.sanitizeUrl(streamInfo.url)}"
         )
         Log.i(TAG, nextBufferPolicy.describeForLog(currentResolvedStreamType, requestedPlaybackBufferMode))
+        // A journal session spans one user prepare; retries and recoveries stay inside it.
+        if (journalSessionPending || mediaChanged) {
+            journalSessionPending = false
+            playbackJournal?.startSession(
+                channelName = streamInfo.title,
+                mediaId = mediaId,
+                streamType = currentResolvedStreamType.name,
+                url = streamInfo.url,
+                decoderPolicy = activeVideoDecoderPolicy.name,
+                audioOutputPath = audioOutputPath,
+                upmix = audioOutputPreference == AudioOutputPreference.SURROUND_UPMIX,
+                bufferPolicy = currentBufferPolicyLabel
+            )
+        } else {
+            playbackJournal?.onReprepare("retry-or-recovery", currentResolvedStreamType.name)
+        }
 
         try {
             val player = getOrCreatePlayer()
@@ -2077,6 +2123,7 @@ class Media3PlayerEngine @Inject constructor(
                 decoderReuseEvaluation: DecoderReuseEvaluation?
             ) {
                 statsCollector.onVideoFormatChanged(format)
+                playbackJournal?.onVideoFormat(format.bitrate, format.width, format.height)
                 refreshKnownBadCompatibilityRecords()
             }
 
@@ -2089,6 +2136,7 @@ class Media3PlayerEngine @Inject constructor(
                 selectedVideoDecoderName = decoderName
                 _playerStats.value = _playerStats.value.copy(videoDecoderName = decoderName)
                 Log.i(TAG, "video-decoder name=$decoderName policy=$activeVideoDecoderPolicy surface=${_renderSurfaceType.value}")
+                playbackJournal?.onVideoDecoder(decoderName)
                 refreshKnownBadCompatibilityRecords()
             }
 
@@ -2105,6 +2153,7 @@ class Media3PlayerEngine @Inject constructor(
                     audioOutputPath = audioOutputPath
                 )
                 Log.i(TAG, "audio-decoder name=$decoderName policy=$activeAudioDecoderPolicy outputPath=$audioOutputPath")
+                playbackJournal?.onAudioDecoder(decoderName, audioOutputPath)
             }
 
             override fun onAudioInputFormatChanged(
@@ -2147,6 +2196,23 @@ class Media3PlayerEngine @Inject constructor(
                 elapsedMs: Long
             ) {
                 statsCollector.onDroppedFrames(droppedFrames)
+                playbackJournal?.onDroppedFrames(droppedFrames, elapsedMs)
+            }
+
+            override fun onLoadError(
+                eventTime: AnalyticsListener.EventTime,
+                loadEventInfo: LoadEventInfo,
+                mediaLoadData: MediaLoadData,
+                error: IOException,
+                wasCanceled: Boolean
+            ) {
+                val journal = playbackJournal ?: return
+                val httpCode = generateSequence<Throwable>(error) { it.cause }
+                    .take(4)
+                    .filterIsInstance<HttpDataSource.InvalidResponseCodeException>()
+                    .firstOrNull()
+                    ?.responseCode
+                journal.onLoadError(httpCode, error::class.java.simpleName, error.message, mediaLoadData.dataType)
             }
 
             override fun onBandwidthEstimate(
@@ -2170,6 +2236,7 @@ class Media3PlayerEngine @Inject constructor(
                 if (prepareStartMs > 0L) {
                     val ttff = System.currentTimeMillis() - prepareStartMs
                     _playerStats.value = _playerStats.value.copy(ttffMs = ttff)
+                    playbackJournal?.onFirstFrame(ttff)
                 }
                 videoStallDetector.onVideoFrameRendered(eventTime.currentPlaybackPositionMs)
                 markPlaybackStarted("first-frame-success")
@@ -2207,6 +2274,7 @@ class Media3PlayerEngine @Inject constructor(
                             "selectedBps=${exoPlayer?.videoFormat?.bitrate} " +
                             "estimateBps=${lastBandwidthEstimateBps.get()} decoder=$selectedVideoDecoderName"
                     )
+                    playbackJournal?.onBufferingEvent(event, player.totalBufferedDuration, _playerStats.value)
                 }
             }
 
@@ -2264,6 +2332,11 @@ class Media3PlayerEngine @Inject constructor(
             }
 
             override fun onPlayerError(error: PlaybackException) {
+                playbackJournal?.onPlayerError(
+                    errorCodeName = error.errorCodeName,
+                    category = PlayerErrorClassifier.classify(error).name,
+                    message = error.message
+                )
                 if (startupTimedOut || startupRefreshGate.isPending || liveMpegTsEndRecovery.isPending ||
                     liveMpegTsEndRecovery.abandoned) return
                 if (_playbackQualityGate.value != null) {
@@ -2438,6 +2511,7 @@ class Media3PlayerEngine @Inject constructor(
     private fun markPlaybackStarted(reason: String) {
         if (playbackStarted) return
         playbackStarted = true
+        playbackJournal?.onPlaybackStarted()
         liveBufferingRecoveryArmed = false
         playbackStartedRecoveryArmed = false
         retryAttempt = resolveRetryAttemptAfterPlaybackStarted(retryAttempt)
@@ -2599,6 +2673,7 @@ class Media3PlayerEngine @Inject constructor(
         val streamInfo = lastStreamInfo ?: return
         Log.w(TAG, "startup-watchdog action=$action streamType=$currentResolvedStreamType " +
             "bufferMs=${_playerStats.value.bufferedDurationMs} target=${PlaybackLogSanitizer.sanitizeUrl(streamInfo.url)}")
+        journalVideoStall("startup-watchdog-${action.name.lowercase()}")
         if (action == LiveStartupWatchdog.Action.REFRESH_SOURCE) {
             startupRefreshGate.begin(SystemClock.elapsedRealtime())
             preloadWindowManager?.clearWindow()
@@ -2638,6 +2713,7 @@ class Media3PlayerEngine @Inject constructor(
             TAG,
             "video-stall count=$videoStallCount recovered=$videoStallSafeRecoveryPerformed decoder=$selectedVideoDecoderName policy=$activeVideoDecoderPolicy surface=${_renderSurfaceType.value} target=${PlaybackLogSanitizer.sanitizeUrl(streamInfo.url)}"
         )
+        journalVideoStall("detected")
 
         if (!isEffectivelyPlaybackStarted()) {
             Log.w(TAG, "video-stall ignored because playback has not started yet")
@@ -2660,11 +2736,13 @@ class Media3PlayerEngine @Inject constructor(
                     bufferingTracker.onRecovery()
                     videoStallDetector.restartAfterRecoveryAttempt()
                     Log.w(TAG, "video-stall in-place-live-seek attempt=$videoStallRecoveryAttempt")
+                    journalVideoStall("live-seek")
                     return
                 }
                 LiveVideoStallRecovery.Result.STOPPED -> {
                     recordCompatibilityFailure("VIDEO_STALL")
                     Log.w(TAG, "video-stall stopped-loading after unsuccessful or unavailable in-place recovery")
+                    journalVideoStall("stopped")
                     _error.tryEmit(PlayerError.DecoderError("Video playback stalled. Try another stream."))
                     return
                 }
@@ -2685,6 +2763,7 @@ class Media3PlayerEngine @Inject constructor(
                     TAG,
                     "video-stall reprepare suppressed after playback start for provider streamType=$currentResolvedStreamType"
                 )
+                journalVideoStall("reprepare-suppressed")
                 _error.tryEmit(
                     PlayerError.DecoderError(
                         "Video playback stalled. Automatic recovery was not attempted to avoid opening another provider connection."
@@ -2693,6 +2772,7 @@ class Media3PlayerEngine @Inject constructor(
                 return
             }
             Log.w(TAG, "video-stall safe reprepare attempt=$videoStallRecoveryAttempt")
+            journalVideoStall("reprepare")
             prepareInternal(
                 streamInfo = streamInfo,
                 preserveRetryState = true,
@@ -2715,6 +2795,15 @@ class Media3PlayerEngine @Inject constructor(
             PlayerError.DecoderError(
                 "Video playback stalled on this device. Try another stream or open diagnostics."
             )
+        )
+    }
+
+    private fun journalVideoStall(action: String) {
+        playbackJournal?.onVideoStall(
+            action = action,
+            stallCount = videoStallCount,
+            decoder = selectedVideoDecoderName,
+            bufferMs = _playerStats.value.bufferedDurationMs
         )
     }
 
@@ -2745,6 +2834,7 @@ class Media3PlayerEngine @Inject constructor(
             TAG,
             "video-stall decoder fallback=$fallbackMode policy=$fallbackPolicy attempt=$videoStallRecoveryAttempt mediaId=$mediaId target=${PlaybackLogSanitizer.sanitizeUrl(streamInfo.url)}"
         )
+        journalVideoStall("decoder-fallback")
         prepareInternal(
             streamInfo = streamInfo,
             preserveRetryState = true,
@@ -3243,6 +3333,12 @@ class Media3PlayerEngine @Inject constructor(
                     "delayMs=$delayMs reason=${retryPolicy.retryReason(error)} " +
                     "errorCode=${error.errorCodeName} causeChain=${formatErrorCauseChain(error)} " +
                     "target=${PlaybackLogSanitizer.sanitizeUrl(streamInfo.url)}"
+            )
+            playbackJournal?.onRetry(
+                attempt = nextAttempt,
+                maxAttempts = retryPolicy.maxWholeSourceRetryAttempts(error, effectivePlaybackStarted),
+                delayMs = delayMs,
+                reason = retryPolicy.retryReason(error)
             )
             retryJob = scope.launch {
                 delay(delayMs)

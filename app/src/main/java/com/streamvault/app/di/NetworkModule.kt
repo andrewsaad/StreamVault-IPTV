@@ -24,6 +24,7 @@ import com.streamvault.player.AudioCompatibilityMemoryStore
 import com.streamvault.player.Media3PlayerEngine
 import com.streamvault.player.PlayerEngine
 import com.streamvault.player.PlaybackSupportSnapshotStore
+import com.streamvault.player.diagnostics.PlaybackJournal
 import com.streamvault.player.playback.applyPlaybackTransportPolicy
 import com.streamvault.player.playback.applyUnsafeTlsBypass
 import com.streamvault.player.di.AuxiliaryPlayerEngine
@@ -163,14 +164,16 @@ object NetworkModule {
         playbackCompatibilityRepository: com.streamvault.domain.repository.PlaybackCompatibilityRepository,
         audioCompatibilityMemoryStore: AudioCompatibilityMemoryStore,
         playbackSupportSnapshotStore: PlaybackSupportSnapshotStore,
-        livePlaybackByteTap: LivePlaybackByteTap
+        livePlaybackByteTap: LivePlaybackByteTap,
+        playbackJournal: PlaybackJournal
     ): PlayerEngine = Media3PlayerEngine(
         context,
         okHttpClient,
         playbackCompatibilityRepository,
         audioCompatibilityMemoryStore,
         playbackSupportSnapshotStore,
-        livePlaybackByteTap
+        livePlaybackByteTap,
+        playbackJournal
     )
 
     /**
