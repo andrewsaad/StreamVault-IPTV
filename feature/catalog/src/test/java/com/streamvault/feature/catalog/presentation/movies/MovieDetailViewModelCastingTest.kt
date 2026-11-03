@@ -12,7 +12,9 @@ import com.streamvault.feature.catalog.api.CatalogStreamPreparer
 import com.streamvault.feature.catalog.api.CatalogUiEvent
 import com.streamvault.feature.catalog.presentation.CatalogMainDispatcherRule
 import com.streamvault.data.preferences.PreferencesRepository
+import com.streamvault.domain.model.ContentType
 import com.streamvault.domain.model.ExternalRatings
+import com.streamvault.domain.model.Favorite
 import com.streamvault.domain.model.Movie
 import com.streamvault.domain.model.LegacyProvider as Provider
 import com.streamvault.domain.model.ProviderType
@@ -39,6 +41,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.async
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -214,6 +217,55 @@ class MovieDetailViewModelCastingTest {
     }
 
     @Test
+    fun `heart follows favorites changed outside the screen while open`() = runBlocking {
+        val favorites = MutableStateFlow<List<Favorite>>(emptyList())
+        val viewModel = createViewModel(favorites = favorites)
+
+        try {
+            withTimeout(5_000L) { viewModel.uiState.first { it.movie != null } }
+            assertThat(viewModel.uiState.value.movie?.isFavorite).isFalse()
+
+            // A group-only membership is not the global heart.
+            favorites.value = listOf(favorite(contentId = 10L, groupId = 7L))
+            assertThat(viewModel.uiState.value.movie?.isFavorite).isFalse()
+
+            favorites.value = listOf(favorite(contentId = 10L))
+            withTimeout(5_000L) { viewModel.uiState.first { it.movie?.isFavorite == true } }
+
+            favorites.value = emptyList()
+            withTimeout(5_000L) { viewModel.uiState.first { it.movie?.isFavorite == false } }
+            assertThat(viewModel.uiState.value.movie?.id).isEqualTo(10L)
+        } finally {
+            viewModel.viewModelScope.cancel()
+        }
+    }
+
+    @Test
+    fun `switching variant observes the favorite state of the new variant`() = runBlocking {
+        val favorites = MutableStateFlow(listOf(favorite(contentId = 10L)))
+        val variant = movie().copy(id = 11L)
+        val viewModel = createViewModel(favorites = favorites, variant = variant)
+
+        try {
+            withTimeout(5_000L) { viewModel.uiState.first { it.movie?.isFavorite == true } }
+            viewModel.selectMovieVariant(11L)
+            withTimeout(5_000L) { viewModel.uiState.first { it.movie?.id == 11L } }
+            assertThat(viewModel.uiState.value.movie?.isFavorite).isFalse()
+
+            favorites.value = listOf(favorite(contentId = 11L))
+            val state = withTimeout(5_000L) { viewModel.uiState.first { it.movie?.isFavorite == true } }
+            assertThat(state.movie?.id).isEqualTo(11L)
+
+            // The previous variant's row no longer drives the heart.
+            favorites.value = listOf(favorite(contentId = 10L))
+            withTimeout(5_000L) { viewModel.uiState.first { it.movie?.isFavorite == false } }
+            assertThat(viewModel.uiState.value.movie?.id).isEqualTo(11L)
+        } finally {
+            viewModel.viewModelScope.cancel()
+        }
+    }
+
+    @Test
     fun `castMovie explains streams that need header rewrite when cast remains unsupported`() = runBlocking {
         val castPort = FakeCatalogCastPort(CatalogCastStartResult.Unsupported(CatalogMessage.CastUnsupported))
         val streamInfo = StreamInfo(
@@ -243,6 +295,8 @@ class MovieDetailViewModelCastingTest {
         castPort: FakeCatalogCastPort = FakeCatalogCastPort(),
         traktFavorites: TraktFavorites = com.streamvault.feature.catalog.presentation.NoopTraktFavorites(),
         traktRatings: TraktRatings = com.streamvault.feature.catalog.presentation.NoopTraktRatings(),
+        favorites: MutableStateFlow<List<Favorite>> = MutableStateFlow(emptyList()),
+        variant: Movie? = null,
     ): MovieDetailViewModel {
         val provider = Provider(
             id = movie.providerId,
@@ -274,8 +328,16 @@ class MovieDetailViewModelCastingTest {
                 episodeNumber = anyOrNull()
             )
         ).thenReturn(null)
-        whenever(favoriteRepository.isFavorite(eq(provider.id), eq(movie.id), any()))
-            .thenReturn(false)
+        whenever(favoriteRepository.isFavorite(any(), any(), any())).thenAnswer { invocation ->
+            val contentId = invocation.getArgument<Long>(1)
+            favorites.value.any { it.contentId == contentId && it.groupId == null }
+        }
+        whenever(favoriteRepository.getFavorites(eq(provider.id), anyOrNull()))
+            .thenReturn(favorites)
+        variant?.let {
+            whenever(movieRepository.getMovieDetails(eq(provider.id), eq(it.id), anyOrNull()))
+                .thenReturn(Result.success(it))
+        }
         whenever(externalRatingsRepository.getRatings(any()))
             .thenReturn(Result.success(ExternalRatings.unavailable()))
 
@@ -346,6 +408,13 @@ class MovieDetailViewModelCastingTest {
     }
 
     private companion object {
+        fun favorite(contentId: Long, groupId: Long? = null) = Favorite(
+            providerId = 1L,
+            contentId = contentId,
+            contentType = ContentType.MOVIE,
+            groupId = groupId,
+        )
+
         fun movie(watchProgress: Long = 0L) = Movie(
             id = 10L,
             name = "Movie",

@@ -146,6 +146,8 @@ class CatalogDownloadBehaviorTest {
         ).thenReturn(null)
         whenever(favoriteRepository.isFavorite(eq(provider.id), eq(movie.id), any()))
             .thenReturn(false)
+        whenever(favoriteRepository.getFavorites(eq(provider.id), anyOrNull()))
+            .thenReturn(flowOf(emptyList()))
         whenever(externalRatingsRepository.getRatings(any()))
             .thenReturn(Result.success(ExternalRatings.unavailable()))
 
