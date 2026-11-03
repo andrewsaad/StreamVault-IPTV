@@ -18,6 +18,7 @@ import com.streamvault.domain.settings.ScopedPlaybackQualityPreference
 import com.streamvault.domain.settings.VideoQualityIssue
 import androidx.media3.common.PlaybackException
 import androidx.media3.datasource.HttpDataSource
+import com.streamvault.player.diagnostics.BufferingHint
 import com.streamvault.player.playback.PlaybackErrorCategory
 import com.streamvault.player.playback.PlayerErrorClassifier
 import java.net.ConnectException
@@ -38,6 +39,7 @@ data class PlaybackQualityGateState(
 )
 
 private val emptyPlaybackQualityGateState = MutableStateFlow<PlaybackQualityGateState?>(null)
+private val noBufferingHint: StateFlow<BufferingHint?> = MutableStateFlow<BufferingHint?>(null).asStateFlow()
 
 const val AUDIO_VIDEO_OFFSET_MIN_MS = -2_000
 const val AUDIO_VIDEO_OFFSET_MAX_MS = 2_000
@@ -81,6 +83,9 @@ interface PlayerEngine {
     val availableVideoTracks: StateFlow<List<PlayerTrack>>
     val playbackQualityGate: StateFlow<PlaybackQualityGateState?>
         get() = emptyPlaybackQualityGateState.asStateFlow()
+    /** Likely cause of the current buffering, or null when there is none or no evidence. */
+    val bufferingHint: StateFlow<BufferingHint?>
+        get() = noBufferingHint
     val playbackSpeed: StateFlow<Float>
     val audioVideoOffsetMs: StateFlow<Int>
     val audioVideoSyncEnabled: StateFlow<Boolean>

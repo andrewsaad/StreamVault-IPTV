@@ -341,8 +341,23 @@ class PlaybackJournal internal constructor(
         }
     }
 
+    /**
+     * Wi-Fi signal from the latest network probe (writer thread), or null when not on Wi-Fi.
+     * Lets the buffering hint use RSSI without its own binder calls on the player thread.
+     */
+    @Volatile
+    var lastRssiDbm: Int? = null
+        private set
+
     private fun probeNetwork(): String =
         runCatching(networkProbe).getOrElse { "net=unknown" }
+            .also { described -> lastRssiDbm = rssiRegex.find(described)?.groupValues?.get(1)?.toIntOrNull() }
+
+    /** Records a change of on-screen buffering hint; null means the hint was cleared. */
+    fun onBufferingHint(hint: BufferingHint?) = guard {
+        if (!sessionActive) return@guard
+        enqueue("buffering-hint hint=${hint?.name ?: "none"}", appendNetwork = true)
+    }
 
     internal fun formatLine(wallMs: Long, body: String): String =
         "${TIMESTAMP_FORMAT.format(Instant.ofEpochMilli(wallMs).atZone(zone()))} $body\n"
@@ -361,6 +376,7 @@ class PlaybackJournal internal constructor(
         private val TIMESTAMP_FORMAT: DateTimeFormatter = DateTimeFormatter.ISO_OFFSET_DATE_TIME
         // Any scheme: rtmp/rtsp/udp stream URLs can carry credentials too.
         private val urlRegex = Regex("""[a-z][a-z0-9+.-]*://[^\s"'<>]+""", RegexOption.IGNORE_CASE)
+        private val rssiRegex = Regex("""\brssi=(-?\d+)""")
         private val mediaSegmentRegex = Regex("""\d+(\.[A-Za-z0-9]{1,5})?|[\w-]+\.(m3u8|mpd|ts|m4s|mp4|mkv|aac)""", RegexOption.IGNORE_CASE)
 
         /**

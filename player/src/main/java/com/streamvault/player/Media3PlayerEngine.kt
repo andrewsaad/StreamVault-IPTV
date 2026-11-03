@@ -55,6 +55,9 @@ import com.streamvault.domain.model.VideoFormat
 import com.streamvault.player.stats.PlaybackBufferingTracker
 import com.streamvault.domain.repository.PlaybackCompatibilityRepository
 import com.streamvault.player.audio.PlayerAudioFocusController
+import com.streamvault.player.diagnostics.BufferingDiagnosis
+import com.streamvault.player.diagnostics.BufferingHint
+import com.streamvault.player.diagnostics.BufferingSignals
 import com.streamvault.player.diagnostics.PlaybackJournal
 import com.streamvault.player.playback.ActiveDecoderPolicy
 import com.streamvault.player.playback.AudioRendererRecoveryPolicy
@@ -194,6 +197,7 @@ class Media3PlayerEngine @Inject constructor(
 
     companion object {
         private const val TAG = "Media3PlayerEngine"
+        private const val HINT_WINDOW_MS = 20_000L
         private const val LEGACY_TEXTURE_VIEW_MAX_SDK = Build.VERSION_CODES.N_MR1
         private const val FIRE_TV_MEDIATEK_TEXTURE_VIEW_MAX_SDK = Build.VERSION_CODES.P
         private const val TEXTURE_VIEW_STARTUP_TIMEOUT_MS = 9_000L
@@ -382,6 +386,15 @@ class Media3PlayerEngine @Inject constructor(
     private val _playerStats = MutableStateFlow(PlayerStats())
     override val playerStats: StateFlow<PlayerStats> = _playerStats.asStateFlow()
 
+    // Buffering hint: evidence from the last HINT_WINDOW_MS, all on the main thread.
+    private val _bufferingHint = MutableStateFlow<BufferingHint?>(null)
+    override val bufferingHint: StateFlow<BufferingHint?> = _bufferingHint.asStateFlow()
+    private data class RecentLoadError(val atMs: Long, val httpCode: Int?, val timeout: Boolean)
+    private val recentLoadErrors = ArrayDeque<RecentLoadError>()
+    private val recentDroppedFrames = ArrayDeque<Pair<Long, Int>>()
+    private var bufferingSinceMs = 0L
+    private var lastVideoStallAtMs = 0L
+
     private val _mediaTitle = MutableStateFlow<String?>(null)
     override val mediaTitle: StateFlow<String?> = _mediaTitle.asStateFlow()
 
@@ -543,6 +556,7 @@ class Media3PlayerEngine @Inject constructor(
                     )
                 }
                 playbackJournal?.onStatsTick(_playbackState.value, _isPlaying.value, stats)
+                updateBufferingHint(stats)
                 val liveStream = isCurrentStreamLive()
                 val selectedVideo = exoPlayer?.currentTracks?.isTypeSelected(C.TRACK_TYPE_VIDEO) == true
                 val effectivePlaybackStarted = isEffectivelyPlaybackStarted()
@@ -1671,6 +1685,10 @@ class Media3PlayerEngine @Inject constructor(
         // A journal session spans one user prepare; retries and recoveries stay inside it.
         if (journalSessionPending || mediaChanged) {
             journalSessionPending = false
+            // A new channel starts with no evidence; retries of the same one keep it.
+            recentLoadErrors.clear()
+            recentDroppedFrames.clear()
+            lastVideoStallAtMs = 0L
             playbackJournal?.startSession(
                 channelName = streamInfo.title,
                 mediaId = mediaId,
@@ -2197,6 +2215,7 @@ class Media3PlayerEngine @Inject constructor(
             ) {
                 statsCollector.onDroppedFrames(droppedFrames)
                 playbackJournal?.onDroppedFrames(droppedFrames, elapsedMs)
+                recentDroppedFrames.addLast(SystemClock.elapsedRealtime() to droppedFrames)
             }
 
             override fun onLoadError(
@@ -2206,13 +2225,19 @@ class Media3PlayerEngine @Inject constructor(
                 error: IOException,
                 wasCanceled: Boolean
             ) {
-                val journal = playbackJournal ?: return
-                val httpCode = generateSequence<Throwable>(error) { it.cause }
-                    .take(4)
+                val causes = generateSequence<Throwable>(error) { it.cause }.take(4).toList()
+                val httpCode = causes
                     .filterIsInstance<HttpDataSource.InvalidResponseCodeException>()
                     .firstOrNull()
                     ?.responseCode
-                journal.onLoadError(httpCode, error::class.java.simpleName, error.message, mediaLoadData.dataType)
+                recentLoadErrors.addLast(
+                    RecentLoadError(
+                        atMs = SystemClock.elapsedRealtime(),
+                        httpCode = httpCode,
+                        timeout = causes.any { it is java.net.SocketTimeoutException }
+                    )
+                )
+                playbackJournal?.onLoadError(httpCode, error::class.java.simpleName, error.message, mediaLoadData.dataType)
             }
 
             override fun onBandwidthEstimate(
@@ -2798,7 +2823,38 @@ class Media3PlayerEngine @Inject constructor(
         )
     }
 
+    /** Runs from the 1 s stats loop; cheap, in-memory only, and quiet until buffering lasts a few seconds. */
+    private fun updateBufferingHint(stats: PlayerStats) {
+        val now = SystemClock.elapsedRealtime()
+        val windowStart = now - HINT_WINDOW_MS
+        while (recentLoadErrors.firstOrNull()?.let { it.atMs < windowStart } == true) recentLoadErrors.removeFirst()
+        while (recentDroppedFrames.firstOrNull()?.let { it.first < windowStart } == true) recentDroppedFrames.removeFirst()
+        val hint = if (_playbackState.value != PlaybackState.BUFFERING) {
+            bufferingSinceMs = 0L
+            null
+        } else {
+            if (bufferingSinceMs == 0L) bufferingSinceMs = now
+            BufferingDiagnosis.classify(
+                BufferingSignals(
+                    bufferingForMs = now - bufferingSinceMs,
+                    recentHttpCodes = recentLoadErrors.mapNotNull { it.httpCode },
+                    recentTimeouts = recentLoadErrors.count { it.timeout },
+                    estimateBps = stats.bandwidthEstimate,
+                    bufferMs = stats.bufferedDurationMs,
+                    rssiDbm = playbackJournal?.lastRssiDbm,
+                    recentDroppedFrames = recentDroppedFrames.sumOf { it.second },
+                    recentDecoderStall = lastVideoStallAtMs >= windowStart && lastVideoStallAtMs > 0L
+                )
+            )
+        }
+        if (hint != _bufferingHint.value) {
+            _bufferingHint.value = hint
+            playbackJournal?.onBufferingHint(hint)
+        }
+    }
+
     private fun journalVideoStall(action: String) {
+        lastVideoStallAtMs = SystemClock.elapsedRealtime()
         playbackJournal?.onVideoStall(
             action = action,
             stallCount = videoStallCount,
