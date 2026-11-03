@@ -55,7 +55,9 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -96,6 +98,7 @@ class SeriesDetailViewModel @Inject constructor(
 
     private var providerDetailJob: Job? = null
     private var unwatchedCountJob: Job? = null
+    private var favoriteJob: Job? = null
     private var activeProviderId: Long? = null
 
     init {
@@ -210,6 +213,7 @@ class SeriesDetailViewModel @Inject constructor(
                             detailsUnavailable = false
                         )
                     }
+                    startFavoriteCollection(providerId, result.data.id)
                     refreshTraktWatchlist()
                     refreshTraktRatings()
                     result
@@ -313,6 +317,23 @@ class SeriesDetailViewModel @Inject constructor(
             } finally {
                 _uiState.update { it.copy(traktRatingBusy = false) }
             }
+        }
+    }
+
+    // Favorites can change from outside this screen (another TV via sync), so keep the
+    // heart live for the displayed variant instead of trusting the one-shot read on load.
+    private fun startFavoriteCollection(providerId: Long, observedSeriesId: Long) {
+        favoriteJob?.cancel()
+        favoriteJob = viewModelScope.launch {
+            favoriteRepository.getFavorites(providerId, ContentType.SERIES)
+                .map { favorites -> favorites.any { it.contentId == observedSeriesId && it.groupId == null } }
+                .distinctUntilChanged()
+                .collect { isFavorite ->
+                    _uiState.update { current ->
+                        val series = current.series?.takeIf { it.id == observedSeriesId } ?: return@update current
+                        current.copy(series = series.copy(isFavorite = isFavorite))
+                    }
+                }
         }
     }
 

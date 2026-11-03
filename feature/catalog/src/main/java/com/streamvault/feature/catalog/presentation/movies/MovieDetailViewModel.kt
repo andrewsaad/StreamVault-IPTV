@@ -44,13 +44,16 @@ import com.streamvault.domain.trakt.TraktRatingIdentity
 import com.streamvault.domain.trakt.TraktRatingType
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -87,6 +90,8 @@ class MovieDetailViewModel @Inject constructor(
     val castEvents: SharedFlow<CatalogUiEvent> = uiEvents
 
     private var castPlaybackReportMode = CastPlaybackReportMode.NONE
+
+    private var favoriteJob: Job? = null
 
     init {
         observeCastPlaybackEvents()
@@ -440,8 +445,26 @@ class MovieDetailViewModel @Inject constructor(
                 resumePositionMs = if (hasResume) resumePositionMs else 0L
             )
         }
+        startFavoriteCollection(providerId, movie.id)
         refreshTraktWatchlist()
         refreshTraktRatings()
+    }
+
+    // Favorites can change from outside this screen (another TV via sync), so keep the
+    // heart live for the displayed variant instead of trusting the one-shot read above.
+    private fun startFavoriteCollection(providerId: Long, observedMovieId: Long) {
+        favoriteJob?.cancel()
+        favoriteJob = viewModelScope.launch {
+            favoriteRepository.getFavorites(providerId, ContentType.MOVIE)
+                .map { favorites -> favorites.any { it.contentId == observedMovieId && it.groupId == null } }
+                .distinctUntilChanged()
+                .collect { isFavorite ->
+                    _uiState.update { current ->
+                        val movie = current.movie?.takeIf { it.id == observedMovieId } ?: return@update current
+                        current.copy(movie = movie.copy(isFavorite = isFavorite))
+                    }
+                }
+        }
     }
 }
 
