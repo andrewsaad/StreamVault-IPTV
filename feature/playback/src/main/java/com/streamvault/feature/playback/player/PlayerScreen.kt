@@ -70,6 +70,7 @@ import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.ui.res.stringResource
 import com.streamvault.feature.playback.R
+import androidx.compose.ui.text.style.TextAlign
 import com.streamvault.feature.playback.cast.CastConnectionState
 import com.streamvault.feature.playback.api.PlaybackPictureInPictureState
 import com.streamvault.feature.playback.api.PlaybackPlatformHost
@@ -166,6 +167,7 @@ fun PlayerScreen(
         ?: false
     val playerEngine by viewModel.activePlayerEngine.collectAsStateWithLifecycle()
     val playbackState by playerEngine.playbackState.collectAsStateWithLifecycle()
+    val bufferingHint by playerEngine.bufferingHint.collectAsStateWithLifecycle()
     val playbackQualityGate by playerEngine.playbackQualityGate.collectAsStateWithLifecycle()
     val isPlaying by playerEngine.isPlaying.collectAsStateWithLifecycle()
     val renderSurfaceType by playerEngine.renderSurfaceType.collectAsStateWithLifecycle()
@@ -793,23 +795,38 @@ fun PlayerScreen(
                     .padding(top = 64.dp),
                 contentAlignment = Alignment.TopCenter
             ) {
-                Row(
+                Column(
                     modifier = Modifier
                         .background(Color.Black.copy(alpha = 0.62f), RoundedCornerShape(12.dp))
                         .padding(horizontal = 16.dp, vertical = 10.dp),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    CircularProgressIndicator(
-                        color = Primary,
-                        strokeWidth = 2.dp,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Text(
-                        text = stringResource(R.string.player_buffering),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = Color.White
-                    )
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        CircularProgressIndicator(
+                            color = Primary,
+                            strokeWidth = 2.dp,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Text(
+                            text = stringResource(R.string.player_buffering),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Color.White
+                        )
+                    }
+                    bufferingHint?.let { hint ->
+                        Text(
+                            text = stringResource(bufferingHintText(hint)),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color.White.copy(alpha = 0.85f),
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier
+                                .padding(top = 6.dp)
+                                .widthIn(max = 420.dp)
+                        )
+                    }
                 }
             }
         }

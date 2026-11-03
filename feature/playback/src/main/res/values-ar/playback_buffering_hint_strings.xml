@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="player_buffering_hint_account_refused">رفض المزوّد البث. قد يكون جهاز آخر يستخدم حسابك.</string>
+    <string name="player_buffering_hint_channel_offline">يبدو أن هذه القناة متوقفة. جرّب قناة أخرى.</string>
+    <string name="player_buffering_hint_server_busy">خادم المزوّد مشغول. جرّب نسخة أخرى من هذه القناة (FHD أو HD).</string>
+    <string name="player_buffering_hint_weak_network">الشبكة ضعيفة. تحقّق من الواي فاي أو الاتصال.</string>
+    <string name="player_buffering_hint_device_decode">يواجه هذا التلفاز صعوبة في فك الترميز. جرّب جودة أقل.</string>
+    <string name="player_buffering_hint_provider_slow">المزوّد يرسل ببطء. جرّب نسخة أخف (FHD أو HD).</string>
+</resources>

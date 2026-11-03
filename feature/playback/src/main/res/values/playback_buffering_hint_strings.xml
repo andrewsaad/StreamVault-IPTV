@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Likely-cause hints under the buffering spinner. Translated to Arabic only for now. -->
+<resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="MissingTranslation">
+    <string name="player_buffering_hint_account_refused">Provider refused the stream. Another device may be using your account.</string>
+    <string name="player_buffering_hint_channel_offline">This channel looks offline. Try another channel.</string>
+    <string name="player_buffering_hint_server_busy">Provider server is busy. Try another version of this channel (FHD or HD).</string>
+    <string name="player_buffering_hint_weak_network">Weak network. Check the Wi-Fi or connection.</string>
+    <string name="player_buffering_hint_device_decode">This TV is struggling to decode. Try a lower quality.</string>
+    <string name="player_buffering_hint_provider_slow">Provider is sending slowly. Try a lighter version (FHD or HD).</string>
+</resources>
