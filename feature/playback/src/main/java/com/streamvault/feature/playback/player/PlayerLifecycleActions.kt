@@ -248,12 +248,26 @@ fun PlayerViewModel.onAppBackgrounded(): Job? {
     if (shouldResumeAfterForeground) {
         playerEngine.pause()
     }
+    backgroundStreamReleaser.onBackgrounded(
+        eligible = shouldResumeAfterForeground && isBackgroundReleaseEligible(
+            contentType = currentContentType,
+            isCatchUpPlayback = isCatchUpPlayback.value,
+            timeshiftStatus = timeshiftUiState.value.engineState.status
+        )
+    ) {
+        playerEngine.stop()
+    }
     return queueForcedProgressFlush()
 }
 
 fun PlayerViewModel.onAppForegrounded() {
     if (isAppInForeground) return
     isAppInForeground = true
+    if (backgroundStreamReleaser.onForegrounded()) {
+        shouldResumeAfterForeground = false
+        retryStream(currentStreamUrl, currentChannelFlow.value?.epgChannelId)
+        return
+    }
     if (shouldResumeAfterForeground && !resumePrompt.value.show) {
         playerEngine.play()
     }
@@ -262,6 +276,7 @@ fun PlayerViewModel.onAppForegrounded() {
 
 fun PlayerViewModel.onPlayerScreenDisposed(): Job? {
     val progressFlush = queueForcedProgressFlush()
+    backgroundStreamReleaser.cancel()
     episodeSourceState.reset(prepareRequestVersion)
     clearPreloadWindow()
     playerPlaybackContextCoordinator.clearSelectedCatchUpProgram()

@@ -467,6 +467,7 @@ class PlayerViewModel @Inject constructor(
     internal var autoPlayNextEpisodeEnabled: Boolean = true
     internal var isAppInForeground: Boolean = true
     internal var shouldResumeAfterForeground: Boolean = false
+    internal val backgroundStreamReleaser = BackgroundStreamReleaser(viewModelScope)
     internal var seekPreviewRequestVersion: Long = 0L
     internal var lastMuteToggleAtMs: Long = 0L
     internal var stopPlaybackTimerEndsAtMs: Long = 0L
