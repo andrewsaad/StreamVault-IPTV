@@ -13,8 +13,10 @@ import com.streamvault.feature.catalog.api.CatalogStreamPreparer
 import com.streamvault.feature.catalog.api.CatalogUiEvent
 import com.streamvault.feature.catalog.presentation.CatalogMainDispatcherRule
 import com.streamvault.data.preferences.PreferencesRepository
+import com.streamvault.domain.model.ContentType
 import com.streamvault.domain.model.Episode
 import com.streamvault.domain.model.ExternalRatings
+import com.streamvault.domain.model.Favorite
 import com.streamvault.domain.model.LegacyProvider as Provider
 import com.streamvault.domain.model.ProviderType
 import com.streamvault.domain.model.Result
@@ -44,6 +46,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.async
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -176,6 +179,61 @@ class SeriesDetailViewModelCastingTest {
             viewModel.castEpisode(episode(id = 22L, episodeNumber = 2))
 
             assertThat(castPort.startCount).isEqualTo(1)
+        } finally {
+            viewModel.viewModelScope.cancel()
+        }
+    }
+
+    @Test
+    fun `heart follows favorites changed outside the screen while open`() = runBlocking {
+        val favorites = MutableStateFlow<List<Favorite>>(emptyList())
+        val current = series()
+        val viewModel = createViewModel(series = current, favorites = favorites)
+
+        try {
+            withTimeout(5_000L) { viewModel.uiState.first { it.series != null } }
+            assertThat(viewModel.uiState.value.series?.isFavorite).isFalse()
+
+            // A group-only membership is not the global heart.
+            favorites.value = listOf(favorite(contentId = current.id, groupId = 7L))
+            assertThat(viewModel.uiState.value.series?.isFavorite).isFalse()
+
+            favorites.value = listOf(favorite(contentId = current.id))
+            withTimeout(5_000L) { viewModel.uiState.first { it.series?.isFavorite == true } }
+
+            favorites.value = emptyList()
+            withTimeout(5_000L) { viewModel.uiState.first { it.series?.isFavorite == false } }
+            assertThat(viewModel.uiState.value.series?.id).isEqualTo(current.id)
+        } finally {
+            viewModel.viewModelScope.cancel()
+        }
+    }
+
+    @Test
+    fun `switching variant observes the favorite state of the new variant`() = runBlocking {
+        val current = series()
+        val variantId = 31L
+        val favorites = MutableStateFlow(listOf(favorite(contentId = current.id)))
+        val viewModel = createViewModel(
+            series = current,
+            favorites = favorites,
+            variantSeriesId = variantId,
+            variantDetailsResult = Result.success(current.copy(id = variantId)),
+        )
+
+        try {
+            withTimeout(5_000L) { viewModel.uiState.first { it.series?.isFavorite == true } }
+            viewModel.selectSeriesVariant(variantId)
+            withTimeout(5_000L) { viewModel.uiState.first { it.series?.id == variantId } }
+            assertThat(viewModel.uiState.value.series?.isFavorite).isFalse()
+
+            favorites.value = listOf(favorite(contentId = variantId))
+            withTimeout(5_000L) { viewModel.uiState.first { it.series?.isFavorite == true } }
+
+            // The previous variant's row no longer drives the heart.
+            favorites.value = listOf(favorite(contentId = current.id))
+            withTimeout(5_000L) { viewModel.uiState.first { it.series?.isFavorite == false } }
+            assertThat(viewModel.uiState.value.series?.id).isEqualTo(variantId)
         } finally {
             viewModel.viewModelScope.cancel()
         }
@@ -364,6 +422,7 @@ class SeriesDetailViewModelCastingTest {
         variantDetailsResult: Result<Series>? = null,
         variants: List<VodSeriesVariant> = emptyList(),
         preferencesRepository: PreferencesRepository = mock(),
+        favorites: MutableStateFlow<List<Favorite>> = MutableStateFlow(emptyList()),
     ): SeriesDetailViewModel {
         val provider = Provider(
             id = series.providerId,
@@ -389,8 +448,12 @@ class SeriesDetailViewModelCastingTest {
         whenever(preferencesRepository.setPreferredVodVariant(any(), any(), any())).thenReturn(Unit)
         whenever(seriesRepository.getEpisodeStreamInfo(any()))
             .thenReturn(Result.success(streamInfo))
-        whenever(favoriteRepository.isFavorite(any(), any(), any()))
-            .thenReturn(false)
+        whenever(favoriteRepository.isFavorite(any(), any(), any())).thenAnswer { invocation ->
+            val contentId = invocation.getArgument<Long>(1)
+            favorites.value.any { it.contentId == contentId && it.groupId == null }
+        }
+        whenever(favoriteRepository.getFavorites(eq(provider.id), anyOrNull()))
+            .thenReturn(favorites)
         whenever(playbackHistoryRepository.getUnwatchedCount(any(), any()))
             .thenReturn(flowOf(0))
         whenever(externalRatingsRepository.getRatings(any()))
@@ -463,6 +526,13 @@ class SeriesDetailViewModelCastingTest {
     }
 
     private companion object {
+        fun favorite(contentId: Long, groupId: Long? = null) = Favorite(
+            providerId = 1L,
+            contentId = contentId,
+            contentType = ContentType.SERIES,
+            groupId = groupId,
+        )
+
         fun series(episodes: List<Episode> = listOf(episode())) = Series(
             id = 30L,
             name = "Series",
