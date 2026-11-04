@@ -2,7 +2,10 @@ package com.streamvault.player.diagnostics
 
 /** Likely reason for the current buffering, shown under the spinner with a suggestion. */
 enum class BufferingHint {
-    /** HTTP 401/403: the provider refused the stream (often another device on a single-connection account). */
+    /**
+     * HTTP 401/403/406: the provider refused the stream. On a single-connection Xtream account a
+     * device that was kicked off by another one gets 406 on every request.
+     */
     ACCOUNT_REFUSED,
     /** HTTP 404/410: this channel's stream is missing. */
     CHANNEL_OFFLINE,
@@ -43,7 +46,7 @@ internal object BufferingDiagnosis {
     fun classify(signals: BufferingSignals): BufferingHint? {
         if (signals.bufferingForMs < SHOW_AFTER_MS) return null
         val codes = signals.recentHttpCodes
-        if (codes.any { it == 401 || it == 403 }) return BufferingHint.ACCOUNT_REFUSED
+        if (codes.any { it == 401 || it == 403 || it == 406 }) return BufferingHint.ACCOUNT_REFUSED
         if (codes.any { it == 404 || it == 410 }) return BufferingHint.CHANNEL_OFFLINE
         if (codes.any { it in 500..599 }) return BufferingHint.SERVER_BUSY
         if (signals.bufferMs >= HEALTHY_BUFFER_MS &&

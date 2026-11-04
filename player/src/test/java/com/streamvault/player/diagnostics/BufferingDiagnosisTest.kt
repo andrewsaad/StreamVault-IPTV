@@ -28,6 +28,8 @@ class BufferingDiagnosisTest {
     fun `http status names the cause and refusal wins over server errors`() {
         assertThat(classify(base.copy(recentHttpCodes = listOf(503, 403)))).isEqualTo(BufferingHint.ACCOUNT_REFUSED)
         assertThat(classify(base.copy(recentHttpCodes = listOf(401)))).isEqualTo(BufferingHint.ACCOUNT_REFUSED)
+        // What a TV gets after another device on the same account took the connection (seen 2026-11-03).
+        assertThat(classify(base.copy(recentHttpCodes = listOf(406, 406)))).isEqualTo(BufferingHint.ACCOUNT_REFUSED)
         assertThat(classify(base.copy(recentHttpCodes = listOf(404)))).isEqualTo(BufferingHint.CHANNEL_OFFLINE)
         assertThat(classify(base.copy(recentHttpCodes = listOf(410)))).isEqualTo(BufferingHint.CHANNEL_OFFLINE)
         assertThat(classify(base.copy(recentHttpCodes = listOf(502)))).isEqualTo(BufferingHint.SERVER_BUSY)
