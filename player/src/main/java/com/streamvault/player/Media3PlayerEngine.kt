@@ -1436,6 +1436,8 @@ class Media3PlayerEngine @Inject constructor(
         // An adopted preview is already playing, so its session starts at the handoff.
         val streamInfo = lastStreamInfo ?: return
         startJournalSession(streamInfo, lastMediaId.orEmpty(), origin = "preview")
+        // Playback began before the handoff, so the session would otherwise end with started=false.
+        if (playbackStarted) journal?.onPlaybackStarted()
     }
 
     override fun onAppVisibilityChanged(foreground: Boolean) {
