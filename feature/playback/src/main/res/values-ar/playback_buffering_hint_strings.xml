@@ -6,4 +6,6 @@
     <string name="player_buffering_hint_weak_network">الشبكة ضعيفة. تحقّق من الواي فاي أو الاتصال.</string>
     <string name="player_buffering_hint_device_decode">يواجه هذا التلفاز صعوبة في فك الترميز. جرّب جودة أقل.</string>
     <string name="player_buffering_hint_provider_slow">المزوّد يرسل ببطء. جرّب نسخة أخف (FHD أو HD).</string>
+    <string name="player_buffering_hint_other_viewer">%1$s يشاهد %2$s على هذا الحساب (منذ %3$s).</string>
+    <string name="player_account_in_use">%1$s يشاهد %2$s على هذا الحساب (منذ %3$s). اختر إعادة المحاولة للمشاهدة هنا.</string>
 </resources>

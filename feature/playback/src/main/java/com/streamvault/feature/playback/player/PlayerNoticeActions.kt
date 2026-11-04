@@ -22,6 +22,7 @@ fun PlayerViewModel.runPlayerNoticeAction(action: PlayerNoticeAction) {
     when (action) {
         PlayerNoticeAction.RETRY -> {
             appendRecoveryAction("Manual retry")
+            clearOtherViewer()
             retryStream(currentStreamUrl, currentChannelFlow.value?.epgChannelId)
         }
         PlayerNoticeAction.LAST_CHANNEL -> {

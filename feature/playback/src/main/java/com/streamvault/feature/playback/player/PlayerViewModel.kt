@@ -100,6 +100,7 @@ class PlayerViewModel @Inject constructor(
     internal val downloadExternalSubtitleUseCase: DownloadExternalSubtitle,
     internal val getExternalSubtitleLanguagesUseCase: GetExternalSubtitleLanguages,
     internal val openSubtitlesAccountManager: OpenSubtitlesAccountManager,
+    internal val nowPlayingRegistry: com.streamvault.domain.sync.NowPlayingRegistry,
 ) : ViewModel() {
     companion object {
         private const val MIN_WATCHED_FOR_AUTO_PLAY_MS = 5_000L
@@ -130,6 +131,10 @@ class PlayerViewModel @Inject constructor(
     val upcomingPrograms: StateFlow<List<Program>> = guideTimelineCoordinator.upcomingPrograms
 
     internal val currentChannelFlow = MutableStateFlow<com.streamvault.domain.model.Channel?>(null)
+    internal val otherViewerFlow = MutableStateFlow<com.streamvault.domain.sync.OtherViewer?>(null)
+    /** Another household TV playing on the shared account, looked up while live TV is stuck. */
+    val otherViewer: StateFlow<com.streamvault.domain.sync.OtherViewer?> = otherViewerFlow.asStateFlow()
+    internal var otherViewerLookupJob: Job? = null
     val currentChannel: StateFlow<com.streamvault.domain.model.Channel?> = currentChannelFlow.asStateFlow()
 
     private val _currentSeries = MutableStateFlow<Series?>(null)
@@ -575,6 +580,7 @@ class PlayerViewModel @Inject constructor(
         viewModelScope.launch {
             while (true) {
                 reportTraktPlayback()
+                reportNowPlaying()
                 delay(500)
             }
         }
@@ -629,6 +635,7 @@ class PlayerViewModel @Inject constructor(
         viewModelScope.launch {
             activePlayerEngineFlow.flatMapLatest { it.playbackState }.collect { state ->
                 _playerDiagnostics.update { it.copy(playbackStateLabel = state.name.replace('_', ' ')) }
+                onNowPlayingPlaybackState(state)
                 if (state == PlaybackState.ENDED && lastObservedPlaybackState != PlaybackState.ENDED) {
                     reportTraktPlayback(state)
                     handlePlaybackEnded()
@@ -2059,6 +2066,7 @@ class PlayerViewModel @Inject constructor(
 
     override fun onCleared() {
         playerTraktCoordinator.close()
+        nowPlayingRegistry.reportStopped()
         playbackSessionCoordinator.invalidate()
         playerPreparationCoordinator.stopPlayback(currentResolvedStreamInfo)
         super.onCleared()

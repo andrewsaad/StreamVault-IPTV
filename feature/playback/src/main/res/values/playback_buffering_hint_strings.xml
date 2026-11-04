@@ -7,4 +7,6 @@
     <string name="player_buffering_hint_weak_network">Weak network. Check the Wi-Fi or connection.</string>
     <string name="player_buffering_hint_device_decode">This TV is struggling to decode. Try a lower quality.</string>
     <string name="player_buffering_hint_provider_slow">Provider is sending slowly. Try a lighter version (FHD or HD).</string>
+    <string name="player_buffering_hint_other_viewer">%1$s is watching %2$s on this account (since %3$s).</string>
+    <string name="player_account_in_use">%1$s is watching %2$s on this account (since %3$s). Choose Retry to watch here instead.</string>
 </resources>

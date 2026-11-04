@@ -257,6 +257,7 @@ fun PlayerViewModel.onAppBackgrounded(): Job? {
         )
     ) {
         playerEngine.stop()
+        nowPlayingRegistry.reportStopped()
     }
     return queueForcedProgressFlush()
 }
@@ -279,6 +280,7 @@ fun PlayerViewModel.onAppForegrounded() {
 fun PlayerViewModel.onPlayerScreenDisposed(): Job? {
     val progressFlush = queueForcedProgressFlush()
     backgroundStreamReleaser.cancel()
+    clearOtherViewer()
     episodeSourceState.reset(prepareRequestVersion)
     clearPreloadWindow()
     playerPlaybackContextCoordinator.clearSelectedCatchUpProgram()

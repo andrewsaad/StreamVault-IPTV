@@ -168,6 +168,7 @@ fun PlayerScreen(
     val playerEngine by viewModel.activePlayerEngine.collectAsStateWithLifecycle()
     val playbackState by playerEngine.playbackState.collectAsStateWithLifecycle()
     val bufferingHint by playerEngine.bufferingHint.collectAsStateWithLifecycle()
+    val otherViewer by viewModel.otherViewer.collectAsStateWithLifecycle()
     val playbackQualityGate by playerEngine.playbackQualityGate.collectAsStateWithLifecycle()
     val isPlaying by playerEngine.isPlaying.collectAsStateWithLifecycle()
     val renderSurfaceType by playerEngine.renderSurfaceType.collectAsStateWithLifecycle()
@@ -827,6 +828,9 @@ fun PlayerScreen(
                                 .widthIn(max = 420.dp)
                         )
                     }
+                    otherViewer?.let { viewer ->
+                        OtherViewerLine(viewer = viewer, modifier = Modifier.padding(top = 6.dp))
+                    }
                 }
             }
         }
@@ -902,6 +906,7 @@ fun PlayerScreen(
                 onAction = handlePlayerNoticeAction,
                 onBack = onBack
             )
+            otherViewer?.let { OtherViewerBanner(it) }
         }
 
         if (shouldShowLiveClock(
