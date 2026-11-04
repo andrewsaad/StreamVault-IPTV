@@ -32,6 +32,8 @@ class HttpFavoriteSyncTransportTest {
         assertThat(HttpFavoriteSyncTransport.documentUrl("http://192.168.1.10:8787/")?.toString())
             .isEqualTo("http://192.168.1.10:8787/v1/docs/streamvault-favorites")
         assertThat(HttpFavoriteSyncTransport.documentUrl("sync-box:8787")).isNull()
+        assertThat(HttpFavoriteSyncTransport.documentUrl("http://192.168.1.10:8787", "streamvault-now-playing")?.toString())
+            .isEqualTo("http://192.168.1.10:8787/v1/docs/streamvault-now-playing")
     }
 
     @Test

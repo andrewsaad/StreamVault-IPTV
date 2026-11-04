@@ -52,6 +52,7 @@ object FavoriteSyncCrypto {
     private const val TAG_BITS = 128
     private val MAGIC = byteArrayOf('S'.code.toByte(), 'V'.code.toByte(), 'F'.code.toByte(), '2'.code.toByte())
     private val HEADER_BYTES = MAGIC.size + SALT_BYTES + IV_BYTES
+    /** Binds a blob to its document, so one household document can never be swapped in for another. */
     private val AAD = "streamvault-favorites-doc-v2".toByteArray(Charsets.UTF_8)
     private val random = SecureRandom()
 
@@ -68,24 +69,24 @@ object FavoriteSyncCrypto {
         return blob.copyOfRange(MAGIC.size, MAGIC.size + SALT_BYTES)
     }
 
-    fun encrypt(keys: FavoriteSyncKeys, plaintext: ByteArray): ByteArray {
+    fun encrypt(keys: FavoriteSyncKeys, plaintext: ByteArray, aad: ByteArray = AAD): ByteArray {
         val iv = ByteArray(IV_BYTES).also(random::nextBytes)
         val cipher = Cipher.getInstance("AES/GCM/NoPadding")
         cipher.init(Cipher.ENCRYPT_MODE, SecretKeySpec(keys.encryptionKey, "AES"), GCMParameterSpec(TAG_BITS, iv))
         // The header is authenticated too, so a swapped salt fails like a wrong passphrase.
         val header = MAGIC + keys.salt + iv
-        cipher.updateAAD(AAD)
+        cipher.updateAAD(aad)
         cipher.updateAAD(header)
         return header + cipher.doFinal(gzip(plaintext))
     }
 
-    fun decrypt(keys: FavoriteSyncKeys, blob: ByteArray): ByteArray {
+    fun decrypt(keys: FavoriteSyncKeys, blob: ByteArray, aad: ByteArray = AAD): ByteArray {
         if (!saltOf(blob).contentEquals(keys.salt)) throw FavoriteSyncPairingMismatchException()
         val iv = blob.copyOfRange(MAGIC.size + SALT_BYTES, HEADER_BYTES)
         val compressed = try {
             val cipher = Cipher.getInstance("AES/GCM/NoPadding")
             cipher.init(Cipher.DECRYPT_MODE, SecretKeySpec(keys.encryptionKey, "AES"), GCMParameterSpec(TAG_BITS, iv))
-            cipher.updateAAD(AAD)
+            cipher.updateAAD(aad)
             cipher.updateAAD(blob, 0, HEADER_BYTES)
             cipher.doFinal(blob, HEADER_BYTES, blob.size - HEADER_BYTES)
         } catch (error: GeneralSecurityException) {

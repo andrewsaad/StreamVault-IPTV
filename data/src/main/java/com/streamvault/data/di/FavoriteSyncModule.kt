@@ -10,7 +10,13 @@ import com.streamvault.data.sync.favorites.FavoriteSyncTransportFactory
 import com.streamvault.data.sync.favorites.HttpFavoriteSyncTransportFactory
 import com.streamvault.data.sync.favorites.ProviderIdentityKeyLookup
 import com.streamvault.data.sync.favorites.SnapshotProviderIdentityKeyLookup
+import com.streamvault.data.sync.nowplaying.AndroidNowPlayingDevice
+import com.streamvault.data.sync.nowplaying.HttpNowPlayingTransportFactory
+import com.streamvault.data.sync.nowplaying.NowPlayingDevice
+import com.streamvault.data.sync.nowplaying.NowPlayingTransportFactory
+import com.streamvault.data.sync.nowplaying.SyncServerNowPlayingRegistry
 import com.streamvault.domain.manager.FavoriteSyncManager
+import com.streamvault.domain.sync.NowPlayingRegistry
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -36,4 +42,13 @@ abstract class FavoriteSyncModule {
 
     @Binds
     abstract fun bindProviderIdentityKeyLookup(impl: SnapshotProviderIdentityKeyLookup): ProviderIdentityKeyLookup
+
+    @Binds
+    abstract fun bindNowPlayingRegistry(impl: SyncServerNowPlayingRegistry): NowPlayingRegistry
+
+    @Binds
+    abstract fun bindNowPlayingTransportFactory(impl: HttpNowPlayingTransportFactory): NowPlayingTransportFactory
+
+    @Binds
+    abstract fun bindNowPlayingDevice(impl: AndroidNowPlayingDevice): NowPlayingDevice
 }

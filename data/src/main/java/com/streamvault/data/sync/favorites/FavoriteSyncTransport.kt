@@ -126,12 +126,12 @@ class HttpFavoriteSyncTransport(
         private val OCTET_STREAM = "application/octet-stream".toMediaType()
 
         /** Builds the document URL from the base URL the user typed, or null when it is not http(s). */
-        fun documentUrl(baseUrl: String): HttpUrl? {
+        fun documentUrl(baseUrl: String, documentId: String = DOCUMENT_ID): HttpUrl? {
             val parsed = baseUrl.trim().trimEnd('/').toHttpUrlOrNull() ?: return null
             return parsed.newBuilder()
                 .addPathSegment("v1")
                 .addPathSegment("docs")
-                .addPathSegment(DOCUMENT_ID)
+                .addPathSegment(documentId)
                 .build()
         }
 
