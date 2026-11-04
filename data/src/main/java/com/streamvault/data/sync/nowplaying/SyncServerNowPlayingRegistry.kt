@@ -4,6 +4,7 @@ import android.content.Context
 import android.os.Build
 import android.provider.Settings
 import android.util.Log
+import androidx.core.content.edit
 import com.streamvault.data.sync.favorites.FavoriteSyncCrypto
 import com.streamvault.data.sync.favorites.FavoriteSyncFetchResult
 import com.streamvault.data.sync.favorites.FavoriteSyncKeyring
@@ -55,7 +56,7 @@ class AndroidNowPlayingDevice @Inject constructor(
     override val id: String by lazy {
         val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         prefs.getString(KEY_ID, null) ?: UUID.randomUUID().toString().replace("-", "").take(16).also {
-            prefs.edit().putString(KEY_ID, it).apply()
+            prefs.edit { putString(KEY_ID, it) }
         }
     }
 
