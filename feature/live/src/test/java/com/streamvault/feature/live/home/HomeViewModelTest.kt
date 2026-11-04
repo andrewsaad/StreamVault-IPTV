@@ -11,6 +11,7 @@ import com.streamvault.feature.live.api.LivePreviewStreamPreparer
 import com.streamvault.feature.live.api.LiveSurfaceRefreshPort
 import com.streamvault.data.preferences.PreferencesRepository
 import com.streamvault.data.sync.SyncManager
+import com.streamvault.domain.sync.NowPlayingRegistry
 import com.streamvault.domain.manager.ParentalControlManager
 import com.streamvault.domain.model.ActiveLiveSource
 import com.streamvault.domain.model.Category
@@ -66,6 +67,7 @@ class HomeViewModelTest {
     private val pluginManager: LivePreviewStreamPreparer = mock()
     private val playerEngine: PlayerEngine = mock()
     private val playerEngineProvider: InjectProvider<PlayerEngine> = mock()
+    private val nowPlayingRegistry: NowPlayingRegistry = mock()
     private val application: Application = mock()
     private lateinit var reverseHandoffOrigin: MutableStateFlow<LivePreviewOrigin?>
     private val createdViewModels = mutableListOf<HomeViewModel>()
@@ -155,7 +157,8 @@ class HomeViewModelTest {
             multiViewStatusPort = multiViewStatusPort,
             livePreviewHandoffManager = livePreviewHandoffManager,
             pluginManager = pluginManager,
-            playerEngineProvider = playerEngineProvider
+            playerEngineProvider = playerEngineProvider,
+            nowPlayingRegistry = nowPlayingRegistry
         ).also(createdViewModels::add)
 
     private fun clearViewModel(viewModel: HomeViewModel) {
@@ -441,6 +444,29 @@ class HomeViewModelTest {
         verify(playerEngine).release()
         assertThat(viewModel.previewUiState.value.previewChannelId).isNull()
         assertThat(viewModel.previewUiState.value.previewPlayerEngine).isNull()
+    }
+
+    @Test
+    fun `a playing preview goes on the household board and clearing it takes it off`() = runTest {
+        configurePreviewDependencies()
+        val playbackState = MutableStateFlow(PlaybackState.BUFFERING)
+        whenever(playerEngine.playbackState).thenReturn(playbackState)
+        whenever(channelRepository.getStreamInfo(any(), any())).thenReturn(
+            Result.Success(StreamInfo(url = "https://example.com/live.m3u8"))
+        )
+        viewModel = createViewModel()
+        advanceUntilIdle()
+
+        viewModel.previewChannel(Channel(id = 106L, name = "beIN Sport 1", providerId = 7L))
+        advanceUntilIdle()
+        verify(nowPlayingRegistry, never()).reportPlaying(any())
+
+        playbackState.value = PlaybackState.READY
+        runCurrent()
+        verify(nowPlayingRegistry).reportPlaying("beIN Sport 1")
+
+        viewModel.clearPreview()
+        verify(nowPlayingRegistry).reportStopped()
     }
 
     private fun configurePreviewDependencies() {

@@ -2,6 +2,7 @@ package com.streamvault.feature.live.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.streamvault.domain.sync.NowPlayingRegistry
 import com.streamvault.player.di.AuxiliaryPlayerEngine
 import com.streamvault.feature.live.api.LiveMultiViewStatusPort
 import com.streamvault.feature.live.api.LivePreviewHandoffPort
@@ -95,7 +96,8 @@ class HomeViewModel @Inject constructor(
     private val livePreviewHandoffManager: LivePreviewHandoffPort,
     private val pluginManager: LivePreviewStreamPreparer,
     @param:AuxiliaryPlayerEngine
-    private val playerEngineProvider: InjectProvider<PlayerEngine>
+    private val playerEngineProvider: InjectProvider<PlayerEngine>,
+    private val nowPlayingRegistry: NowPlayingRegistry
 ) : ViewModel() {
     private companion object {
         const val MIN_CHANNEL_SEARCH_QUERY_LENGTH = 2
@@ -1041,6 +1043,8 @@ class HomeViewModel @Inject constructor(
             var hasEnginePlaybackError = false
             engine.playbackState.collectLatest { playbackState ->
                 if (!isActivePreviewSession(previewVersion, channel.id)) return@collectLatest
+                // The preview holds the single provider connection too, so it goes on the household board.
+                if (playbackState == PlaybackState.READY) nowPlayingRegistry.reportPlaying(channel.name)
                 _previewUiState.update { state ->
                     state.copy(
                         isPreviewLoading = playbackState == PlaybackState.IDLE || playbackState == PlaybackState.BUFFERING,
@@ -1218,6 +1222,7 @@ class HomeViewModel @Inject constructor(
         previewPlaybackJob = viewModelScope.launch {
             engine.playbackState.collectLatest { state ->
                 if (!isActivePreviewSession(version, session.channelId)) return@collectLatest
+                if (state == PlaybackState.READY) session.streamInfo.title?.takeIf { it.isNotBlank() }?.let(nowPlayingRegistry::reportPlaying)
                 if (state == PlaybackState.ERROR && _previewUiState.value.previewErrorMessage == null) {
                     _previewUiState.update { it.copy(previewErrorMessage = appContext.getString(R.string.live_preview_failed)) }
                 }
@@ -1233,6 +1238,7 @@ class HomeViewModel @Inject constructor(
         previewPlaybackJob = null
         previewErrorJob = null
         livePreviewHandoffManager.clear(previewPlayerEngine)
+        nowPlayingRegistry.reportStopped()
         previewPlayerEngine?.stop()
         previewPlayerEngine?.release()
         previewPlayerEngine = null
