@@ -69,6 +69,33 @@ data class LiveGuideGridLabels(
 fun List<Program>.liveCurrentProgramAt(now: Long): Program? =
     firstOrNull { now in it.startTime until it.endTime }
 
+/** Horizontal scroll is quantized into half-viewport buckets so rows only re-filter when a bucket changes. */
+internal fun liveGuideScrollBucket(scrollPx: Int, viewportPx: Float): Int {
+    val step = (viewportPx / 2f).coerceAtLeast(1f)
+    return kotlin.math.floor(scrollPx.coerceAtLeast(0) / step).toInt()
+}
+
+/**
+ * Programs overlapping the viewport for any scroll position inside [bucket], plus one viewport of buffer on
+ * each side so D-pad focus always has a neighbouring program to move to.
+ */
+internal fun List<Program>.liveGuideProgramsForBucket(
+    bucket: Int,
+    viewportPx: Float,
+    totalTimelinePx: Float,
+    windowStart: Long,
+    windowEnd: Long
+): List<Program> {
+    if (isEmpty() || totalTimelinePx <= 0f || viewportPx <= 0f) return this
+    val step = (viewportPx / 2f).coerceAtLeast(1f)
+    val fromPx = bucket * step - viewportPx
+    val toPx = (bucket + 1) * step + 2f * viewportPx
+    val duration = (windowEnd - windowStart).coerceAtLeast(1L).toDouble()
+    val fromMs = windowStart + (fromPx / totalTimelinePx * duration).toLong()
+    val toMs = windowStart + (toPx / totalTimelinePx * duration).toLong()
+    return filter { it.endTime > fromMs && it.startTime < toMs }
+}
+
 @Composable
 fun LiveGuideGridRow(
     channel: Channel,
@@ -97,6 +124,15 @@ fun LiveGuideGridRow(
     val nowState = currentLiveGuideNowState()
     val currentProgram by remember(programs, nowState) {
         derivedStateOf { programs.liveCurrentProgramAt(nowState.value) }
+    }
+    val localDensity = androidx.compose.ui.platform.LocalDensity.current
+    val viewportPx = with(localDensity) { timelineViewportWidth.toPx() }
+    val totalTimelinePx = with(localDensity) { totalTimelineWidth.toPx() }
+    val scrollBucket by remember(scrollState, viewportPx) {
+        derivedStateOf { liveGuideScrollBucket(scrollState.value, viewportPx) }
+    }
+    val composedPrograms = remember(programs, scrollBucket, viewportPx, totalTimelinePx, windowStart, windowEnd) {
+        programs.liveGuideProgramsForBucket(scrollBucket, viewportPx, totalTimelinePx, windowStart, windowEnd)
     }
     val hasUsableArchive = channel.archivePlaybackCapability().canBuildReplayCandidate
     val totalDuration = (windowEnd - windowStart).coerceAtLeast(1L)
@@ -275,7 +311,7 @@ fun LiveGuideGridRow(
                             Text(labels.noSchedule, color = OnSurfaceDim)
                         }
                     } else {
-                        programs.forEach { program ->
+                        composedPrograms.forEach { program ->
                             LiveGuideProgramItem(
                                 program = program,
                                 density = density,
@@ -314,8 +350,12 @@ fun LiveGuideProgramItem(
     val appTimeFormat = LocalLiveTimeFormat.current
     val format = remember(appTimeFormat) { appTimeFormat.createLiveTimeFormatter() }
     val zone = remember { ZoneId.systemDefault() }
-    val startStr = format.format(Instant.ofEpochMilli(program.startTime).atZone(zone))
-    val endStr = format.format(Instant.ofEpochMilli(program.endTime).atZone(zone))
+    val startStr = remember(format, zone, program.startTime) {
+        format.format(Instant.ofEpochMilli(program.startTime).atZone(zone))
+    }
+    val endStr = remember(format, zone, program.endTime) {
+        format.format(Instant.ofEpochMilli(program.endTime).atZone(zone))
+    }
     val totalDuration = (windowEnd - windowStart).coerceAtLeast(1L)
     val visibleStart = max(program.startTime, windowStart)
     val visibleEnd = max(visibleStart + 1, minOf(program.endTime, windowEnd))
