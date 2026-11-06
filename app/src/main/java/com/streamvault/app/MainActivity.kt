@@ -189,7 +189,9 @@ class MainActivity : ComponentActivity(), CatalogPlatformHost {
         WindowCompat.setDecorFitsSystemWindows(window, false)
         applyImmersiveSystemUi()
         _pictureInPictureModeFlow.value = isInPictureInPictureMode
-        handleExternalIntent(intent)
+        if (com.streamvault.app.navigation.shouldHandleLaunchIntent(savedInstanceState != null)) {
+            handleExternalIntent(intent)
+        }
         if (isTelevisionDevice()) {
             // Lock TVs to landscape — the manifest uses "unspecified" so phones/tablets
             // can freely rotate, but TV UI is designed for landscape only.

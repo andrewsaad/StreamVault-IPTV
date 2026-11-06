@@ -25,3 +25,10 @@ internal fun planReturnNavigation(
  */
 internal fun shouldSaveCurrentStateOnReplacement(currentRoute: String?): Boolean =
     currentRoute != AppRoutePatterns.PLAYER
+
+/**
+ * The launch intent is redelivered unchanged when the activity is recreated (locale, uiMode,
+ * density changes, process death restore). Replaying it would re-run its external destination
+ * (typically Home) over the user's current screen, so it is only handled on a fresh launch.
+ */
+internal fun shouldHandleLaunchIntent(hasSavedInstanceState: Boolean): Boolean = !hasSavedInstanceState
