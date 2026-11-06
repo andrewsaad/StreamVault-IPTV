@@ -1004,4 +1004,19 @@
     <string name="settings_favorites_sync_restore_title">Gjenopprette favoritter på alle TV-er?</string>
     <string name="settings_favorites_sync_restore_message">Dette oppdaterer også favorittene på de andre TV-ene dine.</string>
     <string name="settings_favorites_sync_restore_confirm">Gjenopprett</string>
+    <string name="settings_epg_presets_title">Forhåndsinnstillinger for guide</string>
+    <string name="settings_epg_presets_description">Ferdige guidekilder du kan slå på for denne enheten. Ingenting lastes ned før en forhåndsinnstilling er slått på.</string>
+    <string name="epg_preset_bein_name">beIN Sports (arabisk)</string>
+    <string name="epg_preset_bein_coverage">beIN Sports-kanaler og arabiske nettverk</string>
+    <string name="epg_preset_egypt_name">Egypt</string>
+    <string name="epg_preset_egypt_coverage">Al Ahly og egyptiske sportskanaler</string>
+    <string name="epg_preset_us_name">Amerikansk sport og nettverk</string>
+    <string name="epg_preset_us_coverage">NFL, MLS, MLB og nasjonale amerikanske kanaler</string>
+    <string name="epg_preset_status_off">Av</string>
+    <string name="epg_preset_status_updated">Oppdatert %1$s</string>
+    <string name="epg_preset_status_refreshing">Oppdaterer…</string>
+    <string name="epg_preset_status_error">Oppdatering mislyktes: %1$s</string>
+    <string name="epg_preset_refresh_now">Oppdater nå</string>
+    <string name="epg_preset_edit_address">Endre adresse</string>
+    <string name="epg_preset_terms_note">Guidedata kommer fra en offentlig fellesskapskilde uten oppgitte bruksvilkår. Oppdateringer er begrenset til to ganger om dagen.</string>
 </resources>

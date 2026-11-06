@@ -1002,4 +1002,19 @@
     <string name="settings_favorites_sync_restore_title">I-restore ang mga paborito sa lahat ng TV?</string>
     <string name="settings_favorites_sync_restore_message">Maa-update din nito ang mga paborito sa iba mo pang TV.</string>
     <string name="settings_favorites_sync_restore_confirm">I-restore</string>
+    <string name="settings_epg_presets_title">Mga preset ng guide</string>
+    <string name="settings_epg_presets_description">Mga handang source ng guide na maaari mong i-on sa device na ito. Walang mada-download hangga’t walang naka-on na preset.</string>
+    <string name="epg_preset_bein_name">beIN Sports (Arabe)</string>
+    <string name="epg_preset_bein_coverage">Mga channel ng beIN Sports at mga Arabong network</string>
+    <string name="epg_preset_egypt_name">Ehipto</string>
+    <string name="epg_preset_egypt_coverage">Al Ahly at mga sports channel ng Ehipto</string>
+    <string name="epg_preset_us_name">Sports at mga network ng US</string>
+    <string name="epg_preset_us_coverage">NFL, MLS, MLB at mga pambansang channel ng US</string>
+    <string name="epg_preset_status_off">Naka-off</string>
+    <string name="epg_preset_status_updated">Na-update %1$s</string>
+    <string name="epg_preset_status_refreshing">Nag-a-update…</string>
+    <string name="epg_preset_status_error">Nabigo ang pag-update: %1$s</string>
+    <string name="epg_preset_refresh_now">I-update ngayon</string>
+    <string name="epg_preset_edit_address">Palitan ang address</string>
+    <string name="epg_preset_terms_note">Ang data ng guide ay mula sa isang pampublikong source ng komunidad na walang nakasaad na tuntunin ng paggamit. Limitado ang mga update sa dalawang beses bawat araw.</string>
 </resources>

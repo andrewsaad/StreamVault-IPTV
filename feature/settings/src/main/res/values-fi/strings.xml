@@ -1004,4 +1004,19 @@
     <string name="settings_favorites_sync_restore_title">Palautetaanko suosikit kaikkiin televisioihin?</string>
     <string name="settings_favorites_sync_restore_message">Tämä päivittää suosikit myös muissa televisioissasi.</string>
     <string name="settings_favorites_sync_restore_confirm">Palauta</string>
+    <string name="settings_epg_presets_title">Oppaan esiasetukset</string>
+    <string name="settings_epg_presets_description">Valmiita opaslähteitä, jotka voit ottaa käyttöön tällä laitteella. Mitään ei ladata, ennen kuin esiasetus on käytössä.</string>
+    <string name="epg_preset_bein_name">beIN Sports (arabia)</string>
+    <string name="epg_preset_bein_coverage">beIN Sports -kanavat ja arabialaiset verkot</string>
+    <string name="epg_preset_egypt_name">Egypti</string>
+    <string name="epg_preset_egypt_coverage">Al Ahly ja egyptiläiset urheilukanavat</string>
+    <string name="epg_preset_us_name">Yhdysvaltain urheilu ja verkot</string>
+    <string name="epg_preset_us_coverage">NFL, MLS, MLB ja Yhdysvaltain valtakunnalliset kanavat</string>
+    <string name="epg_preset_status_off">Pois</string>
+    <string name="epg_preset_status_updated">Päivitetty %1$s</string>
+    <string name="epg_preset_status_refreshing">Päivitetään…</string>
+    <string name="epg_preset_status_error">Päivitys epäonnistui: %1$s</string>
+    <string name="epg_preset_refresh_now">Päivitä nyt</string>
+    <string name="epg_preset_edit_address">Vaihda osoite</string>
+    <string name="epg_preset_terms_note">Oppaan tiedot tulevat julkisesta yhteisölähteestä, jolla ei ole ilmoitettuja käyttöehtoja. Päivitykset on rajoitettu kahteen kertaan päivässä.</string>
 </resources>

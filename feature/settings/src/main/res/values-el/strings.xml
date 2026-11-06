@@ -1004,4 +1004,19 @@
     <string name="settings_favorites_sync_restore_title">Επαναφορά αγαπημένων σε όλες τις τηλεοράσεις;</string>
     <string name="settings_favorites_sync_restore_message">Αυτό θα ενημερώσει και τα αγαπημένα στις άλλες τηλεοράσεις σας.</string>
     <string name="settings_favorites_sync_restore_confirm">Επαναφορά</string>
+    <string name="settings_epg_presets_title">Προρυθμίσεις οδηγού</string>
+    <string name="settings_epg_presets_description">Έτοιμες πηγές οδηγού που μπορείτε να ενεργοποιήσετε σε αυτήν τη συσκευή. Δεν γίνεται λήψη τίποτα μέχρι να ενεργοποιηθεί μια προρύθμιση.</string>
+    <string name="epg_preset_bein_name">beIN Sports (Αραβικά)</string>
+    <string name="epg_preset_bein_coverage">Κανάλια beIN Sports και αραβικά δίκτυα</string>
+    <string name="epg_preset_egypt_name">Αίγυπτος</string>
+    <string name="epg_preset_egypt_coverage">Al Ahly και αιγυπτιακά αθλητικά κανάλια</string>
+    <string name="epg_preset_us_name">Αθλητικά και δίκτυα ΗΠΑ</string>
+    <string name="epg_preset_us_coverage">NFL, MLS, MLB και εθνικά κανάλια ΗΠΑ</string>
+    <string name="epg_preset_status_off">Ανενεργό</string>
+    <string name="epg_preset_status_updated">Ενημερώθηκε %1$s</string>
+    <string name="epg_preset_status_refreshing">Ενημέρωση…</string>
+    <string name="epg_preset_status_error">Η ενημέρωση απέτυχε: %1$s</string>
+    <string name="epg_preset_refresh_now">Ενημέρωση τώρα</string>
+    <string name="epg_preset_edit_address">Αλλαγή διεύθυνσης</string>
+    <string name="epg_preset_terms_note">Τα δεδομένα του οδηγού προέρχονται από δημόσια κοινοτική πηγή χωρίς δηλωμένους όρους χρήσης. Οι ενημερώσεις περιορίζονται σε δύο φορές την ημέρα.</string>
 </resources>

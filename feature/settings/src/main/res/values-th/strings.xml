@@ -999,4 +999,19 @@
     <string name="settings_favorites_sync_restore_title">กู้คืนรายการโปรดบนทีวีทุกเครื่องหรือไม่</string>
     <string name="settings_favorites_sync_restore_message">การดำเนินการนี้จะอัปเดตรายการโปรดบนทีวีเครื่องอื่นด้วย</string>
     <string name="settings_favorites_sync_restore_confirm">กู้คืน</string>
+    <string name="settings_epg_presets_title">ค่าที่ตั้งไว้ของผังรายการ</string>
+    <string name="settings_epg_presets_description">แหล่งผังรายการสำเร็จรูปที่คุณเปิดใช้ได้บนอุปกรณ์นี้ จะไม่มีการดาวน์โหลดใดๆ จนกว่าจะเปิดค่าที่ตั้งไว้</string>
+    <string name="epg_preset_bein_name">beIN Sports (ภาษาอาหรับ)</string>
+    <string name="epg_preset_bein_coverage">ช่อง beIN Sports และเครือข่ายอาหรับ</string>
+    <string name="epg_preset_egypt_name">อียิปต์</string>
+    <string name="epg_preset_egypt_coverage">อัล อาห์ลี และช่องกีฬาอียิปต์</string>
+    <string name="epg_preset_us_name">กีฬาและเครือข่ายสหรัฐฯ</string>
+    <string name="epg_preset_us_coverage">NFL, MLS, MLB และช่องระดับประเทศของสหรัฐฯ</string>
+    <string name="epg_preset_status_off">ปิด</string>
+    <string name="epg_preset_status_updated">อัปเดตแล้ว %1$s</string>
+    <string name="epg_preset_status_refreshing">กำลังอัปเดต…</string>
+    <string name="epg_preset_status_error">อัปเดตไม่สำเร็จ: %1$s</string>
+    <string name="epg_preset_refresh_now">อัปเดตตอนนี้</string>
+    <string name="epg_preset_edit_address">เปลี่ยนที่อยู่</string>
+    <string name="epg_preset_terms_note">ข้อมูลผังรายการมาจากแหล่งชุมชนสาธารณะที่ไม่ได้ระบุข้อกำหนดการใช้งาน การอัปเดตจำกัดไว้ที่วันละสองครั้ง</string>
 </resources>

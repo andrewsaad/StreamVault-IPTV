@@ -1007,4 +1007,19 @@
     <string name="settings_favorites_sync_restore_title">Restaurați favoritele pe toate televizoarele?</string>
     <string name="settings_favorites_sync_restore_message">Aceasta va actualiza și favoritele de pe celelalte televizoare.</string>
     <string name="settings_favorites_sync_restore_confirm">Restaurează</string>
+    <string name="settings_epg_presets_title">Presetări pentru ghid</string>
+    <string name="settings_epg_presets_description">Surse de ghid gata făcute pe care le puteți activa pe acest dispozitiv. Nu se descarcă nimic până nu este activată o presetare.</string>
+    <string name="epg_preset_bein_name">beIN Sports (arabă)</string>
+    <string name="epg_preset_bein_coverage">Canale beIN Sports și rețele arabe</string>
+    <string name="epg_preset_egypt_name">Egipt</string>
+    <string name="epg_preset_egypt_coverage">Al Ahly și canale sportive egiptene</string>
+    <string name="epg_preset_us_name">Sport și rețele din SUA</string>
+    <string name="epg_preset_us_coverage">NFL, MLS, MLB și canale naționale din SUA</string>
+    <string name="epg_preset_status_off">Dezactivat</string>
+    <string name="epg_preset_status_updated">Actualizat %1$s</string>
+    <string name="epg_preset_status_refreshing">Se actualizează…</string>
+    <string name="epg_preset_status_error">Actualizarea a eșuat: %1$s</string>
+    <string name="epg_preset_refresh_now">Actualizează acum</string>
+    <string name="epg_preset_edit_address">Schimbă adresa</string>
+    <string name="epg_preset_terms_note">Datele ghidului provin dintr-o sursă publică a comunității, fără condiții de utilizare declarate. Actualizările sunt limitate la două pe zi.</string>
 </resources>

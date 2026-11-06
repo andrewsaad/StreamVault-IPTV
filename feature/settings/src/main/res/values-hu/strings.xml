@@ -1004,4 +1004,19 @@
     <string name="settings_favorites_sync_restore_title">Visszaállítja a kedvenceket minden tévén?</string>
     <string name="settings_favorites_sync_restore_message">Ez a többi tévén is frissíti a kedvenceket.</string>
     <string name="settings_favorites_sync_restore_confirm">Visszaállítás</string>
+    <string name="settings_epg_presets_title">Műsorújság-előbeállítások</string>
+    <string name="settings_epg_presets_description">Kész műsorújság-források, amelyeket bekapcsolhat ezen az eszközön. Semmi sem töltődik le, amíg egy előbeállítás nincs bekapcsolva.</string>
+    <string name="epg_preset_bein_name">beIN Sports (arab)</string>
+    <string name="epg_preset_bein_coverage">beIN Sports-csatornák és arab hálózatok</string>
+    <string name="epg_preset_egypt_name">Egyiptom</string>
+    <string name="epg_preset_egypt_coverage">Al Ahly és egyiptomi sportcsatornák</string>
+    <string name="epg_preset_us_name">Amerikai sport és hálózatok</string>
+    <string name="epg_preset_us_coverage">NFL, MLS, MLB és országos amerikai csatornák</string>
+    <string name="epg_preset_status_off">Ki</string>
+    <string name="epg_preset_status_updated">Frissítve: %1$s</string>
+    <string name="epg_preset_status_refreshing">Frissítés…</string>
+    <string name="epg_preset_status_error">A frissítés sikertelen: %1$s</string>
+    <string name="epg_preset_refresh_now">Frissítés most</string>
+    <string name="epg_preset_edit_address">Cím módosítása</string>
+    <string name="epg_preset_terms_note">A műsorújság adatai egy nyilvános közösségi forrásból származnak, amelynek nincsenek megadott felhasználási feltételei. A frissítések napi két alkalomra korlátozódnak.</string>
 </resources>

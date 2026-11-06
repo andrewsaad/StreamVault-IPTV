@@ -1002,4 +1002,19 @@
     <string name="settings_favorites_sync_restore_title">すべてのテレビでお気に入りを復元しますか?</string>
     <string name="settings_favorites_sync_restore_message">他のテレビのお気に入りも更新されます。</string>
     <string name="settings_favorites_sync_restore_confirm">復元</string>
+    <string name="settings_epg_presets_title">ガイドのプリセット</string>
+    <string name="settings_epg_presets_description">このデバイスでオンにできる既製のガイドソースです。プリセットをオンにするまで何もダウンロードされません。</string>
+    <string name="epg_preset_bein_name">beIN Sports（アラビア語）</string>
+    <string name="epg_preset_bein_coverage">beIN Sports のチャンネルとアラブのネットワーク</string>
+    <string name="epg_preset_egypt_name">エジプト</string>
+    <string name="epg_preset_egypt_coverage">アル・アハリとエジプトのスポーツチャンネル</string>
+    <string name="epg_preset_us_name">米国のスポーツとネットワーク</string>
+    <string name="epg_preset_us_coverage">NFL、MLS、MLB と米国の全国チャンネル</string>
+    <string name="epg_preset_status_off">オフ</string>
+    <string name="epg_preset_status_updated">更新: %1$s</string>
+    <string name="epg_preset_status_refreshing">更新中…</string>
+    <string name="epg_preset_status_error">更新に失敗しました: %1$s</string>
+    <string name="epg_preset_refresh_now">今すぐ更新</string>
+    <string name="epg_preset_edit_address">アドレスを変更</string>
+    <string name="epg_preset_terms_note">ガイドデータは、利用規約が明示されていない公開コミュニティソースから取得されます。更新は 1 日 2 回までに制限されています。</string>
 </resources>

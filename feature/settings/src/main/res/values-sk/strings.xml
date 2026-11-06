@@ -1008,4 +1008,19 @@
     <string name="settings_favorites_sync_restore_title">Obnoviť obľúbené na všetkých televízoroch?</string>
     <string name="settings_favorites_sync_restore_message">Týmto sa aktualizujú aj obľúbené na vašich ďalších televízoroch.</string>
     <string name="settings_favorites_sync_restore_confirm">Obnoviť</string>
+    <string name="settings_epg_presets_title">Predvoľby sprievodcu</string>
+    <string name="settings_epg_presets_description">Pripravené zdroje sprievodcu, ktoré môžete zapnúť na tomto zariadení. Nič sa nesťahuje, kým nie je predvoľba zapnutá.</string>
+    <string name="epg_preset_bein_name">beIN Sports (arabsky)</string>
+    <string name="epg_preset_bein_coverage">Kanály beIN Sports a arabské siete</string>
+    <string name="epg_preset_egypt_name">Egypt</string>
+    <string name="epg_preset_egypt_coverage">Al Ahly a egyptské športové kanály</string>
+    <string name="epg_preset_us_name">Šport a siete z USA</string>
+    <string name="epg_preset_us_coverage">NFL, MLS, MLB a celoštátne kanály USA</string>
+    <string name="epg_preset_status_off">Vypnuté</string>
+    <string name="epg_preset_status_updated">Aktualizované %1$s</string>
+    <string name="epg_preset_status_refreshing">Aktualizuje sa…</string>
+    <string name="epg_preset_status_error">Aktualizácia zlyhala: %1$s</string>
+    <string name="epg_preset_refresh_now">Aktualizovať teraz</string>
+    <string name="epg_preset_edit_address">Zmeniť adresu</string>
+    <string name="epg_preset_terms_note">Údaje sprievodcu pochádzajú z verejného komunitného zdroja bez uvedených podmienok používania. Aktualizácie sú obmedzené na dvakrát denne.</string>
 </resources>
