@@ -1,0 +1,18 @@
+# Tagged provider channel names: provider name <TAB> expected guide id from guide_channel_ids.txt.
+# "-" means the loose fallback must NOT match anything (no entry, or a time-shift label).
+beIN Sport 1 H265 SD	beIN.Sports.1.qa
+beIN Sports 1 4K	beIN.Sports.1.qa
+AR: beIN Sports 2 FHD	beIN.Sports.2.qa
+AR | beIN SPORTS 3 HEVC	beIN.Sports.3.qa
+beIN Sports News [HD]	beIN.Sports.News.qa
+beIN SPORTS XTRA 1 VIP	beIN.Sports.Xtra.1.qa
+beIN Sports 1 +1 [HD]	beIN.Sports.1.Plus1.qa
+beIN Sports 2 +1	-
+Al Ahly [HD]	Al.Ahly.TV.HD.ae
+Al Ahly [SD]	Al.Ahly.TV.HD.ae
+MBC Masr (Backup)	MBC.Masr.HD.ae
+Fox [US]	Fox.HD.us2
+USA Network HD [US]	USA.Network.HD.us2
+NFL Network HD [US]	NFL.Network.HD.us2
+US: ESPN 2 RAW	ESPN2.HD.us2
+Ex-Yu | Hr: Arena Sport 1	-

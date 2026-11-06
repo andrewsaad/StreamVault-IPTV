@@ -1,0 +1,22 @@
+# Sample guide channels: xmltv id <TAB> display name.
+# AE1 rows are real entries from epg_ripper_AE1 (checked 2026-11-06); BEIN1 and US2 rows follow
+# the epgshare01 id style (Name.Parts.<country code>) but are samples, not a full copy.
+# BEIN1
+beIN.Sports.1.qa	beIN SPORTS 1
+beIN.Sports.2.qa	beIN SPORTS 2
+beIN.Sports.3.qa	beIN SPORTS 3
+beIN.Sports.News.qa	beIN SPORTS NEWS
+beIN.Sports.Xtra.1.qa	beIN SPORTS XTRA 1
+beIN.Sports.1.Plus1.qa	beIN SPORTS 1 +1
+# AE1
+Al.Ahly.TV.HD.ae	Al Ahly TV HD
+On.Time.Sports.HD.ae	On Time Sports HD
+On.Time.Sport.2.HD.ae	On Time Sport 2 HD
+MBC.Masr.HD.ae	MBC Masr HD
+Nile.Sport.ae	Nile Sport
+# US2
+Fox.HD.us2	Fox HD
+Freeform.HD.us2	Freeform HD
+USA.Network.HD.us2	USA Network HD
+NFL.Network.HD.us2	NFL Network HD
+ESPN2.HD.us2	ESPN2 HD
