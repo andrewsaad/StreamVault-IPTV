@@ -131,7 +131,7 @@ class SettingsEpgPresetViewModelTest {
         val uiState = MutableStateFlow(SettingsUiState())
         val actions = SettingsEpgActions(mock(), manager, uiState)
 
-        val job = actions.observeEpgPresets(backgroundScope)
+        val job = actions.observeEpgPresets(this)
         advanceUntilIdle()
         manager.statuses.value = manager.statuses.value.map {
             if (it.presetId == EpgPresetCatalog.EGYPT) it.copy(enabled = true, refreshing = true) else it
