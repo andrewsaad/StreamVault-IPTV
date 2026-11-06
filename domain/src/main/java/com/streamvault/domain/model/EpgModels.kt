@@ -65,6 +65,8 @@ enum class EpgMatchType {
     EXACT_ID,
     /** Normalized display name match */
     NORMALIZED_NAME,
+    /** Name match after ignoring region tags, quality words and separators (used only when exact matching fails) */
+    NORMALIZED_NAME_LOOSE,
     /** User manually assigned */
     MANUAL,
     /** Provider-native EPG (existing programs table) */
