@@ -94,9 +94,9 @@ fun LiveGuideGridRow(
     onProgramFocused: (Program) -> Unit
 ) {
     var isFocused by remember { mutableStateOf(false) }
-    val now = currentLiveGuideNow()
-    val currentProgram by remember(programs, now) {
-        derivedStateOf { programs.liveCurrentProgramAt(now) }
+    val nowState = currentLiveGuideNowState()
+    val currentProgram by remember(programs, nowState) {
+        derivedStateOf { programs.liveCurrentProgramAt(nowState.value) }
     }
     val hasUsableArchive = channel.archivePlaybackCapability().canBuildReplayCandidate
     val totalDuration = (windowEnd - windowStart).coerceAtLeast(1L)
@@ -122,7 +122,9 @@ fun LiveGuideGridRow(
             onLongClick = onChannelLongClick?.let { cb ->
                 {
                     val prog = currentProgram
-                        ?: programs.minByOrNull { kotlin.math.abs(it.startTime - now) }
+                        ?: nowState.value.let { now ->
+                            programs.minByOrNull { kotlin.math.abs(it.startTime - now) }
+                        }
                     cb(prog)
                 }
             },
@@ -304,8 +306,10 @@ fun LiveGuideProgramItem(
     onFocused: () -> Unit
 ) {
     var isFocused by remember { mutableStateOf(false) }
-    val now = currentLiveGuideNow()
-    val isCurrent = now in program.startTime until program.endTime
+    val nowState = currentLiveGuideNowState()
+    val isCurrent by remember(program.startTime, program.endTime, nowState) {
+        derivedStateOf { nowState.value in program.startTime until program.endTime }
+    }
 
     val appTimeFormat = LocalLiveTimeFormat.current
     val format = remember(appTimeFormat) { appTimeFormat.createLiveTimeFormatter() }
