@@ -46,7 +46,15 @@ fun ChannelLogoBadge(
             .background(backgroundColor),
         contentAlignment = Alignment.Center
     ) {
-        if (!showFallback && model != null) {
+        if (showFallback || model == null) {
+            Text(
+                text = channelInitials(channelName),
+                style = textStyle,
+                color = textColor,
+                fontWeight = FontWeight.Bold
+            )
+        }
+        if (model != null) {
             AsyncImage(
                 model = model,
                 contentDescription = channelName,
@@ -58,29 +66,11 @@ fun ChannelLogoBadge(
                     .fillMaxSize()
                     .padding(contentPadding)
             )
-        } else {
-            Text(
-                text = channelInitials(channelName),
-                style = textStyle,
-                color = textColor,
-                fontWeight = FontWeight.Bold
-            )
-            if (model != null) {
-                AsyncImage(
-                    model = model,
-                    contentDescription = channelName,
-                    contentScale = ContentScale.Fit,
-                    onLoading = { showFallback = true },
-                    onError = { showFallback = true },
-                    onSuccess = { showFallback = false },
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(contentPadding)
-                )
-            }
         }
     }
 }
+
+private val WhitespaceRegex = Regex("\s+")
 
 private fun channelInitials(name: String): String {
     val words = name
