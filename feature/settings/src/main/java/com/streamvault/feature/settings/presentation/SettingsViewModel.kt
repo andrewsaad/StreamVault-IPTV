@@ -124,6 +124,7 @@ class SettingsViewModel @Inject constructor(
     private val diagnosticsPort: SettingsDiagnosticsPort,
     private val syncProvider: SyncProvider,
     private val epgSourceRepository: com.streamvault.domain.repository.EpgSourceRepository,
+    private val epgPresetManager: com.streamvault.domain.repository.EpgPresetManager,
     private val phoneAddSession: com.streamvault.domain.phone.PhoneAddSession,
     private val appUpdatePort: SettingsAppUpdatePort,
     private val getCustomCategories: GetCustomCategories,
@@ -219,6 +220,7 @@ class SettingsViewModel @Inject constructor(
     )
     private val epgActions = SettingsEpgActions(
         epgSourceRepository = epgSourceRepository,
+        epgPresetManager = epgPresetManager,
         uiState = _uiState
     )
 
@@ -272,6 +274,7 @@ class SettingsViewModel @Inject constructor(
             preferencesRepository = preferencesRepository,
             uiState = _uiState
         )
+        epgActions.observeEpgPresets(viewModelScope)
         driveBackupActions.observeAuthState(viewModelScope)
         viewModelScope.launch {
             backupRestoreStatusStore.observeRestoreJobs().collect { jobs ->
@@ -1760,6 +1763,27 @@ class SettingsViewModel @Inject constructor(
 
     fun moveEpgSourceAssignmentDown(providerId: Long, epgSourceId: Long) {
         epgActions.moveEpgSourceAssignmentDown(viewModelScope, providerId, epgSourceId)
+    }
+
+    // ── Guide presets ────────────────────────────────────────────────
+
+    fun toggleEpgPreset(presetId: String, enabled: Boolean) {
+        epgActions.toggleEpgPreset(viewModelScope, presetId, enabled)
+    }
+
+    fun refreshEpgPresetNow(presetId: String) {
+        epgActions.refreshEpgPresetNow(viewModelScope, presetId)
+    }
+
+    fun updateEpgPresetAddress(
+        presetId: String,
+        sourceKey: String,
+        sourceId: Long,
+        url: String,
+        onSuccess: () -> Unit = {},
+        onError: () -> Unit = {}
+    ) {
+        epgActions.updateEpgPresetAddress(viewModelScope, presetId, sourceKey, sourceId, url, onSuccess, onError)
     }
 
 }
