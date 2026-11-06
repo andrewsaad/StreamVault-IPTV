@@ -27,7 +27,10 @@ import com.streamvault.domain.model.ChannelNumberingMode
 import com.streamvault.domain.model.CombinedM3uProfile
 import com.streamvault.domain.model.ContentType
 import com.streamvault.domain.model.DecoderMode
+import com.streamvault.domain.model.EpgPresetCatalog
 import com.streamvault.domain.model.EpgResolutionSummary
+import com.streamvault.domain.model.EpgSource
+import com.streamvault.domain.repository.EpgPresetStatus
 import com.streamvault.domain.model.GroupedChannelLabelMode
 import com.streamvault.domain.model.LiveChannelGroupingMode
 import com.streamvault.domain.model.LiveVariantPreferenceMode
@@ -211,6 +214,7 @@ data class SettingsUiState(
     val refreshingEpgSourceIds: Set<Long> = emptySet(),
     val epgPendingDeleteSourceId: Long? = null,
     val epgTimeShiftMinutesByProvider: Map<Long, Int> = emptyMap(),
+    val epgPresets: List<EpgPresetUiModel> = mapEpgPresetUiModels(emptyList(), emptyList()),
     val autoCheckAppUpdates: Boolean = false,
     val autoDownloadAppUpdates: Boolean = false,
     val isCheckingForUpdates: Boolean = false,
@@ -218,3 +222,74 @@ data class SettingsUiState(
     val crashReport: CrashReportUiModel = CrashReportUiModel(),
     val viewedCrashReport: CrashReportUiModel? = null
 )
+
+/** What the status line under a guide preset says. The UI turns each case into localized text. */
+sealed interface EpgPresetStatusLine {
+    data object Off : EpgPresetStatusLine
+    /** On, but neither a success nor an error has been recorded yet. */
+    data object Pending : EpgPresetStatusLine
+    data object Refreshing : EpgPresetStatusLine
+    data class Updated(val at: Long) : EpgPresetStatusLine
+    data class Failed(val message: String) : EpgPresetStatusLine
+}
+
+/** One guide file of a preset, linked to the ordinary guide source row when one exists. */
+data class EpgPresetSourceUiModel(
+    val key: String,
+    val url: String,
+    val sourceId: Long?,
+)
+
+data class EpgPresetUiModel(
+    val presetId: String,
+    val enabled: Boolean,
+    val refreshing: Boolean,
+    val lastSuccessAt: Long?,
+    val lastError: String?,
+    val sources: List<EpgPresetSourceUiModel>,
+) {
+    val statusLine: EpgPresetStatusLine
+        get() = when {
+            !enabled -> EpgPresetStatusLine.Off
+            refreshing -> EpgPresetStatusLine.Refreshing
+            !lastError.isNullOrBlank() -> EpgPresetStatusLine.Failed(lastError)
+            lastSuccessAt != null -> EpgPresetStatusLine.Updated(lastSuccessAt)
+            else -> EpgPresetStatusLine.Pending
+        }
+}
+
+internal fun epgPresetSourceKey(presetId: String, sourceKey: String): String = "$presetId/$sourceKey"
+
+/**
+ * Builds one entry per catalog preset, in catalog order. A preset the manager has not reported
+ * is shown as off (FR-002). Each preset file is linked to a guide source by [knownSourceIds]
+ * first (so an edited address stays linked), then by its built-in address.
+ */
+internal fun mapEpgPresetUiModels(
+    statuses: List<EpgPresetStatus>,
+    epgSources: List<EpgSource>,
+    knownSourceIds: Map<String, Long> = emptyMap(),
+): List<EpgPresetUiModel> {
+    val statusById = statuses.associateBy { it.presetId }
+    val sourcesById = epgSources.associateBy { it.id }
+    return EpgPresetCatalog.all.map { preset ->
+        val status = statusById[preset.id]
+        EpgPresetUiModel(
+            presetId = preset.id,
+            enabled = status?.enabled == true,
+            refreshing = status?.refreshing == true,
+            lastSuccessAt = status?.lastSuccessAt,
+            lastError = status?.lastError,
+            sources = preset.sources.map { presetSource ->
+                val linked = knownSourceIds[epgPresetSourceKey(preset.id, presetSource.key)]
+                    ?.let(sourcesById::get)
+                    ?: epgSources.firstOrNull { it.url.trim().equals(presetSource.url, ignoreCase = true) }
+                EpgPresetSourceUiModel(
+                    key = presetSource.key,
+                    url = linked?.url ?: presetSource.url,
+                    sourceId = linked?.id,
+                )
+            },
+        )
+    }
+}
