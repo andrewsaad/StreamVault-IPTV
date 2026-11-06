@@ -70,12 +70,12 @@ fun ChannelLogoBadge(
     }
 }
 
-private val WhitespaceRegex = Regex("\s+")
+private val WhitespaceRegex = Regex("\\s+")
 
 private fun channelInitials(name: String): String {
     val words = name
         .trim()
-        .split(Regex("\\s+"))
+        .split(WhitespaceRegex)
         .filter { it.isNotBlank() }
 
     val initials = when {
