@@ -85,7 +85,7 @@ Acceptance scenarios:
 - SC-006: Turning on all first-release presets on a Fire TV Stick with about 1.5 GB of memory finishes without the app closing and without the guide becoming unusable.
 - SC-007: Scrolling the guide with all first-release presets on is no worse than the pre-feature guide scrolling (no more than 6% janky frames over a 66-key scroll test on the Google TV debug build, baseline 4.2% to 5.9%).
 - SC-008: For each of Inter Miami, San Diego FC, the NFL and the Padres, at least one upcoming match in the schedule data appears in the Sports tab with at least one candidate channel or a clear "no channel available" label.
-- SC-009: 100% of new user-facing strings exist and are translated in all supported languages (39 listed today).
+- SC-009: 100% of new user-facing strings exist and are translated in all supported languages (38 listed today: English as the default plus 37 translations).
 - SC-010: A source that cannot be reached leaves the previous guide data visible in 100% of tests.
 
 ## 5. Edge cases and failure handling
@@ -125,7 +125,7 @@ Acceptance scenarios:
 - Assumed match-rate figures are estimates from hand samples of 8 to 12 channels, good to roughly plus or minus 15 to 20 points.
 - Assumed one app build serves both Google TV and Fire TV, because the app has no per-device versions today.
 - Assumed "Prades" in the request means the San Diego Padres, because it is the San Diego baseball team next to San Diego FC.
-- Assumed the supported-language list has 39 entries, because that is the count in the app's locale list today.
+- Assumed the supported-language list has 38 entries (English plus 37 translations), because that is the count in the app's locale list; an earlier draft said 39 from a miscount.
 - Assumed the preset higher in the priority order wins when two presets cover the same channel, because a rule is needed and the order matches the user's stated priority.
 - Assumed the app cannot know which event-only channel carries a given match, so all event-only channels are offered as candidates.
 - Assumed existing manual match overrides and the existing hand-added sources are kept as they are.
