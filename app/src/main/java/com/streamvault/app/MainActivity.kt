@@ -33,6 +33,7 @@ import javax.inject.Inject
 import com.streamvault.data.preferences.PreferencesRepository
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Composable
@@ -198,7 +199,7 @@ class MainActivity : ComponentActivity(), CatalogPlatformHost {
             val appLanguage by preferencesRepository.appLanguage.collectAsState(initial = "system")
             val appTimeFormat by preferencesRepository.appTimeFormat.collectAsState(initial = com.streamvault.domain.model.AppTimeFormat.SYSTEM)
             val appTheme by preferencesRepository.appTheme.collectAsState(initial = AppTheme.DEFAULT)
-            val databaseStartupState by databaseStartupCoordinator.state.collectAsState()
+            val databaseStartupState by databaseStartupCoordinator.state.collectAsStateWithLifecycle()
             val currentContext = LocalContext.current
             
             val deviceConfiguration = LocalConfiguration.current
