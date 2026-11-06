@@ -122,6 +122,19 @@ fun LiveGuideGrid(
                         programsByChannel[lookupKey].orEmpty()
                     }.orEmpty()
                     val isFirstRow = index == 0
+                    val rowOnChannelClick = remember(channel, onChannelClick) { { onChannelClick(channel) } }
+                    val rowOnChannelLongClick: ((Program?) -> Unit)? = remember(channel, onChannelLongClick) {
+                        onChannelLongClick?.let { cb -> { prog: Program? -> cb(channel, prog) } }
+                    }
+                    val rowOnChannelFocused = remember(channel, isFirstRow, onChannelFocused) {
+                        { prog: Program? -> onChannelFocused(channel, prog, isFirstRow) }
+                    }
+                    val rowOnProgramClick = remember(channel, onProgramClick) {
+                        { program: Program -> onProgramClick(channel, program) }
+                    }
+                    val rowOnProgramFocused = remember(channel, isFirstRow, onProgramFocused) {
+                        { program: Program -> onProgramFocused(channel, program, isFirstRow) }
+                    }
                     LiveGuideGridRow(
                         channel = channel,
                         isFavorite = channel.id in favoriteChannelIds,
@@ -139,11 +152,11 @@ fun LiveGuideGrid(
                         scrollState = horizontalScrollState,
                         labels = labels,
                         focusRequester = if (channel.id == resolvedInitialChannelId) initialFocusRequester else null,
-                        onChannelClick = { onChannelClick(channel) },
-                        onChannelLongClick = onChannelLongClick?.let { cb -> { prog -> cb(channel, prog) } },
-                        onChannelFocused = { onChannelFocused(channel, it, isFirstRow) },
-                        onProgramClick = { program -> onProgramClick(channel, program) },
-                        onProgramFocused = { program -> onProgramFocused(channel, program, isFirstRow) }
+                        onChannelClick = rowOnChannelClick,
+                        onChannelLongClick = rowOnChannelLongClick,
+                        onChannelFocused = rowOnChannelFocused,
+                        onProgramClick = rowOnProgramClick,
+                        onProgramFocused = rowOnProgramFocused
                     )
                 }
             }

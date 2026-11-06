@@ -28,6 +28,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
@@ -281,31 +284,33 @@ fun LiveGuideGridRow(
                     .width(totalTimelineWidth)
                     .horizontalScroll(scrollState)
             ) {
+                val markers = remember(windowStart, windowEnd, markerStepMs) {
+                    buildList {
+                        val firstMarker = windowStart - (windowStart % markerStepMs)
+                        var marker = firstMarker
+                        while (marker <= windowEnd) {
+                            add(marker)
+                            marker += markerStepMs
+                        }
+                    }
+                }
                 Box(
                     modifier = Modifier
                         .width(totalTimelineWidth)
                         .fillMaxHeight()
-                ) {
-                    val markers = remember(windowStart, windowEnd, markerStepMs) {
-                        buildList {
-                            val firstMarker = windowStart - (windowStart % markerStepMs)
-                            var marker = firstMarker
-                            while (marker <= windowEnd) {
-                                add(marker)
-                                marker += markerStepMs
+                        .drawBehind {
+                            val lineWidth = 1.dp.toPx()
+                            val lineColor = Color.White.copy(alpha = 0.08f)
+                            markers.forEach { marker ->
+                                val ratio = ((marker - windowStart).toFloat() / totalDuration.toFloat()).coerceIn(0f, 1f)
+                                drawRect(
+                                    color = lineColor,
+                                    topLeft = Offset(size.width * ratio, 0f),
+                                    size = Size(lineWidth, size.height)
+                                )
                             }
                         }
-                    }
-                    markers.forEach { marker ->
-                        val markerRatio = ((marker - windowStart).toFloat() / totalDuration.toFloat()).coerceIn(0f, 1f)
-                        Box(
-                            modifier = Modifier
-                                .padding(start = totalTimelineWidth * markerRatio)
-                                .width(1.dp)
-                                .fillMaxHeight()
-                                .background(Color.White.copy(alpha = 0.08f))
-                        )
-                    }
+                ) {
                     if (programs.isEmpty()) {
                         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                             Text(labels.noSchedule, color = OnSurfaceDim)
