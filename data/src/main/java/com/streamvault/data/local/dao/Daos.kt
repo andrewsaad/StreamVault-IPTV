@@ -10,6 +10,14 @@ data class RemoteIdMapping(
     @ColumnInfo(name = "remote_id") val remoteId: Long
 )
 
+internal const val DELETE_BY_IDS_CHUNK_SIZE = 500
+
+/** Row ids whose remote key is absent from [keepRemoteKeys]; duplicates of a kept key are kept. */
+internal fun <K> staleRowIds(existing: List<Pair<Long, K>>, keepRemoteKeys: Collection<K>): List<Long> {
+    val keep = keepRemoteKeys.toHashSet()
+    return existing.filter { it.second !in keep }.map { it.first }
+}
+
 data class SeriesRemoteIdMapping(
     @ColumnInfo(name = "id") val id: Long,
     @ColumnInfo(name = "remote_id") val remoteId: String
@@ -1899,9 +1907,6 @@ interface MovieDao {
     @Query("DELETE FROM movies WHERE id = :id")
     suspend fun deleteById(id: Long)
 
-    @Query("DELETE FROM movies WHERE provider_id = :providerId AND category_id = :categoryId AND stream_id NOT IN (:remoteIds)")
-    suspend fun deleteMissingByCategory(providerId: Long, categoryId: Long, remoteIds: List<Long>)
-
     @Query("""
         UPDATE movies 
         SET watch_progress = (
@@ -1944,7 +1949,8 @@ interface MovieDao {
 
     @Transaction
     suspend fun replaceCategory(providerId: Long, categoryId: Long, movies: List<MovieEntity>) {
-        val existingByRemoteId = getIdMappingsByCategory(providerId, categoryId).associate { it.remoteId to it.id }
+        val existingMappings = getIdMappingsByCategory(providerId, categoryId)
+        val existingByRemoteId = existingMappings.associate { it.remoteId to it.id }
         val remapped = movies
             .distinctBy { it.streamId }
             .map { entity -> entity.copy(id = existingByRemoteId[entity.streamId] ?: 0L) }
@@ -1953,7 +1959,9 @@ interface MovieDao {
             deleteByProviderAndCategory(providerId, categoryId)
         } else {
             insertAll(remapped)
-            deleteMissingByCategory(providerId, categoryId, remapped.map { it.streamId })
+            staleRowIds(existingMappings.map { it.id to it.remoteId }, remapped.map { it.streamId })
+                .chunked(DELETE_BY_IDS_CHUNK_SIZE)
+                .forEach { deleteByIds(it) }
         }
 
         restoreWatchProgress(providerId)
@@ -2889,19 +2897,10 @@ interface SeriesDao {
         insertAll(remapped)
     }
 
-    @Query(
-        """
-        DELETE FROM series
-        WHERE provider_id = :providerId
-          AND category_id = :categoryId
-          AND COALESCE(NULLIF(provider_series_id, ''), CAST(series_id AS TEXT)) NOT IN (:remoteIds)
-        """
-    )
-    suspend fun deleteMissingByCategory(providerId: Long, categoryId: Long, remoteIds: List<String>)
-
     @Transaction
     suspend fun replaceCategory(providerId: Long, categoryId: Long, series: List<SeriesEntity>) {
-        val existingByRemoteId = getIdMappingsByCategory(providerId, categoryId).associate { it.remoteId to it.id }
+        val existingMappings = getIdMappingsByCategory(providerId, categoryId)
+        val existingByRemoteId = existingMappings.associate { it.remoteId to it.id }
         fun SeriesEntity.remoteKey(): String = providerSeriesId?.takeIf { it.isNotBlank() } ?: seriesId.toString()
         val remapped = series
             .distinctBy { it.remoteKey() }
@@ -2911,7 +2910,9 @@ interface SeriesDao {
             deleteByProviderAndCategory(providerId, categoryId)
         } else {
             insertAll(remapped)
-            deleteMissingByCategory(providerId, categoryId, remapped.map { it.remoteKey() })
+            staleRowIds(existingMappings.map { it.id to it.remoteId }, remapped.map { it.remoteKey() })
+                .chunked(DELETE_BY_IDS_CHUNK_SIZE)
+                .forEach { deleteByIds(it) }
         }
     }
 
