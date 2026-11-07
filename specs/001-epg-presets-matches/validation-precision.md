@@ -35,7 +35,9 @@ Same titles on the same channel, BEIN1 minus the Qatar feed:
 | Channel | Most common difference | Titles at that difference |
 |---|---|---|
 | beIN Sports 1 | +120 min | 27 of 32 compared |
-| beIN Sports 2 | +120 min | 25 of 29 compared |
-| beIN Sports EN 1 | +120 min | 34 of 44 compared |
+| beIN Sports 2 | +120 min | 25 of 37 compared |
+| beIN Sports EN 1 | +120 min | 34 of 66 compared |
+
+The other pairs are mostly repeat airings of a title that the comparison pairs by name, so they say little about the offset.
 
 BEIN1 lists Valencia vs Real Madrid at `22:58 +0100` and the Qatar feed at 22:58 Qatar time, so BEIN1 appears to label Qatar local time as +0100. This is inferred by comparing the two feeds, not checked against a broadcaster schedule.
