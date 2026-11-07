@@ -29,6 +29,14 @@ class EpgPresetStateStoreTest {
     }
 
     @Test
+    fun `codec_keepsHandledProviders_andOlderLinesFallBackToAssigned`() {
+        val record = EpgPresetSourceRecord(7L, owned = true, assignedProviderIds = setOf(2L), handledProviderIds = setOf(1L, 2L))
+
+        assertThat(decodePresetSources(encodePresetSources(mapOf("AE1" to record))).getValue("AE1")).isEqualTo(record)
+        assertThat(decodePresetSources("AE1\t7\t1\t1,2").getValue("AE1").handledProviderIds).containsExactly(1L, 2L)
+    }
+
+    @Test
     fun `codec_ignoresMalformedLines`() {
         val sources = decodePresetSources("AE1\t7\t1\t1,2\n\tbad\nBEIN1\tx\t1\t\nUS2\t5\t0\t3,zz\n")
         assertThat(sources.keys).containsExactly("AE1", "US2")

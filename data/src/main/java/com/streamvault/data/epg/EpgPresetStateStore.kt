@@ -24,12 +24,14 @@ import kotlinx.coroutines.flow.map
  * One guide source a preset uses on this device. [owned] is false when the address already
  * existed as a hand-added source, in which case the preset never deletes it.
  * [assignedProviderIds] are the providers the preset assigned the source to, so turning the
- * preset off only undoes its own assignments.
+ * preset off only undoes its own assignments. [handledProviderIds] are the providers already
+ * seen, so one that lacks the source later had it removed by the user and is left alone.
  */
 data class EpgPresetSourceRecord(
     val sourceId: Long,
     val owned: Boolean,
     val assignedProviderIds: Set<Long>,
+    val handledProviderIds: Set<Long> = assignedProviderIds,
 )
 
 /** Device-local preset state. Sources are keyed by [com.streamvault.domain.model.EpgPresetSource.key]. */
@@ -169,13 +171,22 @@ internal fun decodePresetSources(encoded: String?): Map<String, EpgPresetSourceR
             val key = parts[0].trim()
             val sourceId = parts[1].trim().toLongOrNull() ?: return@mapNotNull null
             if (key.isEmpty() || sourceId <= 0L) return@mapNotNull null
-            val providers = parts.getOrNull(3).orEmpty()
-                .split(',')
-                .mapNotNull { it.trim().toLongOrNull()?.takeIf { id -> id > 0L } }
-                .toSet()
-            key to EpgPresetSourceRecord(sourceId, owned = parts[2].trim() == "1", assignedProviderIds = providers)
+            val providers = decodeProviderIds(parts.getOrNull(3))
+            key to EpgPresetSourceRecord(
+                sourceId,
+                owned = parts[2].trim() == "1",
+                assignedProviderIds = providers,
+                // Lines written before this column existed have no list of their own.
+                handledProviderIds = if (parts.size > 4) decodeProviderIds(parts[4]) else providers,
+            )
         }
         .toMap()
+
+private fun decodeProviderIds(encoded: String?): Set<Long> =
+    encoded.orEmpty()
+        .split(',')
+        .mapNotNull { it.trim().toLongOrNull()?.takeIf { id -> id > 0L } }
+        .toSet()
 
 internal fun encodePresetSources(sources: Map<String, EpgPresetSourceRecord>): String =
     sources.entries
@@ -183,7 +194,9 @@ internal fun encodePresetSources(sources: Map<String, EpgPresetSourceRecord>): S
         .sortedBy { it.key }
         .joinToString("\n") { (key, record) ->
             val owned = if (record.owned) "1" else "0"
-            "$key\t${record.sourceId}\t$owned\t${record.assignedProviderIds.sorted().joinToString(",")}"
+            val assigned = record.assignedProviderIds.sorted().joinToString(",")
+            val handled = record.handledProviderIds.sorted().joinToString(",")
+            "$key\t${record.sourceId}\t$owned\t$assigned\t$handled"
         }
 
 internal fun decodePresetAttempts(encoded: String?): Map<Long, Long> =

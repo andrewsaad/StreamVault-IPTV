@@ -188,12 +188,16 @@ class EpgPresetManagerImpl internal constructor(
         }
     }
 
-    /** Assigns [record] to every provider that lacks it, below that provider's existing sources. */
+    /**
+     * Assigns [record] to every provider not yet seen, below that provider's existing sources.
+     * A seen provider that lacks it had it removed by the user, so it stays removed.
+     */
     private suspend fun assignToAllProviders(record: EpgPresetSourceRecord): EpgPresetSourceRecord {
         val alreadyAssigned = sources.getProviderIdsForSource(record.sourceId).toSet()
         val assignedNow = mutableSetOf<Long>()
+        val handled = record.handledProviderIds + alreadyAssigned
         for (providerId in providers.providerIds()) {
-            if (providerId in alreadyAssigned) continue
+            if (providerId in handled) continue
             val lowest = sources.getAssignmentsForProvider(providerId).first().maxOfOrNull { it.priority } ?: -1
             if (sources.assignSourceToProvider(providerId, record.sourceId, lowest + 1) is Result.Success) {
                 assignedNow += providerId
@@ -201,7 +205,7 @@ class EpgPresetManagerImpl internal constructor(
         }
         // Keep only providers that still have the assignment, plus the ones added now.
         val kept = record.assignedProviderIds.filterTo(HashSet()) { it in alreadyAssigned }
-        return record.copy(assignedProviderIds = kept + assignedNow)
+        return record.copy(assignedProviderIds = kept + assignedNow, handledProviderIds = handled + assignedNow)
     }
 
     /** Runs in [importScope], so an import outlives the screen that started it; only the wait is cancelled. */

@@ -227,7 +227,8 @@ class SyncManager @Inject constructor(
     private val m3uClassificationDao: M3uClassificationDao? = null,
     private val m3uClassificationRepository: M3uClassificationRepository? = null,
     private val pendingBackupRestoreCoordinator: PendingBackupRestoreCoordinator? = null,
-    private val syncContentHashDao: com.streamvault.data.local.dao.SyncContentHashDao? = null
+    private val syncContentHashDao: com.streamvault.data.local.dao.SyncContentHashDao? = null,
+    private val epgPresetManager: com.streamvault.domain.repository.EpgPresetManager? = null
 ) : ProviderSyncCommands, CatalogHydrationCommands, ProviderSyncStateSource, ProviderSyncLifecycle {
     private val syncProviderSnapshotAdapter = SyncProviderSnapshotAdapter(providerSnapshotRepository)
     private val syncStatusPublicationCoordinator = SyncStatusPublicationCoordinator(
@@ -536,7 +537,8 @@ class SyncManager @Inject constructor(
             createStalkerProvider = ::createStalkerSyncProvider,
             xtreamSupport = xtreamSupport,
             progress = ::progress,
-            sanitizeThrowableMessage = ::sanitizeThrowableMessage
+            sanitizeThrowableMessage = ::sanitizeThrowableMessage,
+            reconcileGuidePresets = { epgPresetManager?.reconcile() }
         )
     }
     private val xtreamCatalogSectionExecutor by lazy {

@@ -44,7 +44,8 @@ internal class ProviderEpgSyncExecutor(
     private val createStalkerProvider: (Provider) -> StalkerProvider,
     private val xtreamSupport: SyncManagerXtreamSupport,
     private val progress: (Long, ((String) -> Unit)?, String) -> Unit,
-    private val sanitizeThrowableMessage: (Throwable?) -> String
+    private val sanitizeThrowableMessage: (Throwable?) -> String,
+    private val reconcileGuidePresets: suspend () -> Unit = {}
 ) {
     suspend fun syncXtreamProviderEpg(
         provider: Provider,
@@ -631,6 +632,10 @@ internal class ProviderEpgSyncExecutor(
         onProgress: ((String) -> Unit)?,
         warnings: MutableList<String>? = null
     ): Boolean {
+        // A provider added since a preset was enabled gets its sources before this refresh.
+        runSuspendCatching { reconcileGuidePresets() }.onFailure { e ->
+            Log.w(TAG, "Guide preset reconcile failed (non-fatal): ${sanitizeThrowableMessage(e)}")
+        }
         try {
             progress(provider.id, onProgress, "Refreshing external EPG sources...")
             xtreamSupport.retryTransient {

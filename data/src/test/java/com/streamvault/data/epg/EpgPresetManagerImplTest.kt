@@ -220,6 +220,21 @@ class EpgPresetManagerImplTest {
     }
 
     @Test
+    fun `reconcile_leavesAProviderTheUserUnassigned_andStillAssignsANewOne`() = runTest {
+        manager.setEnabled(EpgPresetCatalog.EGYPT, true)
+        val sourceId = sourceIdFor(ae1.url)
+        repo.unassignSourceFromProvider(1L, sourceId)
+        providerIds += 3L
+
+        manager.reconcile()
+        manager.reconcile()
+
+        assertThat(repo.assignments[1L].orEmpty()).isEmpty()
+        assertThat(repo.assignments[2L]!!.keys).containsExactly(sourceId)
+        assertThat(repo.assignments[3L]!!.keys).containsExactly(sourceId)
+    }
+
+    @Test
     fun `reconcile_assignsEnabledPresetsToAProviderAddedLater_withoutDownloadingAgain`() = runTest {
         manager.setEnabled(EpgPresetCatalog.EGYPT, true)
         val refreshesBefore = repo.refreshCalls.size
