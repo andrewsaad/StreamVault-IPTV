@@ -21,3 +21,5 @@ Game room (presets on): beIN 175 of 229 external matches (was 150); Xtra 15/15, 
 Whole library: 854 loose-name, 52 exact, 27 manual, 4604 unmatched.
 Living room (192.168.68.168): presets not enabled on this device (per-device by design); only 27 manual mappings, beIN 27/229.
 Remaining beIN gaps are non-sports channels (Movies, Series, Star and similar) that the guide files do not list.
+
+Living room (192.168.68.168) after enabling beIN, Egypt and US presets by hand: all five sources synced with no error; beIN 175/229, ESPN 8/13, Alkass 22/23; 854 loose-name matches. Identical to the game room.
