@@ -10,8 +10,13 @@ import com.streamvault.domain.repository.EpgPresetErrors
 import com.streamvault.domain.repository.EpgPresetManager
 import com.streamvault.domain.repository.EpgPresetStatus
 import com.streamvault.domain.repository.EpgSourceRepository
+import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
@@ -39,14 +44,23 @@ class ProviderDaoPresetDirectory @Inject constructor(
  * preset created it.
  */
 @Singleton
-class EpgPresetManagerImpl @Inject constructor(
+class EpgPresetManagerImpl internal constructor(
     private val sources: EpgSourceRepository,
     private val providers: EpgPresetProviderDirectory,
     private val store: EpgPresetStateStore,
+    private val importScope: CoroutineScope,
 ) : EpgPresetManager {
+
+    @Inject
+    constructor(
+        sources: EpgSourceRepository,
+        providers: EpgPresetProviderDirectory,
+        store: EpgPresetStateStore,
+    ) : this(sources, providers, store, CoroutineScope(SupervisorJob() + Dispatchers.IO))
 
     private val mutex = Mutex()
     private val refreshing = MutableStateFlow<Set<String>>(emptySet())
+    private val inFlightSourceIds = ConcurrentHashMap.newKeySet<Long>()
 
     override fun observe(): Flow<List<EpgPresetStatus>> =
         combine(store.state, sources.getAllSources(), refreshing) { state, rows, busy ->
@@ -84,7 +98,7 @@ class EpgPresetManagerImpl @Inject constructor(
     }
 
     override suspend fun reconcile() {
-        val recreated = mutex.withLock {
+        val due = mutex.withLock {
             val state = store.current()
             val enabled = EpgPresetCatalog.all.filter { it.id in state.enabledPresetIds }
             val usedKeys = enabled.flatMapTo(HashSet()) { preset -> preset.sources.map { it.key } }
@@ -97,9 +111,18 @@ class EpgPresetManagerImpl @Inject constructor(
                 records = records + (source.key to assignToAllProviders(record))
             }
             store.update { it.copy(sources = records) }
-            fresh
+            val unfinished = records.values.map { it.sourceId }.distinct()
+                .filter { it !in fresh && it !in inFlightSourceIds && neverFinished(it) }
+            unfinished.forEach { store.clearRefreshAttempt(it) }
+            fresh + unfinished
         }
-        if (recreated.isNotEmpty()) refresh(presetId = null, sourceIds = recreated)
+        if (due.isNotEmpty()) refresh(presetId = null, sourceIds = due)
+    }
+
+    /** No success and no error: the import never reached an outcome, usually because the process died. */
+    private suspend fun neverFinished(sourceId: Long): Boolean {
+        val row = sources.getSourceById(sourceId) ?: return false
+        return row.lastSuccessAt <= 0L && row.lastError.isNullOrBlank()
     }
 
     private suspend fun enable(preset: EpgPreset): Result<Unit> {
@@ -176,16 +199,22 @@ class EpgPresetManagerImpl @Inject constructor(
         return record.copy(assignedProviderIds = kept + assignedNow)
     }
 
+    /** Runs in [importScope], so an import outlives the screen that started it; only the wait is cancelled. */
     private suspend fun refresh(presetId: String?, sourceIds: List<Long>): Result<Unit> {
+        val ids = sourceIds.distinct()
         if (presetId != null) refreshing.update { it + presetId }
-        try {
-            val errors = sourceIds.distinct().mapNotNull { sourceId ->
-                (sources.refreshSource(sourceId) as? Result.Error)?.message
+        inFlightSourceIds += ids
+        return importScope.async {
+            try {
+                val errors = ids.mapNotNull { sourceId ->
+                    (sources.refreshSource(sourceId) as? Result.Error)?.message
+                }
+                if (errors.isEmpty()) Result.success(Unit) else Result.error(errors.joinToString("; "))
+            } finally {
+                inFlightSourceIds -= ids.toSet()
+                if (presetId != null) refreshing.update { it - presetId }
             }
-            return if (errors.isEmpty()) Result.success(Unit) else Result.error(errors.joinToString("; "))
-        } finally {
-            if (presetId != null) refreshing.update { it - presetId }
-        }
+        }.await()
     }
 
     private fun sourceName(source: EpgPresetSource): String = "epgshare01 ${source.key}"

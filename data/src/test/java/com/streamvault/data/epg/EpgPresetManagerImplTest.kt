@@ -12,14 +12,20 @@ import com.streamvault.domain.model.Result
 import com.streamvault.domain.model.XmltvTimezonePolicy
 import com.streamvault.domain.repository.EpgPresetErrors
 import com.streamvault.domain.repository.EpgSourceRepository
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Before
 import org.junit.Test
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class EpgPresetManagerImplTest {
 
     private var now = 1_700_000_000_000L
@@ -169,6 +175,63 @@ class EpgPresetManagerImplTest {
     }
 
     @Test
+    fun `leavingTheScreen_doesNotCancelTheImport`() = runTest {
+        val manager = EpgPresetManagerImpl(repo, { providerIds.toList() }, store, backgroundScope)
+        val release = CompletableDeferred<Unit>()
+        repo.refreshBlocker = release
+
+        val screen = launch { manager.setEnabled(EpgPresetCatalog.EGYPT, true) }
+        runCurrent()
+        screen.cancelAndJoin()
+        release.complete(Unit)
+        runCurrent()
+
+        val status = manager.observe().first().single { it.presetId == EpgPresetCatalog.EGYPT }
+        assertThat(status.lastSuccessAt).isEqualTo(now)
+        assertThat(status.refreshing).isFalse()
+    }
+
+    @Test
+    fun `reconcile_retriesAnImportLostToProcessDeath_insideTheGap`() = runTest {
+        repo.loseRefreshOutcome = true
+        manager.setEnabled(EpgPresetCatalog.EGYPT, true)
+        repo.loseRefreshOutcome = false
+        val ae1Id = sourceIdFor(ae1.url)
+        assertThat(repo.refreshCalls).containsExactly(ae1Id)
+
+        manager.reconcile()
+
+        assertThat(repo.refreshCalls).containsExactly(ae1Id, ae1Id)
+        assertThat(repo.rows.value.single().lastSuccessAt).isEqualTo(now)
+    }
+
+    @Test
+    fun `reconcile_doesNotRetryAFailedImportInsideTheGap`() = runTest {
+        repo.failRefreshWith = "HTTP 503"
+        manager.setEnabled(EpgPresetCatalog.EGYPT, true)
+
+        manager.reconcile()
+
+        assertThat(repo.refreshCalls).hasSize(1)
+    }
+
+    @Test
+    fun `reconcile_doesNotRestartAnImportStillRunning`() = runTest {
+        val manager = EpgPresetManagerImpl(repo, { providerIds.toList() }, store, backgroundScope)
+        val release = CompletableDeferred<Unit>()
+        repo.refreshBlocker = release
+        val enabling = launch { manager.setEnabled(EpgPresetCatalog.EGYPT, true) }
+        runCurrent()
+
+        manager.reconcile()
+        release.complete(Unit)
+        enabling.join()
+        runCurrent()
+
+        assertThat(repo.refreshCalls).hasSize(1)
+    }
+
+    @Test
     fun `stateIsDeviceLocal_aSecondStoreFileSeesEveryPresetOff`() = runTest {
         manager.setEnabled(EpgPresetCatalog.EGYPT, true)
         val otherDevice = testPresetStore { now }
@@ -184,6 +247,10 @@ private class FakeEpgSourceRepository(private val gate: EpgSourceRefreshGate) : 
     val assignments = mutableMapOf<Long, MutableMap<Long, Int>>()
     val refreshCalls = mutableListOf<Long>()
     var failRefreshWith: String? = null
+    /** Holds a refresh open, like a slow download. */
+    var refreshBlocker: CompletableDeferred<Unit>? = null
+    /** The attempt is recorded but nothing about its outcome is, like process death mid-import. */
+    var loseRefreshOutcome = false
     private var nextId = 100L
 
     override fun getAllSources(): Flow<List<EpgSource>> = rows
@@ -243,6 +310,8 @@ private class FakeEpgSourceRepository(private val gate: EpgSourceRefreshGate) : 
     override suspend fun refreshSource(sourceId: Long): Result<Unit> {
         if (!gate.tryBeginRefreshAttempt(sourceId)) return Result.success(Unit)
         refreshCalls += sourceId
+        refreshBlocker?.await()
+        if (loseRefreshOutcome) return Result.success(Unit)
         val error = failRefreshWith
         rows.value = rows.value.map {
             when {

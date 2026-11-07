@@ -17,6 +17,7 @@ import com.streamvault.data.local.entity.ProviderEpgSourceEntity
 import com.streamvault.data.parser.XmltvParser
 import com.streamvault.data.preferences.PreferencesRepository
 import com.streamvault.domain.model.ContentType
+import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import okhttp3.Call
@@ -144,6 +145,17 @@ class EpgSourceRepositoryPresetRefreshCapTest {
         repository.refreshSource(PRESET_SOURCE)
 
         verify(okHttpClient, times(1)).newCall(requestsFor("/ae1.xml.gz"))
+    }
+
+    @Test
+    fun `presetSource_cancelledImport_doesNotBurnTheAttempt`() = runTest {
+        givenSources()
+        whenever(okHttpClient.newCall(any())).thenThrow(CancellationException("left the screen"))
+
+        val thrown = runCatching { repository.refreshSource(PRESET_SOURCE) }.exceptionOrNull()
+
+        assertThat(thrown).isInstanceOf(CancellationException::class.java)
+        assertThat(store.current().lastAttemptAtBySourceId).isEmpty()
     }
 
     @Test

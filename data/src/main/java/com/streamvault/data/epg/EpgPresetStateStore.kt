@@ -46,9 +46,13 @@ data class EpgPresetState(
 interface EpgSourceRefreshGate {
     suspend fun tryBeginRefreshAttempt(sourceId: Long): Boolean
 
+    /** Forgets an attempt that never ran to an outcome (cancelled, or lost to process death). */
+    suspend fun clearRefreshAttempt(sourceId: Long)
+
     /** No gap for any source; the default when no preset store is wired in (tests). */
     object AllowAll : EpgSourceRefreshGate {
         override suspend fun tryBeginRefreshAttempt(sourceId: Long): Boolean = true
+        override suspend fun clearRefreshAttempt(sourceId: Long) = Unit
     }
 }
 
@@ -115,6 +119,10 @@ class EpgPresetStateStore internal constructor(
             )
         }
         return allowed
+    }
+
+    override suspend fun clearRefreshAttempt(sourceId: Long) {
+        update { it.copy(lastAttemptAtBySourceId = it.lastAttemptAtBySourceId - sourceId) }
     }
 
     companion object {

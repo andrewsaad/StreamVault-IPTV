@@ -48,6 +48,7 @@ import com.streamvault.domain.repository.EpgSourceRepository
 import com.streamvault.domain.util.PersistedTimestampPolicy
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -523,7 +524,11 @@ class EpgSourceRepositoryImpl @Inject constructor(
                 Log.d(TAG, "Refreshed source $sourceId: $channelCount channels, $programmeCount programmes")
                 Result.success(Unit)
             } catch (e: Exception) {
-                if (e is CancellationException) throw e
+                if (e is CancellationException) {
+                    // No outcome was reached, so the attempt does not count against the preset gap.
+                    withContext(NonCancellable) { refreshGate.clearRefreshAttempt(sourceId) }
+                    throw e
+                }
                 Log.e(TAG, "Failed to refresh source $sourceId", e)
                 // Clean up any staged rows on failure
                 val stagingId = -sourceId
