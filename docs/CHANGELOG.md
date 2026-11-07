@@ -9,6 +9,8 @@ All notable product changes are recorded in this document.
 - Added backup export selection so you can choose which sections to include when saving, sharing, or uploading a backup to Google Drive.
 - Added QR-based phone setup for EPG sources and Stremio add-ons, so their URLs can be submitted from a phone on the same local network.
 - Added recognition of Brazilian Portuguese sports listings, including matchups, broadcast notes, and Brazilian and South American competitions.
+- Added optional guide presets in Settings (beIN Sports Arabic, Egypt, and US sports and networks) that fill the guide for channels without provider guide data. Presets are off by default, are turned on per device, update at most twice a day, and have an editable address. Channels with no exact guide match are now matched loosely by name, ignoring region tags, quality labels and separators while keeping time-shift labels such as +1; exact and manual matches always win. See `docs/EPG_PRESETS.md`.
+- Added event-only channels (for example MLS LIVE) as candidates for matches of their league in the Sports tab.
 
 ### Changed
 - Improved M3U catch-up playback by preserving playlist replay modes and time corrections, supporting additional replay URL formats, and adding a configurable fallback query format. Eligible past guide programmes can now play when replay is advertised but the archive window is unspecified.
