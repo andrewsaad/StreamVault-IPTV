@@ -25,8 +25,38 @@ object EpgNameNormalizer {
     // epgshare01 ids end in a country code, optionally numbered: ".us2", ".ae", ".qa".
     private val countrySuffixRegex = Regex("^[a-z]{2}\\d*$")
 
+    // "H.265" / "H.264" -> "h265" / "h264" so the codec is one quality token.
+    private val codecDotRegex = Regex("\\bh\\.(26[45])\\b")
+    // Splits glued digits: "1HD" -> "1 HD", "1Xtra" -> "1 Xtra".
+    private val glueSplitRegex = Regex("(\\d)(?=(?:fhd|uhd|hd|sd|xtra)\\b)")
+    // "1080p", "720", "hd720": resolution labels are quality words.
+    private val resolutionRegex = Regex("(?:f?hd)?(?:480|576|720|1080|1440|2160)p?")
+
     private val qualityWords = setOf(
-        "hd", "fhd", "uhd", "4k", "8k", "hevc", "h265", "sd", "q", "backup", "vip", "raw", "low",
+        "hd", "fhd", "uhd", "4k", "8k", "hevc", "h265", "h264", "sd", "q", "backup", "vip", "raw", "low", "vega",
+    )
+
+    private val numberWords = listOf("one", "two", "three", "four", "five", "six", "seven", "eight")
+        .withIndex().associate { (i, w) -> w to (i + 1).toString() }
+
+    /**
+     * Canonical loose keys for well-known US sports networks whose provider and guide names
+     * differ. Applied to the whole joined loose key on both sides, only inside the loose
+     * fallback, so exact id / exact name matches are never affected. Distinct channels
+     * (espn2, espnu, espndeportes, foxsoccerplus, onsportmax) are deliberately absent.
+     * No Bally Sports entries: no public guide exists to verify them.
+     */
+    private val canonicalAliases = mapOf(
+        "espn1" to "espn",
+        "espnnews" to "espnews",
+        "foxsport1" to "fs1",
+        "fs1foxsport1" to "fs1",
+        "foxsport2" to "fs2",
+        "fs2foxsport2" to "fs2",
+        "nbcgolfchannel" to "golfchannel",
+        "nbcgolf" to "golfchannel",
+        "onsport" to "ontimesport",
+        "onsport2" to "ontimesport2",
     )
 
     /**
@@ -76,11 +106,20 @@ object EpgNameNormalizer {
             text = stripped
         }
         text = timeShiftRegex.replace(text) { " plus${it.groupValues[1]} " }
-        val tokens = text.split(tokenSplitRegex)
-            .filter { it.isNotEmpty() && it !in qualityWords }
+        text = codecDotRegex.replace(text, " h$1 ")
+        text = glueSplitRegex.replace(text, "$1 ")
+        var tokens = text.split(tokenSplitRegex)
+            .filter { it.isNotEmpty() && !isQuality(it) }
             .map { if (it == "sports") "sport" else it }
-        return if (tokens.size > 1 && tokens.last() == "tv") tokens.dropLast(1) else tokens
+        if ("alkass" in tokens) {
+            // Alkass: number words equal digits, the beIN brand and the language tag are noise.
+            tokens = tokens.filter { it != "bein" && it != "en" }.map { numberWords[it] ?: it }
+        }
+        if (tokens.size > 1 && tokens.last() == "tv") tokens = tokens.dropLast(1)
+        return canonicalAliases[tokens.joinToString("")]?.let { listOf(it) } ?: tokens
     }
+
+    private fun isQuality(token: String) = token in qualityWords || resolutionRegex.matches(token)
 
     private fun idAsName(xmltvId: String): String? {
         val trimmed = xmltvId.trim()
