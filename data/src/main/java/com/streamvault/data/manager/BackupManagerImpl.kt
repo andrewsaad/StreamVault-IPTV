@@ -23,6 +23,7 @@ import com.streamvault.data.local.dao.M3uClassificationDao
 import com.streamvault.data.local.dao.CombinedM3uProfileDao
 import com.streamvault.data.local.dao.CombinedM3uProfileMemberDao
 import com.streamvault.data.local.dao.EpisodeDao
+import com.streamvault.data.epg.EpgPresetSourceLookup
 import com.streamvault.data.local.dao.EpgSourceDao
 import com.streamvault.data.local.dao.FavoriteDao
 import com.streamvault.data.local.dao.MovieDao
@@ -232,7 +233,8 @@ class BackupManagerImpl @Inject constructor(
     private val stremioAddonDao: StremioAddonDao? = null,
     private val stremioPlaybackHistoryDao: StremioPlaybackHistoryDao? = null,
     private val sportsProviderStore: SportsProviderStore? = null,
-    private val favoriteSyncRecorder: FavoriteSyncChangeRecorder = FavoriteSyncChangeRecorder.NONE
+    private val favoriteSyncRecorder: FavoriteSyncChangeRecorder = FavoriteSyncChangeRecorder.NONE,
+    private val presetSources: EpgPresetSourceLookup = EpgPresetSourceLookup.None
 ) : BackupManager {
 
     internal suspend fun automaticSyncPreferenceBackup(providerEntities: List<ProviderEntity>): Map<String, String> {
@@ -538,9 +540,13 @@ class BackupManagerImpl @Inject constructor(
                         )
                     }
             }
+            // Preset rows are device-local (FR-026): a restore must not recreate them without an owner.
+            val presetOwnedSourceIds = presetSources.presetOwnedSourceIds()
             val providerEpgAssignments = if (plan.exportProviders && providerEpgSourceDao != null && epgSourceDao != null) {
                 providers.flatMap { provider ->
-                    providerEpgSourceDao.getForProviderSync(provider.id).map { assignment ->
+                    providerEpgSourceDao.getForProviderSync(provider.id)
+                        .filterNot { it.epgSourceId in presetOwnedSourceIds }
+                        .map { assignment ->
                         val source = epgSourceDao.getById(assignment.epgSourceId)
                             ?: return@withContext Result.error(
                                 "Cannot export EPG Provider Assignments: '${provider.name}' references missing source ${assignment.epgSourceId}"
@@ -902,7 +908,9 @@ class BackupManagerImpl @Inject constructor(
                 providerCredentials = providerCredentials.takeIf { it.isNotEmpty() },
                 sportsProviders = sportsProviderConfigs?.map(SportsProviderConfig::toBackup),
                 sportsProviderCredentials = sportsProviderCredentials.takeIf { it.isNotEmpty() },
-                epgSources = epgSourceDao.takeIf { plan.exportProviders }?.getAllSync()?.map { it.toDomain() },
+                epgSources = epgSourceDao.takeIf { plan.exportProviders }?.getAllSync()
+                    ?.filterNot { it.id in presetOwnedSourceIds }
+                    ?.map { it.toDomain() },
                 providerEpgAssignments = providerEpgAssignments,
                 manualEpgMappings = null,
                 m3uClassificationOverrides = m3uClassificationOverrides,
