@@ -999,4 +999,19 @@
     <string name="settings_favorites_sync_restore_title">要在所有電視上還原收藏嗎？</string>
     <string name="settings_favorites_sync_restore_message">這也會更新您其他電視上的收藏。</string>
     <string name="settings_favorites_sync_restore_confirm">還原</string>
+    <string name="settings_epg_presets_title">指南預設組合</string>
+    <string name="settings_epg_presets_description">可在此裝置上開啟的現成指南來源。開啟預設組合前不會下載任何內容。</string>
+    <string name="epg_preset_bein_name">beIN Sports（阿拉伯語）</string>
+    <string name="epg_preset_bein_coverage">beIN Sports 頻道與阿拉伯電視網</string>
+    <string name="epg_preset_egypt_name">埃及</string>
+    <string name="epg_preset_egypt_coverage">阿赫利與埃及體育頻道</string>
+    <string name="epg_preset_us_name">美國體育與電視網</string>
+    <string name="epg_preset_us_coverage">NFL、MLS、MLB 與美國全國頻道</string>
+    <string name="epg_preset_status_off">關閉</string>
+    <string name="epg_preset_status_updated">已更新：%1$s</string>
+    <string name="epg_preset_status_refreshing">正在更新…</string>
+    <string name="epg_preset_status_error">更新失敗：%1$s</string>
+    <string name="epg_preset_refresh_now">立即更新</string>
+    <string name="epg_preset_edit_address">變更地址</string>
+    <string name="epg_preset_terms_note">指南資料來自未聲明使用條款的公開社群來源。更新次數限制為每天兩次。</string>
 </resources>

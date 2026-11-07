@@ -1005,4 +1005,19 @@
     <string name="settings_favorites_sync_restore_title">Vratiti favorite na svim televizorima?</string>
     <string name="settings_favorites_sync_restore_message">Time će se ažurirati i favoriti na vašim drugim televizorima.</string>
     <string name="settings_favorites_sync_restore_confirm">Vrati</string>
+    <string name="settings_epg_presets_title">Predlošci vodiča</string>
+    <string name="settings_epg_presets_description">Gotovi izvori vodiča koje možete uključiti na ovom uređaju. Ništa se ne preuzima dok se predložak ne uključi.</string>
+    <string name="epg_preset_bein_name">beIN Sports (arapski)</string>
+    <string name="epg_preset_bein_coverage">Kanali beIN Sports i arapske mreže</string>
+    <string name="epg_preset_egypt_name">Egipat</string>
+    <string name="epg_preset_egypt_coverage">Al Ahly i egipatski sportski kanali</string>
+    <string name="epg_preset_us_name">Američki sport i mreže</string>
+    <string name="epg_preset_us_coverage">NFL, MLS, MLB i nacionalni američki kanali</string>
+    <string name="epg_preset_status_off">Isključeno</string>
+    <string name="epg_preset_status_updated">Ažurirano %1$s</string>
+    <string name="epg_preset_status_refreshing">Ažuriranje…</string>
+    <string name="epg_preset_status_error">Ažuriranje nije uspjelo: %1$s</string>
+    <string name="epg_preset_refresh_now">Ažuriraj sada</string>
+    <string name="epg_preset_edit_address">Promijeni adresu</string>
+    <string name="epg_preset_terms_note">Podaci vodiča dolaze iz javnog izvora zajednice bez navedenih uvjeta korištenja. Ažuriranja su ograničena na dvaput dnevno.</string>
 </resources>

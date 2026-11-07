@@ -1001,4 +1001,19 @@
     <string name="settings_favorites_sync_restore_title">Khôi phục mục yêu thích trên mọi TV?</string>
     <string name="settings_favorites_sync_restore_message">Thao tác này cũng sẽ cập nhật mục yêu thích trên các TV khác của bạn.</string>
     <string name="settings_favorites_sync_restore_confirm">Khôi phục</string>
+    <string name="settings_epg_presets_title">Cài đặt sẵn hướng dẫn</string>
+    <string name="settings_epg_presets_description">Các nguồn hướng dẫn có sẵn mà bạn có thể bật trên thiết bị này. Không có gì được tải xuống cho đến khi bật một cài đặt sẵn.</string>
+    <string name="epg_preset_bein_name">beIN Sports (Ả Rập)</string>
+    <string name="epg_preset_bein_coverage">Các kênh beIN Sports và mạng Ả Rập</string>
+    <string name="epg_preset_egypt_name">Ai Cập</string>
+    <string name="epg_preset_egypt_coverage">Al Ahly và các kênh thể thao Ai Cập</string>
+    <string name="epg_preset_us_name">Thể thao và mạng Hoa Kỳ</string>
+    <string name="epg_preset_us_coverage">NFL, MLS, MLB và các kênh toàn quốc Hoa Kỳ</string>
+    <string name="epg_preset_status_off">Tắt</string>
+    <string name="epg_preset_status_updated">Đã cập nhật %1$s</string>
+    <string name="epg_preset_status_refreshing">Đang cập nhật…</string>
+    <string name="epg_preset_status_error">Cập nhật thất bại: %1$s</string>
+    <string name="epg_preset_refresh_now">Cập nhật ngay</string>
+    <string name="epg_preset_edit_address">Đổi địa chỉ</string>
+    <string name="epg_preset_terms_note">Dữ liệu hướng dẫn đến từ một nguồn cộng đồng công khai không nêu điều khoản sử dụng. Cập nhật được giới hạn hai lần mỗi ngày.</string>
 </resources>

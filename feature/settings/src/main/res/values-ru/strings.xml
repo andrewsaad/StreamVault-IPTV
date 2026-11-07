@@ -1010,4 +1010,19 @@
     <string name="settings_favorites_sync_restore_title">Восстановить избранное на всех телевизорах?</string>
     <string name="settings_favorites_sync_restore_message">Избранное на других ваших телевизорах тоже обновится.</string>
     <string name="settings_favorites_sync_restore_confirm">Восстановить</string>
+    <string name="settings_epg_presets_title">Готовые наборы гида</string>
+    <string name="settings_epg_presets_description">Готовые источники гида, которые можно включить на этом устройстве. Ничего не загружается, пока набор не включён.</string>
+    <string name="epg_preset_bein_name">beIN Sports (арабский)</string>
+    <string name="epg_preset_bein_coverage">Каналы beIN Sports и арабские сети</string>
+    <string name="epg_preset_egypt_name">Египет</string>
+    <string name="epg_preset_egypt_coverage">Аль-Ахли и египетские спортивные каналы</string>
+    <string name="epg_preset_us_name">Спорт и сети США</string>
+    <string name="epg_preset_us_coverage">NFL, MLS, MLB и общенациональные каналы США</string>
+    <string name="epg_preset_status_off">Выкл.</string>
+    <string name="epg_preset_status_updated">Обновлено %1$s</string>
+    <string name="epg_preset_status_refreshing">Обновление…</string>
+    <string name="epg_preset_status_error">Не удалось обновить: %1$s</string>
+    <string name="epg_preset_refresh_now">Обновить сейчас</string>
+    <string name="epg_preset_edit_address">Изменить адрес</string>
+    <string name="epg_preset_terms_note">Данные гида поступают из общедоступного источника сообщества без указанных условий использования. Обновления ограничены двумя в день.</string>
 </resources>

@@ -1002,4 +1002,19 @@
     <string name="settings_favorites_sync_restore_title">بازیابی علاقه‌مندی‌ها در همه تلویزیون‌ها؟</string>
     <string name="settings_favorites_sync_restore_message">این کار علاقه‌مندی‌های تلویزیون‌های دیگر شما را هم به‌روز می‌کند.</string>
     <string name="settings_favorites_sync_restore_confirm">بازیابی</string>
+    <string name="settings_epg_presets_title">پیش‌تنظیم‌های راهنما</string>
+    <string name="settings_epg_presets_description">منابع آماده راهنما که می‌توانید روی این دستگاه روشن کنید. تا زمانی که یک پیش‌تنظیم روشن نشود، چیزی دانلود نمی‌شود.</string>
+    <string name="epg_preset_bein_name">beIN Sports (عربی)</string>
+    <string name="epg_preset_bein_coverage">کانال‌های beIN Sports و شبکه‌های عربی</string>
+    <string name="epg_preset_egypt_name">مصر</string>
+    <string name="epg_preset_egypt_coverage">الاهلی و کانال‌های ورزشی مصر</string>
+    <string name="epg_preset_us_name">ورزش و شبکه‌های آمریکا</string>
+    <string name="epg_preset_us_coverage">NFL، MLS، MLB و کانال‌های سراسری آمریکا</string>
+    <string name="epg_preset_status_off">خاموش</string>
+    <string name="epg_preset_status_updated">به‌روزرسانی‌شده: %1$s</string>
+    <string name="epg_preset_status_refreshing">در حال به‌روزرسانی…</string>
+    <string name="epg_preset_status_error">به‌روزرسانی ناموفق بود: %1$s</string>
+    <string name="epg_preset_refresh_now">به‌روزرسانی اکنون</string>
+    <string name="epg_preset_edit_address">تغییر نشانی</string>
+    <string name="epg_preset_terms_note">داده‌های راهنما از یک منبع عمومی جامعه‌محور بدون شرایط استفادهٔ اعلام‌شده می‌آید. به‌روزرسانی‌ها به دو بار در روز محدود است.</string>
 </resources>

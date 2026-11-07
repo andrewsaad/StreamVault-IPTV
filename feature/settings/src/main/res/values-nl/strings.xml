@@ -1004,4 +1004,19 @@
     <string name="settings_favorites_sync_restore_title">Favorieten op alle tv\'s herstellen?</string>
     <string name="settings_favorites_sync_restore_message">Hiermee worden ook de favorieten op je andere tv\'s bijgewerkt.</string>
     <string name="settings_favorites_sync_restore_confirm">Herstellen</string>
+    <string name="settings_epg_presets_title">Gidsvoorinstellingen</string>
+    <string name="settings_epg_presets_description">Kant-en-klare gidsbronnen die u op dit apparaat kunt inschakelen. Er wordt niets gedownload totdat een voorinstelling is ingeschakeld.</string>
+    <string name="epg_preset_bein_name">beIN Sports (Arabisch)</string>
+    <string name="epg_preset_bein_coverage">beIN Sports-zenders en Arabische netwerken</string>
+    <string name="epg_preset_egypt_name">Egypte</string>
+    <string name="epg_preset_egypt_coverage">Al Ahly en Egyptische sportzenders</string>
+    <string name="epg_preset_us_name">Amerikaanse sport en netwerken</string>
+    <string name="epg_preset_us_coverage">NFL, MLS, MLB en landelijke Amerikaanse zenders</string>
+    <string name="epg_preset_status_off">Uit</string>
+    <string name="epg_preset_status_updated">Bijgewerkt %1$s</string>
+    <string name="epg_preset_status_refreshing">Bijwerken…</string>
+    <string name="epg_preset_status_error">Bijwerken mislukt: %1$s</string>
+    <string name="epg_preset_refresh_now">Nu bijwerken</string>
+    <string name="epg_preset_edit_address">Adres wijzigen</string>
+    <string name="epg_preset_terms_note">Gidsgegevens komen van een openbare communitybron zonder vermelde gebruiksvoorwaarden. Updates zijn beperkt tot twee keer per dag.</string>
 </resources>

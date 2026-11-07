@@ -1002,4 +1002,19 @@
     <string name="settings_favorites_sync_restore_title">सभी टीवी पर पसंदीदा पुनर्स्थापित करें?</string>
     <string name="settings_favorites_sync_restore_message">इससे आपके दूसरे टीवी पर भी पसंदीदा अपडेट हो जाएंगे।</string>
     <string name="settings_favorites_sync_restore_confirm">पुनर्स्थापित करें</string>
+    <string name="settings_epg_presets_title">गाइड प्रीसेट</string>
+    <string name="settings_epg_presets_description">तैयार गाइड स्रोत जिन्हें आप इस डिवाइस पर चालू कर सकते हैं। जब तक कोई प्रीसेट चालू न हो, कुछ भी डाउनलोड नहीं होता।</string>
+    <string name="epg_preset_bein_name">beIN Sports (अरबी)</string>
+    <string name="epg_preset_bein_coverage">beIN Sports चैनल और अरबी नेटवर्क</string>
+    <string name="epg_preset_egypt_name">मिस्र</string>
+    <string name="epg_preset_egypt_coverage">अल अहली और मिस्र के खेल चैनल</string>
+    <string name="epg_preset_us_name">अमेरिकी खेल और नेटवर्क</string>
+    <string name="epg_preset_us_coverage">NFL, MLS, MLB और राष्ट्रीय अमेरिकी चैनल</string>
+    <string name="epg_preset_status_off">बंद</string>
+    <string name="epg_preset_status_updated">अपडेट किया गया: %1$s</string>
+    <string name="epg_preset_status_refreshing">अपडेट हो रहा है…</string>
+    <string name="epg_preset_status_error">अपडेट विफल: %1$s</string>
+    <string name="epg_preset_refresh_now">अभी अपडेट करें</string>
+    <string name="epg_preset_edit_address">पता बदलें</string>
+    <string name="epg_preset_terms_note">गाइड डेटा एक सार्वजनिक सामुदायिक स्रोत से आता है जिसकी उपयोग की कोई घोषित शर्तें नहीं हैं। अपडेट दिन में दो बार तक सीमित हैं।</string>
 </resources>

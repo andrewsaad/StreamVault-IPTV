@@ -1016,4 +1016,19 @@
     <string name="settings_favorites_sync_restore_title">استعادة المفضلة على كل أجهزة التلفاز؟</string>
     <string name="settings_favorites_sync_restore_message">سيؤدي هذا أيضًا إلى تحديث المفضلة على أجهزة التلفاز الأخرى.</string>
     <string name="settings_favorites_sync_restore_confirm">استعادة</string>
+    <string name="settings_epg_presets_title">إعدادات مسبقة للدليل</string>
+    <string name="settings_epg_presets_description">مصادر دليل جاهزة يمكنك تفعيلها على هذا الجهاز. لن يتم تنزيل أي شيء حتى يتم تفعيل إعداد مسبق.</string>
+    <string name="epg_preset_bein_name">beIN Sports (عربي)</string>
+    <string name="epg_preset_bein_coverage">قنوات beIN Sports والشبكات العربية</string>
+    <string name="epg_preset_egypt_name">مصر</string>
+    <string name="epg_preset_egypt_coverage">الأهلي وقنوات الرياضة المصرية</string>
+    <string name="epg_preset_us_name">الرياضة والشبكات الأمريكية</string>
+    <string name="epg_preset_us_coverage">NFL وMLS وMLB والقنوات الأمريكية الوطنية</string>
+    <string name="epg_preset_status_off">متوقف</string>
+    <string name="epg_preset_status_updated">تم التحديث %1$s</string>
+    <string name="epg_preset_status_refreshing">جارٍ التحديث…</string>
+    <string name="epg_preset_status_error">فشل التحديث: %1$s</string>
+    <string name="epg_preset_refresh_now">تحديث الآن</string>
+    <string name="epg_preset_edit_address">تغيير العنوان</string>
+    <string name="epg_preset_terms_note">تأتي بيانات الدليل من مصدر مجتمعي عام دون شروط استخدام معلنة. التحديثات محدودة بمرتين يوميًا.</string>
 </resources>

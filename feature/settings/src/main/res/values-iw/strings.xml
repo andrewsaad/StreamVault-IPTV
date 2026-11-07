@@ -1007,4 +1007,19 @@
     <string name="settings_favorites_sync_restore_title">לשחזר מועדפים בכל הטלוויזיות?</string>
     <string name="settings_favorites_sync_restore_message">פעולה זו תעדכן גם את המועדפים בטלוויזיות האחרות שלכם.</string>
     <string name="settings_favorites_sync_restore_confirm">שחזור</string>
+    <string name="settings_epg_presets_title">הגדרות מוכנות למדריך</string>
+    <string name="settings_epg_presets_description">מקורות מדריך מוכנים שאפשר להפעיל במכשיר הזה. שום דבר לא יורד עד שמפעילים הגדרה מוכנה.</string>
+    <string name="epg_preset_bein_name">beIN Sports (ערבית)</string>
+    <string name="epg_preset_bein_coverage">ערוצי beIN Sports ורשתות ערביות</string>
+    <string name="epg_preset_egypt_name">מצרים</string>
+    <string name="epg_preset_egypt_coverage">אל אהלי וערוצי ספורט מצריים</string>
+    <string name="epg_preset_us_name">ספורט ורשתות מארה״ב</string>
+    <string name="epg_preset_us_coverage">NFL, MLS, MLB וערוצים ארציים בארה״ב</string>
+    <string name="epg_preset_status_off">כבוי</string>
+    <string name="epg_preset_status_updated">עודכן %1$s</string>
+    <string name="epg_preset_status_refreshing">מתעדכן…</string>
+    <string name="epg_preset_status_error">העדכון נכשל: %1$s</string>
+    <string name="epg_preset_refresh_now">לעדכן עכשיו</string>
+    <string name="epg_preset_edit_address">שינוי כתובת</string>
+    <string name="epg_preset_terms_note">נתוני המדריך מגיעים ממקור קהילתי ציבורי ללא תנאי שימוש מוצהרים. העדכונים מוגבלים לפעמיים ביום.</string>
 </resources>

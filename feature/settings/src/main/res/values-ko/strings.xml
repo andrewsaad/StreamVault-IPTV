@@ -1000,4 +1000,19 @@
     <string name="settings_favorites_sync_restore_title">모든 TV에서 즐겨찾기를 복원할까요?</string>
     <string name="settings_favorites_sync_restore_message">다른 TV의 즐겨찾기도 함께 업데이트됩니다.</string>
     <string name="settings_favorites_sync_restore_confirm">복원</string>
+    <string name="settings_epg_presets_title">가이드 프리셋</string>
+    <string name="settings_epg_presets_description">이 기기에서 켤 수 있는 미리 준비된 가이드 소스입니다. 프리셋을 켜기 전에는 아무것도 다운로드되지 않습니다.</string>
+    <string name="epg_preset_bein_name">beIN Sports(아랍어)</string>
+    <string name="epg_preset_bein_coverage">beIN Sports 채널 및 아랍 네트워크</string>
+    <string name="epg_preset_egypt_name">이집트</string>
+    <string name="epg_preset_egypt_coverage">알 아흘리 및 이집트 스포츠 채널</string>
+    <string name="epg_preset_us_name">미국 스포츠 및 네트워크</string>
+    <string name="epg_preset_us_coverage">NFL, MLS, MLB 및 미국 전국 채널</string>
+    <string name="epg_preset_status_off">끔</string>
+    <string name="epg_preset_status_updated">업데이트됨: %1$s</string>
+    <string name="epg_preset_status_refreshing">업데이트 중…</string>
+    <string name="epg_preset_status_error">업데이트 실패: %1$s</string>
+    <string name="epg_preset_refresh_now">지금 업데이트</string>
+    <string name="epg_preset_edit_address">주소 변경</string>
+    <string name="epg_preset_terms_note">가이드 데이터는 이용 약관이 명시되지 않은 공개 커뮤니티 소스에서 제공됩니다. 업데이트는 하루 두 번으로 제한됩니다.</string>
 </resources>

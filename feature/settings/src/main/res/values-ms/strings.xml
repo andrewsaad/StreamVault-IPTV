@@ -999,4 +999,19 @@
     <string name="settings_favorites_sync_restore_title">Pulihkan kegemaran pada semua TV?</string>
     <string name="settings_favorites_sync_restore_message">Ini juga akan mengemas kini kegemaran pada TV anda yang lain.</string>
     <string name="settings_favorites_sync_restore_confirm">Pulihkan</string>
+    <string name="settings_epg_presets_title">Pratetap panduan</string>
+    <string name="settings_epg_presets_description">Sumber panduan sedia ada yang boleh anda hidupkan pada peranti ini. Tiada apa-apa dimuat turun sehingga pratetap dihidupkan.</string>
+    <string name="epg_preset_bein_name">beIN Sports (Arab)</string>
+    <string name="epg_preset_bein_coverage">Saluran beIN Sports dan rangkaian Arab</string>
+    <string name="epg_preset_egypt_name">Mesir</string>
+    <string name="epg_preset_egypt_coverage">Al Ahly dan saluran sukan Mesir</string>
+    <string name="epg_preset_us_name">Sukan dan rangkaian AS</string>
+    <string name="epg_preset_us_coverage">NFL, MLS, MLB dan saluran nasional AS</string>
+    <string name="epg_preset_status_off">Mati</string>
+    <string name="epg_preset_status_updated">Dikemas kini %1$s</string>
+    <string name="epg_preset_status_refreshing">Mengemas kini…</string>
+    <string name="epg_preset_status_error">Kemas kini gagal: %1$s</string>
+    <string name="epg_preset_refresh_now">Kemas kini sekarang</string>
+    <string name="epg_preset_edit_address">Tukar alamat</string>
+    <string name="epg_preset_terms_note">Data panduan datang daripada sumber komuniti awam tanpa terma penggunaan yang dinyatakan. Kemas kini dihadkan kepada dua kali sehari.</string>
 </resources>

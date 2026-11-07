@@ -1000,4 +1000,19 @@
     <string name="settings_favorites_sync_restore_title">Ripristinare i preferiti su tutte le TV?</string>
     <string name="settings_favorites_sync_restore_message">Verranno aggiornati anche i preferiti sulle altre TV.</string>
     <string name="settings_favorites_sync_restore_confirm">Ripristina</string>
+    <string name="settings_epg_presets_title">Preimpostazioni della guida</string>
+    <string name="settings_epg_presets_description">Fonti della guida pronte all’uso che puoi attivare su questo dispositivo. Non viene scaricato nulla finché non attivi una preimpostazione.</string>
+    <string name="epg_preset_bein_name">beIN Sports (arabo)</string>
+    <string name="epg_preset_bein_coverage">Canali beIN Sports e reti arabe</string>
+    <string name="epg_preset_egypt_name">Egitto</string>
+    <string name="epg_preset_egypt_coverage">Al Ahly e canali sportivi egiziani</string>
+    <string name="epg_preset_us_name">Sport e reti USA</string>
+    <string name="epg_preset_us_coverage">NFL, MLS, MLB e canali nazionali USA</string>
+    <string name="epg_preset_status_off">Disattivato</string>
+    <string name="epg_preset_status_updated">Aggiornato %1$s</string>
+    <string name="epg_preset_status_refreshing">Aggiornamento…</string>
+    <string name="epg_preset_status_error">Aggiornamento non riuscito: %1$s</string>
+    <string name="epg_preset_refresh_now">Aggiorna ora</string>
+    <string name="epg_preset_edit_address">Cambia indirizzo</string>
+    <string name="epg_preset_terms_note">I dati della guida provengono da una fonte pubblica della community senza termini d’uso dichiarati. Gli aggiornamenti sono limitati a due al giorno.</string>
 </resources>

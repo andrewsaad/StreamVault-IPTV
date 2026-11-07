@@ -1004,4 +1004,19 @@
     <string name="settings_favorites_sync_restore_title">Återställa favoriter på alla tv-apparater?</string>
     <string name="settings_favorites_sync_restore_message">Detta uppdaterar även favoriterna på dina andra tv-apparater.</string>
     <string name="settings_favorites_sync_restore_confirm">Återställ</string>
+    <string name="settings_epg_presets_title">Guideförval</string>
+    <string name="settings_epg_presets_description">Färdiga guidekällor som du kan aktivera på den här enheten. Inget laddas ned förrän ett förval är aktiverat.</string>
+    <string name="epg_preset_bein_name">beIN Sports (arabiska)</string>
+    <string name="epg_preset_bein_coverage">beIN Sports-kanaler och arabiska nätverk</string>
+    <string name="epg_preset_egypt_name">Egypten</string>
+    <string name="epg_preset_egypt_coverage">Al Ahly och egyptiska sportkanaler</string>
+    <string name="epg_preset_us_name">Amerikansk sport och nätverk</string>
+    <string name="epg_preset_us_coverage">NFL, MLS, MLB och rikstäckande amerikanska kanaler</string>
+    <string name="epg_preset_status_off">Av</string>
+    <string name="epg_preset_status_updated">Uppdaterad %1$s</string>
+    <string name="epg_preset_status_refreshing">Uppdaterar…</string>
+    <string name="epg_preset_status_error">Uppdateringen misslyckades: %1$s</string>
+    <string name="epg_preset_refresh_now">Uppdatera nu</string>
+    <string name="epg_preset_edit_address">Ändra adress</string>
+    <string name="epg_preset_terms_note">Guidedata kommer från en offentlig community-källa utan angivna användarvillkor. Uppdateringar är begränsade till två gånger per dag.</string>
 </resources>

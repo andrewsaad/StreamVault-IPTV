@@ -1002,4 +1002,19 @@
     <string name="settings_favorites_sync_restore_title">Възстановяване на любимите на всички телевизори?</string>
     <string name="settings_favorites_sync_restore_message">Това ще обнови любимите и на другите ви телевизори.</string>
     <string name="settings_favorites_sync_restore_confirm">Възстанови</string>
+    <string name="settings_epg_presets_title">Готови настройки за програмата</string>
+    <string name="settings_epg_presets_description">Готови източници за програмата, които можете да включите на това устройство. Нищо не се изтегля, докато не включите настройка.</string>
+    <string name="epg_preset_bein_name">beIN Sports (арабски)</string>
+    <string name="epg_preset_bein_coverage">Канали на beIN Sports и арабски мрежи</string>
+    <string name="epg_preset_egypt_name">Египет</string>
+    <string name="epg_preset_egypt_coverage">Ал Ахли и египетски спортни канали</string>
+    <string name="epg_preset_us_name">Спорт и мрежи от САЩ</string>
+    <string name="epg_preset_us_coverage">NFL, MLS, MLB и национални канали от САЩ</string>
+    <string name="epg_preset_status_off">Изключено</string>
+    <string name="epg_preset_status_updated">Обновено %1$s</string>
+    <string name="epg_preset_status_refreshing">Обновяване…</string>
+    <string name="epg_preset_status_error">Неуспешно обновяване: %1$s</string>
+    <string name="epg_preset_refresh_now">Обнови сега</string>
+    <string name="epg_preset_edit_address">Промяна на адреса</string>
+    <string name="epg_preset_terms_note">Данните за програмата идват от публичен обществен източник без посочени условия за ползване. Обновяванията са ограничени до два пъти дневно.</string>
 </resources>

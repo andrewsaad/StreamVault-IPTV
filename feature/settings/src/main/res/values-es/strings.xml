@@ -1000,4 +1000,19 @@
     <string name="settings_favorites_sync_restore_title">¿Restaurar favoritos en todas las TV?</string>
     <string name="settings_favorites_sync_restore_message">Esto también actualizará los favoritos en tus otras TV.</string>
     <string name="settings_favorites_sync_restore_confirm">Restaurar</string>
+    <string name="settings_epg_presets_title">Ajustes predefinidos de la guía</string>
+    <string name="settings_epg_presets_description">Fuentes de guía listas para usar que puede activar en este dispositivo. No se descarga nada hasta que se active un ajuste predefinido.</string>
+    <string name="epg_preset_bein_name">beIN Sports (árabe)</string>
+    <string name="epg_preset_bein_coverage">Canales de beIN Sports y cadenas árabes</string>
+    <string name="epg_preset_egypt_name">Egipto</string>
+    <string name="epg_preset_egypt_coverage">Al Ahly y canales deportivos egipcios</string>
+    <string name="epg_preset_us_name">Deportes y cadenas de EE. UU.</string>
+    <string name="epg_preset_us_coverage">NFL, MLS, MLB y canales nacionales de EE. UU.</string>
+    <string name="epg_preset_status_off">Desactivado</string>
+    <string name="epg_preset_status_updated">Actualizado %1$s</string>
+    <string name="epg_preset_status_refreshing">Actualizando…</string>
+    <string name="epg_preset_status_error">Error al actualizar: %1$s</string>
+    <string name="epg_preset_refresh_now">Actualizar ahora</string>
+    <string name="epg_preset_edit_address">Cambiar dirección</string>
+    <string name="epg_preset_terms_note">Los datos de la guía provienen de una fuente comunitaria pública sin condiciones de uso declaradas. Las actualizaciones se limitan a dos al día.</string>
 </resources>

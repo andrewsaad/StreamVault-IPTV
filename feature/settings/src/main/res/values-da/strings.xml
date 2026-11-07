@@ -1004,4 +1004,19 @@
     <string name="settings_favorites_sync_restore_title">Gendan favoritter på alle tv?</string>
     <string name="settings_favorites_sync_restore_message">Dette opdaterer også favoritterne på dine andre tv.</string>
     <string name="settings_favorites_sync_restore_confirm">Gendan</string>
+    <string name="settings_epg_presets_title">Guideforudindstillinger</string>
+    <string name="settings_epg_presets_description">Færdige guidekilder, som du kan slå til på denne enhed. Intet downloades, før en forudindstilling er slået til.</string>
+    <string name="epg_preset_bein_name">beIN Sports (arabisk)</string>
+    <string name="epg_preset_bein_coverage">beIN Sports-kanaler og arabiske netværk</string>
+    <string name="epg_preset_egypt_name">Egypten</string>
+    <string name="epg_preset_egypt_coverage">Al Ahly og egyptiske sportskanaler</string>
+    <string name="epg_preset_us_name">Amerikansk sport og netværk</string>
+    <string name="epg_preset_us_coverage">NFL, MLS, MLB og landsdækkende amerikanske kanaler</string>
+    <string name="epg_preset_status_off">Fra</string>
+    <string name="epg_preset_status_updated">Opdateret %1$s</string>
+    <string name="epg_preset_status_refreshing">Opdaterer…</string>
+    <string name="epg_preset_status_error">Opdatering mislykkedes: %1$s</string>
+    <string name="epg_preset_refresh_now">Opdater nu</string>
+    <string name="epg_preset_edit_address">Skift adresse</string>
+    <string name="epg_preset_terms_note">Guidedata kommer fra en offentlig fællesskabskilde uden angivne brugsvilkår. Opdateringer er begrænset til to gange om dagen.</string>
 </resources>

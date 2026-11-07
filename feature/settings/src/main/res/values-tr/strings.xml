@@ -1004,4 +1004,19 @@
     <string name="settings_favorites_sync_restore_title">Favoriler tüm TV\'lerde geri yüklensin mi?</string>
     <string name="settings_favorites_sync_restore_message">Bu, diğer TV\'lerinizdeki favorileri de güncelleyecek.</string>
     <string name="settings_favorites_sync_restore_confirm">Geri yükle</string>
+    <string name="settings_epg_presets_title">Rehber ön ayarları</string>
+    <string name="settings_epg_presets_description">Bu cihazda açabileceğiniz hazır rehber kaynakları. Bir ön ayar açılana kadar hiçbir şey indirilmez.</string>
+    <string name="epg_preset_bein_name">beIN Sports (Arapça)</string>
+    <string name="epg_preset_bein_coverage">beIN Sports kanalları ve Arap ağları</string>
+    <string name="epg_preset_egypt_name">Mısır</string>
+    <string name="epg_preset_egypt_coverage">Al Ahly ve Mısır spor kanalları</string>
+    <string name="epg_preset_us_name">ABD sporları ve ağları</string>
+    <string name="epg_preset_us_coverage">NFL, MLS, MLB ve ulusal ABD kanalları</string>
+    <string name="epg_preset_status_off">Kapalı</string>
+    <string name="epg_preset_status_updated">Güncellendi: %1$s</string>
+    <string name="epg_preset_status_refreshing">Güncelleniyor…</string>
+    <string name="epg_preset_status_error">Güncelleme başarısız: %1$s</string>
+    <string name="epg_preset_refresh_now">Şimdi güncelle</string>
+    <string name="epg_preset_edit_address">Adresi değiştir</string>
+    <string name="epg_preset_terms_note">Rehber verileri, belirtilmiş kullanım koşulları olmayan herkese açık bir topluluk kaynağından gelir. Güncellemeler günde iki kezle sınırlıdır.</string>
 </resources>

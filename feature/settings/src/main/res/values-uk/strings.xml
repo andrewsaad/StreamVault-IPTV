@@ -1010,4 +1010,19 @@
     <string name="settings_favorites_sync_restore_title">Відновити обране на всіх телевізорах?</string>
     <string name="settings_favorites_sync_restore_message">Обране на інших ваших телевізорах також оновиться.</string>
     <string name="settings_favorites_sync_restore_confirm">Відновити</string>
+    <string name="settings_epg_presets_title">Готові набори гіда</string>
+    <string name="settings_epg_presets_description">Готові джерела гіда, які можна ввімкнути на цьому пристрої. Нічого не завантажується, доки набір не ввімкнено.</string>
+    <string name="epg_preset_bein_name">beIN Sports (арабська)</string>
+    <string name="epg_preset_bein_coverage">Канали beIN Sports та арабські мережі</string>
+    <string name="epg_preset_egypt_name">Єгипет</string>
+    <string name="epg_preset_egypt_coverage">Аль-Аглі та єгипетські спортивні канали</string>
+    <string name="epg_preset_us_name">Спорт і мережі США</string>
+    <string name="epg_preset_us_coverage">NFL, MLS, MLB та загальнонаціональні канали США</string>
+    <string name="epg_preset_status_off">Вимк.</string>
+    <string name="epg_preset_status_updated">Оновлено %1$s</string>
+    <string name="epg_preset_status_refreshing">Оновлення…</string>
+    <string name="epg_preset_status_error">Не вдалося оновити: %1$s</string>
+    <string name="epg_preset_refresh_now">Оновити зараз</string>
+    <string name="epg_preset_edit_address">Змінити адресу</string>
+    <string name="epg_preset_terms_note">Дані гіда надходять із загальнодоступного джерела спільноти без зазначених умов використання. Оновлення обмежено двома на день.</string>
 </resources>

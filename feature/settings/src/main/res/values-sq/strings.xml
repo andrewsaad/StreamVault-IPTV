@@ -1002,4 +1002,19 @@
     <string name="settings_favorites_sync_restore_title">Të rikthehen të preferuarat në të gjithë televizorët?</string>
     <string name="settings_favorites_sync_restore_message">Kjo do të përditësojë edhe të preferuarat në televizorët e tjerë.</string>
     <string name="settings_favorites_sync_restore_confirm">Rikthe</string>
+    <string name="settings_epg_presets_title">Paracaktimet e guidës</string>
+    <string name="settings_epg_presets_description">Burime të gatshme të guidës që mund t’i aktivizoni në këtë pajisje. Asgjë nuk shkarkohet derisa të aktivizohet një paracaktim.</string>
+    <string name="epg_preset_bein_name">beIN Sports (arabisht)</string>
+    <string name="epg_preset_bein_coverage">Kanalet beIN Sports dhe rrjetet arabe</string>
+    <string name="epg_preset_egypt_name">Egjipti</string>
+    <string name="epg_preset_egypt_coverage">Al Ahly dhe kanalet sportive egjiptiane</string>
+    <string name="epg_preset_us_name">Sporti dhe rrjetet e SHBA-së</string>
+    <string name="epg_preset_us_coverage">NFL, MLS, MLB dhe kanalet kombëtare të SHBA-së</string>
+    <string name="epg_preset_status_off">Joaktiv</string>
+    <string name="epg_preset_status_updated">Përditësuar %1$s</string>
+    <string name="epg_preset_status_refreshing">Po përditësohet…</string>
+    <string name="epg_preset_status_error">Përditësimi dështoi: %1$s</string>
+    <string name="epg_preset_refresh_now">Përditëso tani</string>
+    <string name="epg_preset_edit_address">Ndrysho adresën</string>
+    <string name="epg_preset_terms_note">Të dhënat e guidës vijnë nga një burim publik i komunitetit pa kushte të deklaruara përdorimi. Përditësimet kufizohen në dy herë në ditë.</string>
 </resources>

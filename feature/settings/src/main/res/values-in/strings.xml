@@ -1004,4 +1004,19 @@
     <string name="settings_favorites_sync_restore_title">Pulihkan favorit di semua TV?</string>
     <string name="settings_favorites_sync_restore_message">Ini juga akan memperbarui favorit di TV Anda yang lain.</string>
     <string name="settings_favorites_sync_restore_confirm">Pulihkan</string>
+    <string name="settings_epg_presets_title">Preset panduan</string>
+    <string name="settings_epg_presets_description">Sumber panduan siap pakai yang dapat Anda aktifkan di perangkat ini. Tidak ada yang diunduh sampai preset diaktifkan.</string>
+    <string name="epg_preset_bein_name">beIN Sports (Arab)</string>
+    <string name="epg_preset_bein_coverage">Saluran beIN Sports dan jaringan Arab</string>
+    <string name="epg_preset_egypt_name">Mesir</string>
+    <string name="epg_preset_egypt_coverage">Al Ahly dan saluran olahraga Mesir</string>
+    <string name="epg_preset_us_name">Olahraga dan jaringan AS</string>
+    <string name="epg_preset_us_coverage">NFL, MLS, MLB, dan saluran nasional AS</string>
+    <string name="epg_preset_status_off">Nonaktif</string>
+    <string name="epg_preset_status_updated">Diperbarui %1$s</string>
+    <string name="epg_preset_status_refreshing">Memperbarui…</string>
+    <string name="epg_preset_status_error">Pembaruan gagal: %1$s</string>
+    <string name="epg_preset_refresh_now">Perbarui sekarang</string>
+    <string name="epg_preset_edit_address">Ubah alamat</string>
+    <string name="epg_preset_terms_note">Data panduan berasal dari sumber komunitas publik tanpa ketentuan penggunaan yang dinyatakan. Pembaruan dibatasi dua kali sehari.</string>
 </resources>

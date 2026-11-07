@@ -1005,4 +1005,19 @@
     <string name="settings_favorites_sync_restore_title">Вратити омиљене на свим телевизорима?</string>
     <string name="settings_favorites_sync_restore_message">Ово ће ажурирати и омиљене на вашим другим телевизорима.</string>
     <string name="settings_favorites_sync_restore_confirm">Врати</string>
+    <string name="settings_epg_presets_title">Готова подешавања водича</string>
+    <string name="settings_epg_presets_description">Готови извори водича које можете да укључите на овом уређају. Ништа се не преузима док се подешавање не укључи.</string>
+    <string name="epg_preset_bein_name">beIN Sports (арапски)</string>
+    <string name="epg_preset_bein_coverage">Канали beIN Sports и арапске мреже</string>
+    <string name="epg_preset_egypt_name">Египат</string>
+    <string name="epg_preset_egypt_coverage">Ал Ахли и египатски спортски канали</string>
+    <string name="epg_preset_us_name">Спорт и мреже из САД</string>
+    <string name="epg_preset_us_coverage">NFL, MLS, MLB и национални канали из САД</string>
+    <string name="epg_preset_status_off">Искључено</string>
+    <string name="epg_preset_status_updated">Ажурирано %1$s</string>
+    <string name="epg_preset_status_refreshing">Ажурирање…</string>
+    <string name="epg_preset_status_error">Ажурирање није успело: %1$s</string>
+    <string name="epg_preset_refresh_now">Ажурирај сада</string>
+    <string name="epg_preset_edit_address">Промени адресу</string>
+    <string name="epg_preset_terms_note">Подаци водича долазе из јавног извора заједнице без наведених услова коришћења. Ажурирања су ограничена на два пута дневно.</string>
 </resources>
