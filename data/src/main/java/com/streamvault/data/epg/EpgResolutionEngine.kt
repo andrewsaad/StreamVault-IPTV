@@ -9,6 +9,7 @@ import com.streamvault.data.local.dao.ProgramDao
 import com.streamvault.data.local.dao.ProviderSnapshotDao
 import com.streamvault.data.local.dao.ProviderEpgSourceDao
 import com.streamvault.data.local.entity.ChannelEpgMappingEntity
+import com.streamvault.data.local.entity.EpgChannelEntity
 import com.streamvault.data.mapper.toDomain
 import com.streamvault.data.mapper.toDomainProgram
 import com.streamvault.domain.model.EpgMatchType
@@ -28,6 +29,8 @@ import javax.inject.Singleton
  * 1. Manual override (future)
  * 2. External source with exact ID match (highest-priority source first)
  * 3. External source with normalized name match (highest-priority source first)
+ * 3b. External source with loose name match: tags, prefixes and quality words ignored
+ *     (highest-priority source first; deterministic tie-break inside a source)
  * 4. Provider-native EPG if available
  * 5. No EPG
  *
@@ -47,6 +50,41 @@ class EpgResolutionEngine @Inject constructor(
         private const val TAG = "EpgResolutionEngine"
         private const val LOW_CONFIDENCE_THRESHOLD = 0.7f
         private const val MAX_REMATCH_ATTEMPTS = 6
+        private const val LOOSE_NAME_CONFIDENCE = 0.6f
+
+        /**
+         * Picks one guide entry among those sharing a loose key: fewest differing quality words
+         * against the channel name, then the smallest guide id. Independent of row order.
+         */
+        internal fun pickLooseCandidate(
+            channelName: String,
+            candidates: List<EpgChannelEntity>,
+        ): EpgChannelEntity? {
+            if (candidates.size <= 1) return candidates.firstOrNull()
+            val channelQuality = EpgNameNormalizer.qualityWords(channelName)
+            return candidates.minWithOrNull(
+                compareBy<EpgChannelEntity>(
+                    { candidate ->
+                        val quality = EpgNameNormalizer.qualityWords(candidate.displayName)
+                        (channelQuality - quality).size + (quality - channelQuality).size
+                    },
+                    { it.xmltvChannelId },
+                )
+            )
+        }
+
+        /** Loose key -> guide entries, one entry per guide id. */
+        internal fun buildLooseIndex(epgChannels: List<EpgChannelEntity>): Map<String, List<EpgChannelEntity>> {
+            val index = HashMap<String, MutableList<EpgChannelEntity>>()
+            val seenIds = HashSet<String>()
+            for (channel in epgChannels) {
+                if (!seenIds.add(channel.xmltvChannelId)) continue
+                for (key in EpgNameNormalizer.looseKeys(channel.displayName, channel.xmltvChannelId)) {
+                    index.getOrPut(key) { ArrayList(1) }.add(channel)
+                }
+            }
+            return index
+        }
     }
 
     /**
@@ -105,6 +143,10 @@ class EpgResolutionEngine @Inject constructor(
             }
             nameIndex[sourceId] = nameMap
         }
+        // Built on first use per source: most passes resolve everything by id or exact name.
+        val looseIndex = mutableMapOf<Long, Map<String, List<EpgChannelEntity>>>()
+        fun looseIndexFor(sourceId: Long): Map<String, List<EpgChannelEntity>> =
+            looseIndex.getOrPut(sourceId) { buildLooseIndex(epgChannelsBySource[sourceId].orEmpty()) }
 
         // Check which channels have provider-native EPG data
         val providerEpgChannelIds = channels.mapNotNull { it.epgChannelId?.trim()?.takeIf(String::isNotEmpty) }
@@ -131,6 +173,7 @@ class EpgResolutionEngine @Inject constructor(
         val now = System.currentTimeMillis()
         var exactIdMatches = 0
         var normalizedNameMatches = 0
+        var looseNameMatches = 0
         var providerNativeMatches = 0
         var manualMatches = 0
         var unresolvedCount = 0
@@ -199,6 +242,31 @@ class EpgResolutionEngine @Inject constructor(
                 }
             }
 
+            // 3b. Loose name match, only after exact id and exact name failed in every source
+            val channelLooseKey = EpgNameNormalizer.normalizeLoose(channel.name)
+            if (channelLooseKey.isNotEmpty()) {
+                for (assignment in enabledAssignments) {
+                    val sid = assignment.epgSourceId
+                    if (sid !in epgChannelsBySource) continue
+                    val candidates = looseIndexFor(sid)[channelLooseKey] ?: continue
+                    val picked = pickLooseCandidate(channel.name, candidates) ?: continue
+                    looseNameMatches++
+                    return@map ChannelEpgMappingEntity(
+                        providerChannelId = channel.id,
+                        providerId = providerId,
+                        sourceType = EpgSourceType.EXTERNAL.name,
+                        epgSourceId = sid,
+                        xmltvChannelId = picked.xmltvChannelId,
+                        matchType = EpgMatchType.NORMALIZED_NAME_LOOSE.name,
+                        confidence = LOOSE_NAME_CONFIDENCE,
+                        matchedAt = now,
+                        failedAttempts = 0,
+                        source = "loose_name_match",
+                        updatedAt = now
+                    )
+                }
+            }
+
             // 4. Fall back to provider-native EPG
             if (allowProviderNativeMappings && channelEpgId != null && channelEpgId in providerNativeChannelIds) {
                 providerNativeMatches++
@@ -257,6 +325,7 @@ class EpgResolutionEngine @Inject constructor(
             totalChannels = channels.size,
             exactIdMatches = exactIdMatches,
             normalizedNameMatches = normalizedNameMatches,
+            looseNameMatches = looseNameMatches,
             providerNativeMatches = providerNativeMatches,
             manualMatches = manualMatches,
             unresolvedChannels = unresolvedCount,
@@ -405,6 +474,7 @@ class EpgResolutionEngine @Inject constructor(
         var total = 0
         var exactId = 0
         var normalizedName = 0
+        var looseName = 0
         var providerNative = 0
         var manual = 0
         var unresolved = 0
@@ -415,6 +485,7 @@ class EpgResolutionEngine @Inject constructor(
                 row.sourceType == EpgSourceType.NONE.name -> unresolved += row.cnt
                 row.matchType == EpgMatchType.EXACT_ID.name -> exactId += row.cnt
                 row.matchType == EpgMatchType.NORMALIZED_NAME.name -> normalizedName += row.cnt
+                row.matchType == EpgMatchType.NORMALIZED_NAME_LOOSE.name -> looseName += row.cnt
                 row.matchType == EpgMatchType.PROVIDER_NATIVE.name -> providerNative += row.cnt
                 row.matchType == EpgMatchType.MANUAL.name -> manual += row.cnt
             }
@@ -424,6 +495,7 @@ class EpgResolutionEngine @Inject constructor(
             totalChannels = total,
             exactIdMatches = exactId,
             normalizedNameMatches = normalizedName,
+            looseNameMatches = looseName,
             providerNativeMatches = providerNative,
             manualMatches = manual,
             unresolvedChannels = unresolved,

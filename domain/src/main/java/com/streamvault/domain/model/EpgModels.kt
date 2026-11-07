@@ -124,5 +124,7 @@ data class EpgResolutionSummary(
     val manualMatches: Int = 0,
     val unresolvedChannels: Int = 0,
     val lowConfidenceChannels: Int = 0,
-    val rematchCandidateChannels: Int = 0
+    val rematchCandidateChannels: Int = 0,
+    /** Matched by the loose-name fallback (tags, prefixes and quality words ignored). */
+    val looseNameMatches: Int = 0
 )
