@@ -35,6 +35,7 @@ internal enum class SportsChannelMatchReason {
     MATCHING_DATE,
     DIRECT_MAPPING,
     MANUAL_SEARCH,
+    CLUB_CHANNEL,
 }
 
 /** Normalized once for an effective playable-channel set and reused across events. */
@@ -124,6 +125,8 @@ internal class SportsChannelIndex private constructor(
 
 internal object SportsChannelFallbackMatcher {
     private const val MIN_MATCH_SCORE = 70
+    private const val CLUB_CHANNEL_SCORE = 70
+    private val CLUB_CHANNEL_QUALITY_TOKENS = setOf("sd", "lq", "hq")
     private const val TEAM_PAIR_SCORE = 100
     private const val EVENT_NAME_SCORE = 90
     private const val BROADCASTER_SCORE = 110
@@ -361,6 +364,12 @@ internal object SportsChannelFallbackMatcher {
             score += BROADCASTER_SCORE
             reasons += SportsChannelMatchReason.BROADCASTER
         }
+        // A channel named only after one competitor (for example "Al Ahly [HD]") is that club's own channel.
+        if (!hasEventIdentityMatch && !hasBroadcasterMatch && !isFight && isClubChannel(channelName, competitorAliases)) {
+            score += CLUB_CHANNEL_SCORE
+            reasons += SportsChannelMatchReason.CLUB_CHANNEL
+            hasEventIdentityMatch = true
+        }
         if (!hasEventIdentityMatch && !hasBroadcasterMatch) return null
 
         if (leagueAliases.any { alias -> containsPhrase(channelName, alias) }) {
@@ -401,6 +410,15 @@ internal object SportsChannelFallbackMatcher {
 
     private fun normalizedBroadcasterName(name: String, providerId: Long): String =
         SportsTextNormalizer.normalize(ChannelNormalizer.classify(name, providerId).canonicalName)
+
+    private fun isClubChannel(channelName: String, competitorAliases: List<Set<String>>): Boolean {
+        // The indexed name repeats the channel name and its canonical name, so de-duplicate tokens.
+        val bareName = channelName.split(' ')
+            .filter { token -> token.isNotBlank() && token !in qualityNoise && token !in CLUB_CHANNEL_QUALITY_TOKENS }
+            .distinct()
+            .joinToString(" ")
+        return bareName.isNotBlank() && competitorAliases.any { aliases -> bareName in aliases }
+    }
 
     private fun containsPhrase(normalizedText: String, phrase: String): Boolean {
         if (phrase.isBlank()) return false
