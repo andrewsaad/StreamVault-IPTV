@@ -86,7 +86,11 @@ internal object SportsEventAssembler {
             SportsBroadcast(candidate.channel, candidate.combinedProfileId)
         }.distinctBy { broadcast ->
             "${broadcast.channel.providerId}:${broadcast.channel.id}"
-        }.sortedBy { it.channel.name.lowercase() }
+        }.sortedWith(
+            // The first broadcast is the one that plays, so Arabic beIN feeds lead over regional ones.
+            compareBy<SportsBroadcast> { SportsCommentatorMatcher.beinChannelNumber(it.channel.name) == null }
+                .thenBy { it.channel.name.lowercase() },
+        )
         val competitors = flatMap { candidate ->
             candidate.classification.competitors.map { displayName -> SportsCompetitor(displayName) }
         }.distinctBy(SportsCompetitor::canonicalName)

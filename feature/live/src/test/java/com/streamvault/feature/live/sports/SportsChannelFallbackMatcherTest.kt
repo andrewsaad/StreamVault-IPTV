@@ -186,6 +186,25 @@ class SportsChannelFallbackMatcherTest {
     }
 
     @Test
+    fun equallyScoredBroadcasterMatchesListTheArabicBeinFeedFirst() {
+        val source = SportsSourceRef.Provider("event-account", "test-provider", "provider-event-1")
+        val event = teamEvent().copy(
+            id = "provider:event-account:provider-event-1",
+            provenance = SportsEventProvenance(
+                sources = setOf(source),
+                broadcasters = SourcedValue(listOf(ProviderBroadcaster("beIN Sports 1")), source),
+            ),
+        )
+        val french = channel(1, "[FR]_BeIN_SPORTS_1_HD", canonicalName = "beIN Sports 1")
+        val arabic = channel(2, "beIN Sports 1 FHD", canonicalName = "beIN Sports 1")
+        val index = SportsChannelIndex.build(listOf(french, arabic).map(::entry))
+
+        val resolved = SportsEventFallbackResolver.addFallbacksWhenDirectChoicesAreUnavailable(event, index)
+
+        assertEquals(listOf(arabic.channel.id, french.channel.id), resolved.broadcasts.map { it.channel.id })
+    }
+
+    @Test
     fun providerBroadcasterMapsProviderOnlyEventToExactPlayableLocalChannel() {
         val source = SportsSourceRef.Provider("event-account", "test-provider", "provider-event-1")
         val event = teamEvent().copy(

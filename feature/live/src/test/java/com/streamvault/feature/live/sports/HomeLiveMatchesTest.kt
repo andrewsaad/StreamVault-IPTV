@@ -62,6 +62,34 @@ class HomeLiveMatchesTest {
     }
 
     @Test
+    fun `a live Arabic beIN feed comes before a regional one that started earlier`() {
+        val french = channel(1L, "beIN Sport 1 FR FHD", number = 1)
+        val arabic = channel(2L, "beIN Sport 1 FHD", number = 56)
+        val candidates = listOf(
+            candidate(french, "Valence vs Real Madrid", start = now - 8 * minute, end = now + 90 * minute),
+            candidate(arabic, "Valencia vs Real Madrid", start = now - 5 * minute, end = now + 90 * minute),
+        )
+
+        val selected = HomeLiveMatchSelector.select(candidates, now, limit = 20)
+
+        assertThat(selected.map { it.channel.id }).containsExactly(2L, 1L).inOrder()
+    }
+
+    @Test
+    fun `a live regional beIN feed still comes before an upcoming Arabic one`() {
+        val french = channel(1L, "beIN Sport 1 FR FHD", number = 1)
+        val arabic = channel(2L, "beIN Sport 2 FHD", number = 59)
+        val candidates = listOf(
+            candidate(arabic, "Soon A vs B", start = now + 5 * minute, end = now + 95 * minute),
+            candidate(french, "Live C vs D", start = now - 5 * minute, end = now + 85 * minute),
+        )
+
+        val selected = HomeLiveMatchSelector.select(candidates, now, limit = 20)
+
+        assertThat(selected.map { it.title }).containsExactly("Live C vs D", "Soon A vs B").inOrder()
+    }
+
+    @Test
     fun `only competitive football counts - studio shows, replays and other sports are dropped`() {
         val bein = channel(1L, "beIN Sport 1 FHD Q")
         fun candidateFor(title: String, genre: String?) = SportsProgrammeClassifier.classify(

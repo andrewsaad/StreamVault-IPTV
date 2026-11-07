@@ -145,6 +145,9 @@ internal object SportsChannelFallbackMatcher {
             .takeIf { it != 0 }
             ?: second.score.compareTo(first.score)
             .takeIf { it != 0 }
+            ?: (SportsCommentatorMatcher.beinChannelNumber(first.entry.channel.name) == null)
+                .compareTo(SportsCommentatorMatcher.beinChannelNumber(second.entry.channel.name) == null)
+                .takeIf { it != 0 }
             ?: first.entry.channel.name.compareTo(second.entry.channel.name, ignoreCase = true)
                 .takeIf { it != 0 }
             ?: first.entry.channel.providerId.compareTo(second.entry.channel.providerId)

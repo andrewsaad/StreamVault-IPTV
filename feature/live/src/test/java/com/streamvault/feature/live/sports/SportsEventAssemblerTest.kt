@@ -180,11 +180,43 @@ class SportsEventAssemblerTest {
         assertThat(events.map(SportsEvent::startTime)).containsExactly(start, start + 3 * 60 * MINUTE).inOrder()
     }
 
+    @Test
+    fun listsArabicBeinChannelsFirstSoTheMainChannelIsNotARegionalFeed() {
+        val start = 1_800_000_000_000L
+        val names = listOf(
+            "[FR]_BeIN_SPORTS_1_HD",
+            "BeIN_SPORTS_1_HD [TR]",
+            "beIN Sport 1 EN HD",
+            "beIN Sport 1 FR FHD",
+            "Abu Dhabi Sports 1",
+            "beIN Sport 2 HD",
+            "beIN Sport 1 FHD",
+            "beIN Sport 1",
+        )
+        val candidates = names.mapIndexed { index, name ->
+            candidate("Valencia vs Real Madrid", index + 1L, start, channelName = name)
+        }
+
+        val broadcasts = SportsEventAssembler.assemble(candidates).single().broadcasts
+
+        assertThat(broadcasts.map { it.channel.name }).containsExactly(
+            "beIN Sport 1",
+            "beIN Sport 1 FHD",
+            "beIN Sport 2 HD",
+            "[FR]_BeIN_SPORTS_1_HD",
+            "Abu Dhabi Sports 1",
+            "beIN Sport 1 EN HD",
+            "beIN Sport 1 FR FHD",
+            "BeIN_SPORTS_1_HD [TR]",
+        ).inOrder()
+    }
+
     private fun candidate(
         title: String,
         channelId: Long,
         startTime: Long,
         genre: String? = "Football",
+        channelName: String = "Sports $channelId",
     ): SportsEventCandidate {
         val program = Program(
             id = channelId * 100 + startTime / MINUTE,
@@ -197,7 +229,7 @@ class SportsEventAssemblerTest {
         )
         val channel = Channel(
             id = channelId,
-            name = "Sports $channelId",
+            name = channelName,
             streamUrl = "test://sports/$channelId",
             providerId = 1L,
         )

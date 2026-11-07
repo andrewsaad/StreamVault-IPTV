@@ -71,14 +71,15 @@ internal object HomeLiveMatchSelector {
 
     private val order = compareByDescending<Pair<HomeMatchCandidate, Boolean>> { it.first.isBein }
         .thenByDescending { it.second }
-        .thenBy { it.first.startTimeMs }
         .thenBy { if (it.first.beinNumber != null) 0 else 1 }
+        .thenBy { it.first.startTimeMs }
         .thenBy { it.first.channel.number }
         .thenBy { it.first.channel.id }
 
     /**
      * Matches live at [nowMs] (start <= now < end) or starting within 30 minutes (start <= now+30m),
-     * beIN channels first, then live before upcoming, earliest first. A match carried by several
+     * beIN channels first, then live before upcoming, Arabic beIN feeds before regional ones,
+     * earliest first. A match carried by several
      * channels (HD/FHD/backup feeds) is shown once, on the best-ranked channel.
      */
     fun select(candidates: List<HomeMatchCandidate>, nowMs: Long, limit: Int): List<HomeMatchCandidate> {
