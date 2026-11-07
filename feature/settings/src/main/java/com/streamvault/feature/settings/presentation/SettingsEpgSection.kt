@@ -39,12 +39,15 @@ import androidx.tv.material3.Text
 import androidx.compose.foundation.lazy.items
 import com.streamvault.core.ui.design.FocusSpec
 import com.streamvault.core.ui.interaction.TvClickableSurface
+import com.streamvault.core.ui.theme.ErrorColor
 import com.streamvault.core.ui.theme.OnSurfaceDim
 import com.streamvault.core.ui.theme.OnSurface
 import com.streamvault.core.ui.theme.Primary
 import com.streamvault.core.ui.theme.SurfaceElevated
 import com.streamvault.core.ui.theme.SurfaceHighlight
+import com.streamvault.domain.model.AppTimeFormat
 import com.streamvault.domain.model.ChannelLogoSourcePolicy
+import com.streamvault.domain.model.EpgPresetCatalog
 import com.streamvault.domain.model.GuideSourcePolicy
 import com.streamvault.domain.model.ProviderType
 import com.streamvault.feature.settings.R
@@ -58,6 +61,14 @@ fun LazyListScope.epgSourcesSection(
 ) {
     val epgSources = uiState.epgSources
     val providers = uiState.providers
+
+    epgPresetsSection(
+        uiState = uiState,
+        viewModel = viewModel,
+        // The presets now lead the page, so they take the entry focus unless a search
+        // result points at the add-source card.
+        firstFocusModifier = if (targetItemId == "guide.source.add") Modifier else firstFocusModifier,
+    )
 
     item {
         Text(
@@ -79,7 +90,7 @@ fun LazyListScope.epgSourcesSection(
             viewModel = viewModel,
             firstFocusModifier = if (targetItemId == "guide.source.add") {
                 targetFocusModifier
-            } else firstFocusModifier,
+            } else Modifier,
         )
     }
 
@@ -221,6 +232,217 @@ fun LazyListScope.epgSourcesSection(
             )
         }
     }
+}
+
+private fun LazyListScope.epgPresetsSection(
+    uiState: SettingsUiState,
+    viewModel: SettingsViewModel,
+    firstFocusModifier: Modifier,
+) {
+    val presets = uiState.epgPresets
+    item(key = "epg-presets-header") {
+        Text(
+            text = stringResource(R.string.settings_epg_presets_title),
+            style = MaterialTheme.typography.titleMedium,
+            color = Primary,
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
+        Text(
+            text = stringResource(R.string.settings_epg_presets_description),
+            style = MaterialTheme.typography.bodySmall,
+            color = OnSurfaceDim,
+            modifier = Modifier.padding(bottom = 12.dp)
+        )
+    }
+    items(presets, key = { preset -> "epg-preset-${preset.presetId}" }) { preset ->
+        EpgPresetCard(
+            preset = preset,
+            appTimeFormat = uiState.appTimeFormat,
+            onToggle = { enabled -> viewModel.toggleEpgPreset(preset.presetId, enabled) },
+            onRefreshNow = { viewModel.refreshEpgPresetNow(preset.presetId) },
+            onUpdateAddress = { source, url, onSuccess, onError ->
+                val sourceId = source.sourceId
+                if (sourceId == null) {
+                    onError()
+                } else {
+                    viewModel.updateEpgPresetAddress(preset.presetId, source.key, sourceId, url, onSuccess, onError)
+                }
+            },
+            switchModifier = if (preset.presetId == presets.firstOrNull()?.presetId) firstFocusModifier else Modifier,
+        )
+    }
+    item(key = "epg-presets-terms") {
+        Text(
+            text = stringResource(R.string.epg_preset_terms_note),
+            style = MaterialTheme.typography.bodySmall,
+            color = OnSurfaceDim,
+            modifier = Modifier.padding(top = 4.dp, bottom = 24.dp)
+        )
+    }
+}
+
+@Composable
+private fun EpgPresetCard(
+    preset: EpgPresetUiModel,
+    appTimeFormat: AppTimeFormat,
+    onToggle: (Boolean) -> Unit,
+    onRefreshNow: () -> Unit,
+    onUpdateAddress: (EpgPresetSourceUiModel, String, () -> Unit, () -> Unit) -> Unit,
+    switchModifier: Modifier = Modifier,
+) {
+    var editingAddress by remember(preset.presetId) { mutableStateOf(false) }
+    val editableSources = preset.sources.filter { it.sourceId != null }
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 12.dp)
+            .settingsDetailPanel()
+            .padding(vertical = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        SwitchSettingsRow(
+            label = stringResource(epgPresetNameRes(preset.presetId)),
+            value = stringResource(epgPresetCoverageRes(preset.presetId)),
+            checked = preset.enabled,
+            onCheckedChange = onToggle,
+            modifier = switchModifier,
+        )
+        val status = preset.statusLine
+        epgPresetStatusText(status, appTimeFormat)?.let { statusText ->
+            Text(
+                text = statusText,
+                style = MaterialTheme.typography.bodySmall,
+                color = if (status is EpgPresetStatusLine.Failed) ErrorColor else OnSurfaceDim,
+                modifier = Modifier.padding(horizontal = 16.dp)
+            )
+        }
+        if (preset.enabled) {
+            Row(
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                EpgPresetActionButton(
+                    label = stringResource(R.string.epg_preset_refresh_now),
+                    enabled = !preset.refreshing,
+                    onClick = onRefreshNow,
+                )
+                EpgPresetActionButton(
+                    label = stringResource(R.string.epg_preset_edit_address),
+                    enabled = editableSources.isNotEmpty(),
+                    selected = editingAddress,
+                    onClick = { editingAddress = !editingAddress },
+                )
+            }
+            if (editingAddress) {
+                editableSources.forEach { source ->
+                    EpgPresetAddressEditor(
+                        source = source,
+                        onSave = { url, onSuccess, onError -> onUpdateAddress(source, url, onSuccess, onError) },
+                        onDone = { editingAddress = false },
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun EpgPresetAddressEditor(
+    source: EpgPresetSourceUiModel,
+    onSave: (String, () -> Unit, () -> Unit) -> Unit,
+    onDone: () -> Unit,
+) {
+    var input by remember(source.sourceId, source.url) { mutableStateOf(source.url) }
+    var saving by remember(source.sourceId) { mutableStateOf(false) }
+    Column(
+        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        EpgSourceTextField(
+            value = input,
+            onValueChange = { input = it },
+            placeholder = stringResource(R.string.settings_epg_source_url_hint)
+        )
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            EpgPresetActionButton(
+                label = stringResource(if (saving) R.string.settings_epg_timezone_saving else R.string.settings_save),
+                enabled = !saving && input.isNotBlank(),
+                onClick = {
+                    saving = true
+                    onSave(
+                        input,
+                        {
+                            saving = false
+                            onDone()
+                        },
+                        { saving = false }
+                    )
+                },
+            )
+            EpgPresetActionButton(
+                label = stringResource(R.string.settings_cancel),
+                enabled = !saving,
+                onClick = onDone,
+            )
+        }
+    }
+}
+
+@Composable
+private fun EpgPresetActionButton(
+    label: String,
+    enabled: Boolean,
+    onClick: () -> Unit,
+    selected: Boolean = false,
+) {
+    val shape = RoundedCornerShape(8.dp)
+    TvClickableSurface(
+        onClick = onClick,
+        enabled = enabled,
+        shape = ClickableSurfaceDefaults.shape(shape),
+        colors = ClickableSurfaceDefaults.colors(
+            containerColor = if (selected) Primary.copy(alpha = 0.2f) else SurfaceElevated,
+            focusedContainerColor = if (selected) Primary.copy(alpha = 0.4f) else SurfaceHighlight
+        ),
+        border = epgActionBorder(shape, enabled),
+        scale = ClickableSurfaceDefaults.scale(focusedScale = 1f)
+    ) {
+        Text(
+            text = label,
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+            style = MaterialTheme.typography.labelSmall,
+            color = if (enabled) OnSurface else OnSurfaceDim
+        )
+    }
+}
+
+@Composable
+private fun epgPresetStatusText(status: EpgPresetStatusLine, appTimeFormat: AppTimeFormat): String? {
+    val dateTimeFormat = remember(appTimeFormat) { appTimeFormat.createSettingsDateTimeFormat() }
+    return when (status) {
+        EpgPresetStatusLine.Off -> stringResource(R.string.epg_preset_status_off)
+        EpgPresetStatusLine.Pending -> null
+        EpgPresetStatusLine.Refreshing -> stringResource(R.string.epg_preset_status_refreshing)
+        is EpgPresetStatusLine.Updated -> stringResource(
+            R.string.epg_preset_status_updated,
+            dateTimeFormat.format(java.util.Date(status.at))
+        )
+        is EpgPresetStatusLine.Failed -> stringResource(R.string.epg_preset_status_error, status.message)
+    }
+}
+
+private fun epgPresetNameRes(presetId: String): Int = when (presetId) {
+    EpgPresetCatalog.BEIN -> R.string.epg_preset_bein_name
+    EpgPresetCatalog.EGYPT -> R.string.epg_preset_egypt_name
+    EpgPresetCatalog.US -> R.string.epg_preset_us_name
+    else -> R.string.settings_epg_presets_title
+}
+
+private fun epgPresetCoverageRes(presetId: String): Int = when (presetId) {
+    EpgPresetCatalog.BEIN -> R.string.epg_preset_bein_coverage
+    EpgPresetCatalog.EGYPT -> R.string.epg_preset_egypt_coverage
+    EpgPresetCatalog.US -> R.string.epg_preset_us_coverage
+    else -> R.string.settings_epg_presets_description
 }
 
 @Composable

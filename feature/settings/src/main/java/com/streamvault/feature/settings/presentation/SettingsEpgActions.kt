@@ -2,22 +2,147 @@ package com.streamvault.feature.settings.presentation
 
 import com.streamvault.domain.model.Result
 import com.streamvault.domain.model.XmltvTimezonePolicy
+import com.streamvault.domain.repository.EpgPresetManager
 import com.streamvault.domain.repository.EpgSourceRepository
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.util.concurrent.ConcurrentHashMap
 
 class SettingsEpgActions(
     private val epgSourceRepository: EpgSourceRepository,
+    private val epgPresetManager: EpgPresetManager,
     private val uiState: MutableStateFlow<SettingsUiState>
 ) {
     // Tracks the active assignment-collector job per provider so recompositions
     // cancel the old coroutine rather than leaking it in viewModelScope.
     private val assignmentJobs = ConcurrentHashMap<Long, Job>()
+
+    // Preset file -> guide source id, remembered so a preset stays linked to its source after
+    // the user changes the address (the built-in address no longer matches then).
+    private val knownPresetSourceIds = ConcurrentHashMap<String, Long>()
+    private var presetObserverJob: Job? = null
+
+    // ── Guide presets ────────────────────────────────────────────────
+
+    /** Publishes preset status into [uiState]; reconciles preset sources once when started. */
+    fun observeEpgPresets(scope: CoroutineScope): Job {
+        presetObserverJob?.cancel()
+        return scope.launch {
+            launch {
+                try {
+                    epgPresetManager.reconcile()
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (error: Exception) {
+                    showUnexpectedPresetError(error)
+                }
+            }
+            try {
+                combine(
+                    epgPresetManager.observe(),
+                    uiState.map { it.epgSources }.distinctUntilChanged()
+                ) { statuses, sources ->
+                    mapEpgPresetUiModels(statuses, sources, knownPresetSourceIds.toMap())
+                }.collect { presets ->
+                    presets.forEach { preset ->
+                        preset.sources.forEach { source ->
+                            source.sourceId?.let { knownPresetSourceIds[epgPresetSourceKey(preset.presetId, source.key)] = it }
+                        }
+                    }
+                    uiState.update { it.copy(epgPresets = presets) }
+                }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (error: Exception) {
+                showUnexpectedPresetError(error)
+            }
+        }.also { presetObserverJob = it }
+    }
+
+    fun toggleEpgPreset(scope: CoroutineScope, presetId: String, enabled: Boolean) {
+        scope.launch {
+            try {
+                val result = epgPresetManager.setEnabled(presetId, enabled)
+                if (result is Result.Error) {
+                    uiState.update { it.copy(userMessage = result.message) }
+                }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (error: Exception) {
+                showUnexpectedPresetError(error)
+            }
+        }
+    }
+
+    fun refreshEpgPresetNow(scope: CoroutineScope, presetId: String) {
+        scope.launch {
+            try {
+                // Progress and the outcome show in the preset's own status line.
+                val result = epgPresetManager.refreshNow(presetId)
+                if (result is Result.Error) {
+                    uiState.update { it.copy(userMessage = result.message) }
+                }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (error: Exception) {
+                showUnexpectedPresetError(error)
+            }
+        }
+    }
+
+    /**
+     * Changes the address of a preset file through the ordinary guide source update, so the
+     * source keeps its id (and with it the preset link and the refresh limit). FR-006, FR-023.
+     */
+    fun updateEpgPresetAddress(
+        scope: CoroutineScope,
+        presetId: String,
+        sourceKey: String,
+        sourceId: Long,
+        url: String,
+        onSuccess: () -> Unit = {},
+        onError: () -> Unit = {}
+    ) {
+        val trimmedUrl = url.trim()
+        if (trimmedUrl.isEmpty()) {
+            onError()
+            return
+        }
+        scope.launch {
+            try {
+                val source = epgSourceRepository.getSourceById(sourceId)
+                if (source == null) {
+                    onError()
+                    return@launch
+                }
+                knownPresetSourceIds[epgPresetSourceKey(presetId, sourceKey)] = sourceId
+                val result = epgSourceRepository.updateSource(source.copy(url = trimmedUrl))
+                if (result is Result.Error) {
+                    uiState.update { it.copy(userMessage = result.message) }
+                    onError()
+                } else {
+                    onSuccess()
+                }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (error: Exception) {
+                showUnexpectedPresetError(error)
+                onError()
+            }
+        }
+    }
+
+    private fun showUnexpectedPresetError(error: Exception) {
+        val message = error.message?.takeIf(String::isNotBlank) ?: return
+        uiState.update { it.copy(userMessage = message) }
+    }
 
     fun loadEpgAssignments(scope: CoroutineScope, providerId: Long) {
         assignmentJobs[providerId]?.cancel()

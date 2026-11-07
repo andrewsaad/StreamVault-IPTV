@@ -1079,4 +1079,20 @@
     <string name="settings_favorites_sync_restore_title">Restore favorites on all TVs?</string>
     <string name="settings_favorites_sync_restore_message">This will also update favorites on your other TVs.</string>
     <string name="settings_favorites_sync_restore_confirm">Restore</string>
+    <!-- Guide presets -->
+    <string name="settings_epg_presets_title">Guide presets</string>
+    <string name="settings_epg_presets_description">Ready-made guide sources you can turn on for this device. Nothing downloads until a preset is on.</string>
+    <string name="epg_preset_bein_name">beIN Sports (Arabic)</string>
+    <string name="epg_preset_bein_coverage">beIN Sports channels and Arabic networks</string>
+    <string name="epg_preset_egypt_name">Egypt</string>
+    <string name="epg_preset_egypt_coverage">Al Ahly and Egyptian sports channels</string>
+    <string name="epg_preset_us_name">US sports and networks</string>
+    <string name="epg_preset_us_coverage">NFL, MLS, MLB and national US channels</string>
+    <string name="epg_preset_status_off">Off</string>
+    <string name="epg_preset_status_updated">Updated %1$s</string>
+    <string name="epg_preset_status_refreshing">Updating…</string>
+    <string name="epg_preset_status_error">Update failed: %1$s</string>
+    <string name="epg_preset_refresh_now">Update now</string>
+    <string name="epg_preset_edit_address">Change address</string>
+    <string name="epg_preset_terms_note">Guide data comes from a public community source with no stated terms of use. Updates are limited to twice a day.</string>
 </resources>
