@@ -1,0 +1,13 @@
+# Egypt preset fixtures: provider name <TAB> expected AE1 guide id (see guide_channel_ids.txt).
+# "-" means no match is expected. ON Sport was renamed; AE1 (checked 2026-11-06) lists it as On Time Sports.
+Al Ahly [HD]	Al.Ahly.TV.HD.ae
+Al Ahly [SD]	Al.Ahly.TV.HD.ae
+Al Ahly TV FHD	Al.Ahly.TV.HD.ae
+EG: Al Ahly HD	Al.Ahly.TV.HD.ae
+ON Time Sports [HD]	On.Time.Sports.HD.ae
+ON Time Sports [SD]	On.Time.Sports.HD.ae
+ON Time Sport 2 [HD]	On.Time.Sport.2.HD.ae
+EG | ON E HD	On.E.HD.ae
+Nile Sport [HD]	Nile.Sport.ae
+MBC Masr 2 (Backup)	MBC.Masr.2.HD.ae
+ON Sport 1 [HD]	-

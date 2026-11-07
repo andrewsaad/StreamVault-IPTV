@@ -13,6 +13,9 @@ Al.Ahly.TV.HD.ae	Al Ahly TV HD
 On.Time.Sports.HD.ae	On Time Sports HD
 On.Time.Sport.2.HD.ae	On Time Sport 2 HD
 MBC.Masr.HD.ae	MBC Masr HD
+MBC.Masr.2.HD.ae	MBC Masr 2 HD
+On.E.HD.ae	On E HD
+On.Drama.ae	On Drama
 Nile.Sport.ae	Nile Sport
 # US2
 Fox.HD.us2	Fox HD
