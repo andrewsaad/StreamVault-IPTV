@@ -28,7 +28,7 @@ object EpgNameNormalizer {
     // "H.265" / "H.264" -> "h265" / "h264" so the codec is one quality token.
     private val codecDotRegex = Regex("\\bh\\.(26[45])\\b")
     // Splits glued digits: "1HD" -> "1 HD", "1Xtra" -> "1 Xtra".
-    private val glueSplitRegex = Regex("(\\d)(?=(?:fhd|uhd|hd|sd|xtra)\\b)")
+    private val glueSplitRegex = Regex("(\\d)(?=(?:fhd|uhd|hd|sd|xtra)(?![a-z0-9]))")
     // "1080p", "720", "hd720": resolution labels are quality words.
     private val resolutionRegex = Regex("(?:f?hd)?(?:480|576|720|1080|1440|2160)p?")
 
@@ -36,7 +36,9 @@ object EpgNameNormalizer {
         "hd", "fhd", "uhd", "4k", "8k", "hevc", "h265", "h264", "sd", "q", "backup", "vip", "raw", "low", "vega",
     )
 
-    private val numberWords = listOf("one", "two", "three", "four", "five", "six", "seven", "eight")
+    private val orderedTags = setOf("en", "fr", "xtra")
+
+    private val numberWords =listOf("one", "two", "three", "four", "five", "six", "seven", "eight")
         .withIndex().associate { (i, w) -> w to (i + 1).toString() }
 
     /**
@@ -115,8 +117,21 @@ object EpgNameNormalizer {
             // Alkass: number words equal digits, the beIN brand and the language tag are noise.
             tokens = tokens.filter { it != "bein" && it != "en" }.map { numberWords[it] ?: it }
         }
+        if ("bein" in tokens && "alkass" !in tokens) tokens = tagBeforeNumber(tokens)
         if (tokens.size > 1 && tokens.last() == "tv") tokens = tokens.dropLast(1)
         return canonicalAliases[tokens.joinToString("")]?.let { listOf(it) } ?: tokens
+    }
+
+    /**
+     * beIN only: providers write "Sport 1 EN" / "1Xtra", the guide writes "EN 1" / "XTRA 1".
+     * A trailing "<number> <tag>" pair is rewritten to "<tag> <number>" so both reach one key.
+     */
+    private fun tagBeforeNumber(tokens: List<String>): List<String> {
+        if (tokens.size < 2) return tokens
+        val tag = tokens.last()
+        val number = tokens[tokens.size - 2]
+        if (tag !in orderedTags || number.isEmpty() || !number.all(Char::isDigit)) return tokens
+        return tokens.dropLast(2) + tag + number
     }
 
     private fun isQuality(token: String) = token in qualityWords || resolutionRegex.matches(token)

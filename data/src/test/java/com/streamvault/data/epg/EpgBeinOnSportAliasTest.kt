@@ -22,7 +22,7 @@ class EpgBeinOnSportAliasTest {
         val xtra = key("beIN_SPORTS_1Xtra_1080p")
         assertThat(key("beIN_SPORTS_1Xtra_HD720")).isEqualTo(xtra)
         assertThat(key("beIN_SPORTS_1Xtra_Low")).isEqualTo(xtra)
-        assertThat(xtra).isEqualTo("beinsport1xtra")
+        assertThat(xtra).isEqualTo("beinsportxtra1")
         assertThat(xtra).isNotEqualTo(key("beIN SPORTS 1"))
     }
 
