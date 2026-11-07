@@ -102,6 +102,9 @@ class EpgPresetManagerImpl internal constructor(
             val state = store.current()
             val enabled = EpgPresetCatalog.all.filter { it.id in state.enabledPresetIds }
             val usedKeys = enabled.flatMapTo(HashSet()) { preset -> preset.sources.map { it.key } }
+            // Left by a process death mid-enable or a key gone from the catalog. Released before the
+            // rows below are ensured, so a key renamed at the same address cannot lose the row it just took.
+            state.sources.filterKeys { it !in usedKeys }.values.forEach { release(it) }
             val fresh = mutableListOf<Long>()
             var records = state.sources.filterKeys { it in usedKeys }
             enabled.flatMap { it.sources }.distinctBy { it.key }.forEach { source ->
@@ -153,16 +156,18 @@ class EpgPresetManagerImpl internal constructor(
             .filter { it.id in remaining }
             .flatMapTo(HashSet()) { other -> other.sources.map { it.key } }
         val released = preset.sources.map { it.key }.filterNot { it in stillUsed }
-        for (key in released) {
-            val record = state.sources[key] ?: continue
-            if (record.owned) {
-                sources.deleteSource(record.sourceId)
-            } else {
-                record.assignedProviderIds.forEach { sources.unassignSourceFromProvider(it, record.sourceId) }
-            }
-        }
+        released.forEach { key -> state.sources[key]?.let { release(it) } }
         store.update { it.copy(enabledPresetIds = remaining, sources = it.sources - released.toSet()) }
         Result.success(Unit)
+    }
+
+    /** Deletes a row the preset created; a hand-added row keeps everything except the preset's own assignments. */
+    private suspend fun release(record: EpgPresetSourceRecord) {
+        if (record.owned) {
+            sources.deleteSource(record.sourceId)
+        } else {
+            record.assignedProviderIds.forEach { sources.unassignSourceFromProvider(it, record.sourceId) }
+        }
     }
 
     /** The row for [source]: the remembered one if it still exists, else a hand-added row with the address, else a new one. */

@@ -162,6 +162,63 @@ class EpgPresetManagerImplTest {
         assertThat(store.current().sources.getValue(ae1.key).sourceId).isEqualTo(recreated)
     }
 
+    /** The state a process death leaves behind: the row was saved and assigned, the preset never marked on. */
+    private suspend fun leavePresetRowBehind() {
+        manager.setEnabled(EpgPresetCatalog.EGYPT, true)
+        store.update { it.copy(enabledPresetIds = emptySet()) }
+    }
+
+    @Test
+    fun `reconcile_deletesAnOwnedRowLeftBehindByAnInterruptedEnable`() = runTest {
+        leavePresetRowBehind()
+
+        manager.reconcile()
+
+        assertThat(repo.rows.value).isEmpty()
+        assertThat(repo.assignments.values.flatMap { it.keys }).isEmpty()
+        assertThat(store.current().sources).isEmpty()
+    }
+
+    @Test
+    fun `reconcile_deletesTheOwnedRowOfACatalogKeyNoLongerInUse_andKeepsTheEnabledPreset`() = runTest {
+        manager.setEnabled(EpgPresetCatalog.EGYPT, true)
+        val removed = repo.addSource("epgshare01 OLD", "https://example.com/old.xml.gz").getOrNull()!!
+        repo.assignSourceToProvider(1L, removed.id, priority = 9)
+        store.update {
+            it.copy(sources = it.sources + ("OLD" to EpgPresetSourceRecord(removed.id, true, setOf(1L))))
+        }
+
+        manager.reconcile()
+
+        assertThat(repo.rows.value.map { it.url }).containsExactly(ae1.url)
+        assertThat(repo.assignments[1L]!!.keys).containsExactly(sourceIdFor(ae1.url))
+        assertThat(store.current().sources.keys).containsExactly(ae1.key)
+    }
+
+    @Test
+    fun `reconcile_keepsAHandAddedRowLeftBehind_andUndoesOnlyThePresetAssignments`() = runTest {
+        val handAdded = repo.addSource("Mine", ae1.url).getOrNull()!!
+        repo.assignSourceToProvider(1L, handAdded.id, priority = 0)
+        leavePresetRowBehind()
+
+        manager.reconcile()
+
+        assertThat(repo.rows.value.map { it.id }).containsExactly(handAdded.id)
+        assertThat(repo.assignments[1L]!!.keys).containsExactly(handAdded.id)
+        assertThat(repo.assignments[2L].orEmpty()).isEmpty()
+        assertThat(store.current().sources).isEmpty()
+    }
+
+    @Test
+    fun `enableAfterReconcileCleanup_ownsTheNewRow`() = runTest {
+        leavePresetRowBehind()
+        manager.reconcile()
+
+        manager.setEnabled(EpgPresetCatalog.EGYPT, true)
+
+        assertThat(store.current().sources.getValue(ae1.key).owned).isTrue()
+    }
+
     @Test
     fun `reconcile_assignsEnabledPresetsToAProviderAddedLater_withoutDownloadingAgain`() = runTest {
         manager.setEnabled(EpgPresetCatalog.EGYPT, true)
