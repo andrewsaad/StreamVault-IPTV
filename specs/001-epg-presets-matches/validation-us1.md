@@ -1,5 +1,7 @@
 # US1 validation: beIN preset (T024)
 
+**Correction (2026-11-07):** the SC-001 pass below does not show the preset works alone. This device also had Andrew's hand-added `beIN Qatar (open-epg)` source, which is not in the catalog, and the mapped channels used its `.qa` guide ids. The catalog's beIN preset alone maps 20 of 188 sports channels. See `validation-precision.md`.
+
 Device: Google TV Streamer (game room), `com.streamvault.app.debug`, 2026-11-07. Evidence: screenshots of Live TV (Favorites) and the TV Guide, plus a read-only copy of the app database pulled at 06:44 local time (epg_programmes rows with start <= now < end).
 
 ## Named channels (database, programme covering now)
