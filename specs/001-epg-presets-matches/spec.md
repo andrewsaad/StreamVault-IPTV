@@ -77,7 +77,7 @@ Acceptance scenarios:
 
 ## 4. Success criteria
 
-- SC-001: With the beIN preset on, at least 80% of the provider's beIN channels (242 in the tested provider) show a current program within 2 minutes of turning it on. This is a target; the match rate for beIN names was not measured before the spec.
+- SC-001: With the beIN preset on, at least 80% of the provider's beIN sports channels (188 in the tested provider: beIN-named channels whose name contains "sport", "xtra" or "alkass") show a current program within 2 minutes of turning it on. Non-sport beIN channels (movies, series, kids, drama, 54 in the tested provider) are not counted because the guide files do not list them. This is a target; the match rate for beIN names was not measured before the spec.
 - SC-002: With the US preset on, at least 50% of the channels in the provider's USA category (147 channels) show a current program. The estimate comes from a 12-channel sample and could be off by 15 to 20 points.
 - SC-003: Every channel that is matched to a guide entry before the feature is switched on is matched to the same entry afterwards (zero changed matches).
 - SC-004: Turning a preset on takes no more than 3 actions from the main screen.
@@ -138,4 +138,5 @@ Acceptance scenarios:
 - Q: When Andrew turns a guide preset on for one device, should his other devices get it automatically? → A: No, each device opts in on its own. Reflected in the P2 story (now "Same presets available on every device"), its scenarios, and FR-026.
 - Q: If MLS, NFL and MLB fixtures are not available to the Sports tab today, should adding them be in scope? → A: In scope only if the existing sports data source already offers them; otherwise report the gap and do not add a new source. Reflected in FR-017, FR-017a, the P3 scenarios and Out of scope.
 - Q: If a preset's guide file moves or is renamed, how should the corrected address reach Andrew's devices? → A: Only through a new app build, plus the user can edit the address by hand on the affected device. Reflected in FR-023 and FR-023a.
+- Q (2026-11-07, after the first device run): SC-001 measured 164 of 242 beIN channels (67.8%) because 54 non-sport beIN channels (Box Office, Series, Movies, Kids) are not in any guide file, and no alias can fix that. Should SC-001 count sports channels only? → A: Yes, Andrew chose sports channels only. SC-001 now counts beIN-named channels containing "sport", "xtra" or "alkass" (188). The criterion was changed after the first result, so the original 242-channel figure is kept in validation-us1.md.
 - Q (design review): should a "+1" time-shift label be ignored or kept when matching names? → A: kept, because a "+1" channel matched to the base channel would show times an hour off. Reflected in FR-010 and FR-010a; plan.md section 5 already assumed this.

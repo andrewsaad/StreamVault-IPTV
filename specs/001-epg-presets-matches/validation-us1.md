@@ -34,3 +34,18 @@ Not measured in this session (presets were already on). NOT RUN.
 ## Verdict
 
 Named channels and sample: PASS. SC-001 as written: FAIL (67.8%). SC-004: NOT RUN.
+
+## SC-001 re-scored under the revised definition (2026-11-07)
+
+Andrew chose to count sports channels only (spec.md SC-001 and Clarifications). Same database snapshot as above.
+
+| Group | Channels | With a programme now | Share |
+|---|---|---|---|
+| beIN sports (name has sport or xtra, no Alkass) | 170 | 164 | 96.5% |
+| Alkass feeds | 18 | 0 | 0.0% (feeds hold no programme covering this hour) |
+| **SC-001 group (sport + xtra + alkass)** | **188** | **164** | **87.2%** |
+| Non-sport beIN names (not counted) | 54 | 0 | not in any guide file |
+
+Sports channels without a programme now: BeIN Sport NBA HD, beIN Sports Haber [TR], [FR]_BeIN_SPORT_Max7 to Max10, and the 18 Alkass feeds.
+
+Revised verdict: SC-001 PASS (87.2% against 80%) under the revised definition; it still FAILS (67.8%) under the original wording. SC-004 is still NOT RUN.
