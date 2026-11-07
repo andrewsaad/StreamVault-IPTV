@@ -8,8 +8,10 @@ import com.streamvault.data.local.dao.EpgProgrammeDao
 import com.streamvault.data.local.dao.ProgramDao
 import com.streamvault.data.local.dao.ProviderSnapshotDao
 import com.streamvault.data.local.dao.ProviderEpgSourceDao
+import com.streamvault.data.local.entity.ChannelEntity
 import com.streamvault.data.local.entity.ChannelEpgMappingEntity
 import com.streamvault.data.local.entity.EpgChannelEntity
+import com.streamvault.data.local.entity.ProviderEpgSourceEntity
 import com.streamvault.data.mapper.toDomain
 import com.streamvault.data.mapper.toDomainProgram
 import com.streamvault.domain.model.EpgMatchType
@@ -27,12 +29,16 @@ import javax.inject.Singleton
  *
  * Resolution order per channel:
  * 1. Manual override (future)
- * 2. External source with exact ID match (highest-priority source first)
- * 3. External source with normalized name match (highest-priority source first)
- * 3b. External source with loose name match: tags, prefixes and quality words ignored
- *     (highest-priority source first; deterministic tie-break inside a source)
+ * 2. Hand-added source with exact ID match (highest-priority source first)
+ * 3. Hand-added source with normalized name match (highest-priority source first)
  * 4. Provider-native EPG if available
- * 5. No EPG
+ * 5. Hand-added source with loose name match: tags, prefixes and quality words ignored
+ *    (highest-priority source first; deterministic tie-break inside a source)
+ * 6. Preset-owned source: exact ID, then normalized name, then loose name
+ * 7. No EPG
+ *
+ * Preset sources only fill channels nothing else resolves, so turning a preset on never
+ * changes a match that already works (FR-011, FR-022, SC-003).
  *
  * Results are persisted in `channel_epg_mappings` and used by the guide grid.
  */
@@ -44,7 +50,8 @@ class EpgResolutionEngine @Inject constructor(
     private val epgChannelDao: EpgChannelDao,
     private val epgProgrammeDao: EpgProgrammeDao,
     private val programDao: ProgramDao,
-    private val providerSnapshotDao: ProviderSnapshotDao
+    private val providerSnapshotDao: ProviderSnapshotDao,
+    private val presetSources: EpgPresetSourceLookup = EpgPresetSourceLookup.None
 ) {
     companion object {
         private const val TAG = "EpgResolutionEngine"
@@ -178,6 +185,97 @@ class EpgResolutionEngine @Inject constructor(
         var manualMatches = 0
         var unresolvedCount = 0
 
+        val presetOwnedIds = presetSources.presetOwnedSourceIds()
+        val (presetAssignments, handAddedAssignments) = enabledAssignments.partition { it.epgSourceId in presetOwnedIds }
+
+        fun exactIdMatch(
+            assignments: List<ProviderEpgSourceEntity>,
+            channel: ChannelEntity,
+            channelEpgId: String?,
+        ): ChannelEpgMappingEntity? {
+            if (channelEpgId == null) return null
+            for (assignment in assignments) {
+                val sid = assignment.epgSourceId
+                val index = exactIdIndex[sid] ?: continue
+                if (channelEpgId in index) {
+                    exactIdMatches++
+                    return ChannelEpgMappingEntity(
+                        providerChannelId = channel.id,
+                        providerId = providerId,
+                        sourceType = EpgSourceType.EXTERNAL.name,
+                        epgSourceId = sid,
+                        xmltvChannelId = channelEpgId,
+                        matchType = EpgMatchType.EXACT_ID.name,
+                        confidence = 1.0f,
+                        matchedAt = now,
+                        failedAttempts = 0,
+                        source = "tvg_id",
+                        updatedAt = now
+                    )
+                }
+            }
+            return null
+        }
+
+        fun exactNameMatch(
+            assignments: List<ProviderEpgSourceEntity>,
+            channel: ChannelEntity,
+            channelNormalizedName: String,
+        ): ChannelEpgMappingEntity? {
+            if (channelNormalizedName.isEmpty()) return null
+            for (assignment in assignments) {
+                val sid = assignment.epgSourceId
+                val nIndex = nameIndex[sid] ?: continue
+                val matchedXmltvId = nIndex[channelNormalizedName]
+                if (matchedXmltvId != null) {
+                    normalizedNameMatches++
+                    return ChannelEpgMappingEntity(
+                        providerChannelId = channel.id,
+                        providerId = providerId,
+                        sourceType = EpgSourceType.EXTERNAL.name,
+                        epgSourceId = sid,
+                        xmltvChannelId = matchedXmltvId,
+                        matchType = EpgMatchType.NORMALIZED_NAME.name,
+                        confidence = 0.7f,
+                        matchedAt = now,
+                        failedAttempts = 0,
+                        source = "name_match",
+                        updatedAt = now
+                    )
+                }
+            }
+            return null
+        }
+
+        fun looseNameMatch(
+            assignments: List<ProviderEpgSourceEntity>,
+            channel: ChannelEntity,
+            channelLooseKey: String,
+        ): ChannelEpgMappingEntity? {
+            if (channelLooseKey.isEmpty()) return null
+            for (assignment in assignments) {
+                val sid = assignment.epgSourceId
+                if (sid !in epgChannelsBySource) continue
+                val candidates = looseIndexFor(sid)[channelLooseKey] ?: continue
+                val picked = pickLooseCandidate(channel.name, candidates) ?: continue
+                looseNameMatches++
+                return ChannelEpgMappingEntity(
+                    providerChannelId = channel.id,
+                    providerId = providerId,
+                    sourceType = EpgSourceType.EXTERNAL.name,
+                    epgSourceId = sid,
+                    xmltvChannelId = picked.xmltvChannelId,
+                    matchType = EpgMatchType.NORMALIZED_NAME_LOOSE.name,
+                    confidence = LOOSE_NAME_CONFIDENCE,
+                    matchedAt = now,
+                    failedAttempts = 0,
+                    source = "loose_name_match",
+                    updatedAt = now
+                )
+            }
+            return null
+        }
+
         val mappings = channels.map { channel ->
             val existing = existingMappingsByChannel[channel.id]
             // 1. Check for manual override
@@ -194,78 +292,12 @@ class EpgResolutionEngine @Inject constructor(
 
             val channelEpgId = channel.epgChannelId?.trim()?.takeIf(String::isNotEmpty)
 
-            // 2. Try external sources in priority order — exact ID match
-            for (assignment in enabledAssignments) {
-                val sid = assignment.epgSourceId
-                val index = exactIdIndex[sid] ?: continue
-                if (channelEpgId != null && channelEpgId in index) {
-                    exactIdMatches++
-                    return@map ChannelEpgMappingEntity(
-                        providerChannelId = channel.id,
-                        providerId = providerId,
-                        sourceType = EpgSourceType.EXTERNAL.name,
-                        epgSourceId = sid,
-                        xmltvChannelId = channelEpgId,
-                        matchType = EpgMatchType.EXACT_ID.name,
-                        confidence = 1.0f,
-                        matchedAt = now,
-                        failedAttempts = 0,
-                        source = "tvg_id",
-                        updatedAt = now
-                    )
-                }
-            }
+            // 2. Hand-added sources in priority order — exact ID match
+            exactIdMatch(handAddedAssignments, channel, channelEpgId)?.let { return@map it }
 
-            // 3. Try external sources — normalized name match
+            // 3. Hand-added sources — normalized name match
             val channelNormalizedName = EpgNameNormalizer.normalize(channel.name)
-            if (channelNormalizedName.isNotEmpty()) {
-                for (assignment in enabledAssignments) {
-                    val sid = assignment.epgSourceId
-                    val nIndex = nameIndex[sid] ?: continue
-                    val matchedXmltvId = nIndex[channelNormalizedName]
-                    if (matchedXmltvId != null) {
-                        normalizedNameMatches++
-                        return@map ChannelEpgMappingEntity(
-                            providerChannelId = channel.id,
-                            providerId = providerId,
-                            sourceType = EpgSourceType.EXTERNAL.name,
-                            epgSourceId = sid,
-                            xmltvChannelId = matchedXmltvId,
-                            matchType = EpgMatchType.NORMALIZED_NAME.name,
-                            confidence = 0.7f,
-                            matchedAt = now,
-                            failedAttempts = 0,
-                            source = "name_match",
-                            updatedAt = now
-                        )
-                    }
-                }
-            }
-
-            // 3b. Loose name match, only after exact id and exact name failed in every source
-            val channelLooseKey = EpgNameNormalizer.normalizeLoose(channel.name)
-            if (channelLooseKey.isNotEmpty()) {
-                for (assignment in enabledAssignments) {
-                    val sid = assignment.epgSourceId
-                    if (sid !in epgChannelsBySource) continue
-                    val candidates = looseIndexFor(sid)[channelLooseKey] ?: continue
-                    val picked = pickLooseCandidate(channel.name, candidates) ?: continue
-                    looseNameMatches++
-                    return@map ChannelEpgMappingEntity(
-                        providerChannelId = channel.id,
-                        providerId = providerId,
-                        sourceType = EpgSourceType.EXTERNAL.name,
-                        epgSourceId = sid,
-                        xmltvChannelId = picked.xmltvChannelId,
-                        matchType = EpgMatchType.NORMALIZED_NAME_LOOSE.name,
-                        confidence = LOOSE_NAME_CONFIDENCE,
-                        matchedAt = now,
-                        failedAttempts = 0,
-                        source = "loose_name_match",
-                        updatedAt = now
-                    )
-                }
-            }
+            exactNameMatch(handAddedAssignments, channel, channelNormalizedName)?.let { return@map it }
 
             // 4. Fall back to provider-native EPG
             if (allowProviderNativeMappings && channelEpgId != null && channelEpgId in providerNativeChannelIds) {
@@ -285,7 +317,16 @@ class EpgResolutionEngine @Inject constructor(
                 )
             }
 
-            // 5. No EPG
+            // 5. Hand-added sources — loose name match, only after every exact step and provider-native failed
+            val channelLooseKey = EpgNameNormalizer.normalizeLoose(channel.name)
+            looseNameMatch(handAddedAssignments, channel, channelLooseKey)?.let { return@map it }
+
+            // 6. Preset-owned sources fill whatever is still unresolved
+            exactIdMatch(presetAssignments, channel, channelEpgId)?.let { return@map it }
+            exactNameMatch(presetAssignments, channel, channelNormalizedName)?.let { return@map it }
+            looseNameMatch(presetAssignments, channel, channelLooseKey)?.let { return@map it }
+
+            // 7. No EPG
             unresolvedCount++
             Log.v(TAG, "Unresolved: channel=${channel.name} (id=${channel.id}), " +
                 "epgId=${channelEpgId ?: "null"}, " +

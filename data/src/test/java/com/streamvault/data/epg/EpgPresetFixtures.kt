@@ -64,6 +64,8 @@ internal object EpgResolutionHarness {
         channels: List<ChannelEntity>,
         guideBySource: List<Pair<Long, List<EpgChannelEntity>>>,
         existing: List<ChannelEpgMappingEntity> = emptyList(),
+        presetSourceIds: Set<Long> = emptySet(),
+        providerNativeChannelIds: List<String> = emptyList(),
     ): Pair<EpgResolutionSummary, List<ChannelEpgMappingEntity>> {
         val channelDao: ChannelDao = mock()
         val mappingDao: ChannelEpgMappingDao = mock()
@@ -71,7 +73,7 @@ internal object EpgResolutionHarness {
         val epgChannelDao: EpgChannelDao = mock()
         val programDao: ProgramDao = mock()
         val snapshotDao: ProviderSnapshotDao = mock()
-        whenever(programDao.getChannelIdsWithPrograms(any(), any())).thenReturn(emptyList())
+        whenever(programDao.getChannelIdsWithPrograms(any(), any())).thenReturn(providerNativeChannelIds)
         whenever(snapshotDao.getConfig(any())).thenReturn(null)
         whenever(channelDao.getByProviderSync(PROVIDER_ID)).thenReturn(channels)
         whenever(mappingDao.getForProvider(PROVIDER_ID)).thenReturn(existing)
@@ -90,6 +92,7 @@ internal object EpgResolutionHarness {
             epgProgrammeDao = mock<EpgProgrammeDao>(),
             programDao = programDao,
             providerSnapshotDao = snapshotDao,
+            presetSources = { presetSourceIds },
         )
         val summary = engine.resolveForProvider(PROVIDER_ID)
         val captor = argumentCaptor<List<ChannelEpgMappingEntity>>()

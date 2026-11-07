@@ -101,7 +101,7 @@ Acceptance scenarios:
 - No preset covers a channel (Azerbaijan, Armenian, Iran, Kurdish and several others): the guide row is empty with no error (FR-018).
 - Device storage is almost full: the update fails visibly and the app keeps working.
 - Several devices update at the same time: each device's refresh limit applies on its own.
-- Empty state: no preset on means the guide behaves exactly as it does today.
+- Empty state: no preset on means no preset guide data is downloaded or shown. Hand-added guide sources also get the loose name match, but only for channels that exact matching and the provider's own guide leave unresolved.
 
 ## 6. Out of scope
 
@@ -139,4 +139,5 @@ Acceptance scenarios:
 - Q: If MLS, NFL and MLB fixtures are not available to the Sports tab today, should adding them be in scope? → A: In scope only if the existing sports data source already offers them; otherwise report the gap and do not add a new source. Reflected in FR-017, FR-017a, the P3 scenarios and Out of scope.
 - Q: If a preset's guide file moves or is renamed, how should the corrected address reach Andrew's devices? → A: Only through a new app build, plus the user can edit the address by hand on the affected device. Reflected in FR-023 and FR-023a.
 - Q (2026-11-07, after the first device run): SC-001 measured 164 of 242 beIN channels (67.8%) because 54 non-sport beIN channels (Box Office, Series, Movies, Kids) are not in any guide file, and no alias can fix that. Should SC-001 count sports channels only? → A: Yes, Andrew chose sports channels only. SC-001 now counts beIN-named channels containing "sport", "xtra" or "alkass" (188). The criterion was changed after the first result, so the original 242-channel figure is kept in validation-us1.md.
+- Q (2026-11-07, architecture review): the loose name match also runs for hand-added sources with no preset on, which contradicted the "Empty state" line. Enforce the line or keep the behavior? → A: Keep it, ranked after the provider's own guide, because the Fire TV's 160 loose matches rely on it. Empty state wording amended.
 - Q (design review): should a "+1" time-shift label be ignored or kept when matching names? → A: kept, because a "+1" channel matched to the base channel would show times an hour off. Reflected in FR-010 and FR-010a; plan.md section 5 already assumed this.

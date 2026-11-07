@@ -52,6 +52,16 @@ interface EpgSourceRefreshGate {
     }
 }
 
+/** Which guide source rows a preset created on this device, for code that must rank or skip them. */
+fun interface EpgPresetSourceLookup {
+    suspend fun presetOwnedSourceIds(): Set<Long>
+
+    /** No preset rows; the default when no preset store is wired in (tests). */
+    object None : EpgPresetSourceLookup {
+        override suspend fun presetOwnedSourceIds(): Set<Long> = emptySet()
+    }
+}
+
 /**
  * Per-device preset state in its own DataStore file, separate from the main preferences, so
  * it never travels with a backup or another device (FR-026). Encoded as tab-separated lines,
@@ -61,7 +71,7 @@ interface EpgSourceRefreshGate {
 class EpgPresetStateStore internal constructor(
     private val dataStore: DataStore<Preferences>,
     private val clock: () -> Long,
-) : EpgSourceRefreshGate {
+) : EpgSourceRefreshGate, EpgPresetSourceLookup {
 
     @Inject
     constructor(@ApplicationContext context: Context) : this(
@@ -80,6 +90,9 @@ class EpgPresetStateStore internal constructor(
     }
 
     fun now(): Long = clock()
+
+    override suspend fun presetOwnedSourceIds(): Set<Long> =
+        current().sources.values.filter { it.owned }.mapTo(HashSet()) { it.sourceId }
 
     /** True when a preset-owned source was attempted less than [MIN_ATTEMPT_GAP_MILLIS] ago. */
     fun isInsideAttemptGap(state: EpgPresetState, sourceId: Long, now: Long = clock()): Boolean =
