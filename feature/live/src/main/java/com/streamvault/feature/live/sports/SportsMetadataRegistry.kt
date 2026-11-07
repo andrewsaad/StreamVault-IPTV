@@ -51,6 +51,8 @@ internal object SportsAliasRegistry {
         "gs warriors" to "golden state warriors",
         "golden state" to "golden state warriors",
         "golden state warriors" to "golden state warriors",
+        "san diego padres" to "padres",
+        "padres" to "padres",
     )
 
     fun normalizeTeamName(value: String): String {
