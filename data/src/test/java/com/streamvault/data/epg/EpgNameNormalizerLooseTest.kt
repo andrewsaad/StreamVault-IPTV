@@ -57,6 +57,88 @@ class EpgNameNormalizerLooseTest {
     }
 
     @Test
+    fun `normalizeLoose_keepsATimeShiftInsideBrackets`() {
+        assertThat(loose("Fox (+1)")).isEqualTo("foxplus1")
+        assertThat(loose("Fox [+2] HD")).isEqualTo("foxplus2")
+    }
+
+    @Test
+    fun `normalizeLoose_keepsADifferentFeedNamedInBrackets_andDropsEast`() {
+        assertThat(loose("ESPN 2 (Alternate)")).isNotEqualTo(loose("[US]ESPN_2HD"))
+        assertThat(loose("HBO (West)")).isEqualTo(loose("HBO West"))
+        assertThat(loose("HBO (Pacific)")).isNotEqualTo(loose("HBO"))
+        assertThat(loose("Fox (East)")).isEqualTo(loose("Fox"))
+    }
+
+    @Test
+    fun `normalizeLoose_keepsRegionalBeinFeedsOffTheArabicGuide`() {
+        assertThat(loose("[FR]_BeIN_SPORTS_1_HD")).isEqualTo(loose("beIN SPORTS FR 1"))
+        assertThat(loose("beIN Sport 1 FR FHD")).isEqualTo(loose("beIN SPORTS FR 1"))
+        listOf("BeIN SPORTS 1 HD [TR]", "BeIN_SPORTS_1_HD [TR]", "US: beIN Sports 1", "[CA] beIN Sports 1").forEach { name ->
+            assertWithMessage(name).that(loose(name)).isNotEqualTo(loose("beIN SPORTS 1"))
+        }
+        assertThat(loose("[FR]_BeIN_SPORT_MAX4")).isNotEqualTo(loose("[Q] beIN SPORT MAX4"))
+    }
+
+    @Test
+    fun `normalizeLoose_keepsArabicTaggedBeinFeedsOnTheArabicGuide`() {
+        listOf("AR: beIN Sports 1", "beIN Sports 1 [AR]", "[QA] beIN Sports 1", "beIN Sport 1 FHD Q").forEach { name ->
+            assertWithMessage(name).that(loose(name)).isEqualTo("beinsport1")
+        }
+    }
+
+    @Test
+    fun `qualityWords_seesAQualityGluedToANumber`() {
+        assertThat(EpgNameNormalizer.qualityWords("[US]ESPN_2HD")).containsExactly("hd")
+    }
+
+    @Test
+    fun `regionsConflict_rejectsAnotherCountrysGuide_only`() {
+        fun conflict(name: String, id: String) = EpgNameNormalizer.regionsConflict(name, id)
+
+        assertThat(conflict("TR: Fox", "Fox.us2")).isTrue()
+        assertThat(conflict("Fox [UK]", "Fox.us2")).isTrue()
+        assertThat(conflict("US: Fox", "Fox.us2")).isFalse()
+        assertThat(conflict("Fox [US]", "Fox.us2")).isFalse()
+        assertThat(conflict("Fox", "Fox.us2")).isFalse()
+        assertThat(conflict("Fox [SD]", "Fox.us2")).isFalse()
+        assertThat(conflict("EN: BBC One", "BBC.One.uk")).isFalse()
+        assertThat(conflict("US: Fox", "Fox.tv")).isFalse()
+        assertThat(conflict("US: Fox", "fox")).isFalse()
+    }
+
+    @Test
+    fun `normalizeLoose_aKeyOfOnlyDigitsMatchesNothing`() {
+        // A guide name in Arabic script leaves only its digits: "1 أبوظبي الرياضية" must not match "1 TV".
+        assertThat(loose("Afg: 1 TV")).isEmpty()
+        assertThat(loose("24 HD [TR]")).isEmpty()
+        assertThat(EpgNameNormalizer.looseKeys("", "ar:.1.أبوظبي.الرياضية.ae")).isEmpty()
+        assertThat(loose("France 24")).isEqualTo("france24")
+    }
+
+    @Test
+    fun `normalizeLoose_keepsAPlusAfterAWord`() {
+        assertThat(loose("MBC Drama+ HD")).isNotEqualTo(loose("MBC Drama"))
+        assertThat(loose("MBC Drama+ HD")).isEqualTo(loose("MBC Drama Plus"))
+        assertThat(loose("Fox+1")).isEqualTo("foxplus1")
+    }
+
+    @Test
+    fun `regionsConflict_readsLongerRegionTags`() {
+        assertThat(EpgNameNormalizer.regionsConflict("Ex-Yu | Srb: HBO 2 HD", "HBO2.HD.us2")).isTrue()
+        assertThat(EpgNameNormalizer.regionsConflict("USA: Fox", "Fox.us2")).isFalse()
+        assertThat(EpgNameNormalizer.regionsConflict("CNN [NEWS]", "CNN.HD.us2")).isFalse()
+        assertThat(EpgNameNormalizer.regionsConflict("Fox [VIP]", "Fox.us2")).isFalse()
+    }
+
+    @Test
+    fun `regionsConflict_trustsNoCountryOnMultiRegionGuides`() {
+        // AE1 lists channels from many countries under ".ae", so its suffix says nothing about them.
+        assertThat(EpgNameNormalizer.regionsConflict("[FR]_M6", "en:.M6.ae")).isFalse()
+        assertThat(EpgNameNormalizer.regionsConflict("KU: Amozhgary TV", "Amozhgary.TV.ae")).isFalse()
+    }
+
+    @Test
     fun `normalizeLoose_emptyOrOnlyTags_returnsEmpty`() {
         assertThat(loose("")).isEmpty()
         assertThat(loose("   ")).isEmpty()

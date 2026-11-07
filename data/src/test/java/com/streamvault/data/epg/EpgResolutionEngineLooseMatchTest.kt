@@ -37,6 +37,24 @@ class EpgResolutionEngineLooseMatchTest {
     }
 
     @Test
+    fun `loose_skipsAnotherCountrysGuide_andTakesTheRightOneFromALaterSource`() = runTest {
+        val (_, onlyWrongCountry) = resolve(
+            channels = listOf(channel(1, "TR: Fox")),
+            guideBySource = listOf(SOURCE_1 to listOf(guide(SOURCE_1, "Fox.us2", "Fox"))),
+        )
+        val (_, bothCountries) = resolve(
+            channels = listOf(channel(1, "TR: Fox")),
+            guideBySource = listOf(
+                SOURCE_1 to listOf(guide(SOURCE_1, "Fox.us2", "Fox")),
+                SOURCE_2 to listOf(guide(SOURCE_2, "Fox.tr", "Fox")),
+            ),
+        )
+
+        assertThat(onlyWrongCountry.single().xmltvChannelId).isNull()
+        assertThat(bothCountries.single().xmltvChannelId).isEqualTo("Fox.tr")
+    }
+
+    @Test
     fun `exactId_beatsLoose`() = runTest {
         val (_, mappings) = resolve(
             channels = listOf(channel(1, "Fox [US]", epgChannelId = "fox.east")),

@@ -60,16 +60,18 @@ class EpgResolutionEngine @Inject constructor(
         private const val LOOSE_NAME_CONFIDENCE = 0.6f
 
         /**
-         * Picks one guide entry among those sharing a loose key: fewest differing quality words
-         * against the channel name, then the smallest guide id. Independent of row order.
+         * Picks one guide entry among those sharing a loose key, skipping another country's guide:
+         * fewest differing quality words against the channel name, then the smallest guide id.
+         * Independent of row order.
          */
         internal fun pickLooseCandidate(
             channelName: String,
             candidates: List<EpgChannelEntity>,
         ): EpgChannelEntity? {
-            if (candidates.size <= 1) return candidates.firstOrNull()
+            val allowed = candidates.filterNot { EpgNameNormalizer.regionsConflict(channelName, it.xmltvChannelId) }
+            if (allowed.size <= 1) return allowed.firstOrNull()
             val channelQuality = EpgNameNormalizer.qualityWords(channelName)
-            return candidates.minWithOrNull(
+            return allowed.minWithOrNull(
                 compareBy<EpgChannelEntity>(
                     { candidate ->
                         val quality = EpgNameNormalizer.qualityWords(candidate.displayName)
