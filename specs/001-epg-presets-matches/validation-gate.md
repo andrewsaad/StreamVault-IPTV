@@ -33,3 +33,10 @@ New issues versus baseline: 0.
 ## Build
 
 `./gradlew :app:assembleDebug --no-build-cache`: executed and produced `app/build/outputs/apk/debug/app-debug.apk` (run together with lint in one invocation; that invocation's overall status was FAILED only because of the PropertyEscape error above).
+
+## Rerun after the alias and beIN merges (f5e09b7a plus 75de2be7), 2026-11-06
+
+- Unit tests, single worker, uncached: domain 286, data 2045, feature:settings 1139, feature:live 287, core:ui 24, app 210 = 3991 tests, 0 failures, 0 errors, 0 skipped (from Gradle result XML).
+- Lint: data and player lintDebug and verifyLintBaseline passed. app lintDebug reported one PropertyEscape error from the untracked local.properties (unescaped sdk.dir); after escaping it and forcing a fresh analysis (`:app:lintAnalyzeDebug --rerun :app:lintDebug`) it reported no new issues. Baseline files untouched.
+- Debug build: `:app:assembleDebug` succeeded standalone (uncached, one worker) and was installed on both TVs.
+- Not verified: the app baseline still lists 141 stale entries; nothing exercised beyond the two TVs' guide matching.
