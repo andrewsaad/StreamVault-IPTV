@@ -5,6 +5,7 @@ import android.net.Uri
 import android.util.Log
 import com.streamvault.data.epg.EpgNameNormalizer
 import com.streamvault.data.epg.EpgResolutionEngine
+import com.streamvault.data.epg.EpgSourceRefreshGate
 import com.streamvault.data.local.DatabaseTransactionRunner
 import com.streamvault.data.local.dao.ChannelEpgMappingDao
 import com.streamvault.data.local.dao.EpgChannelDao
@@ -137,7 +138,9 @@ class EpgSourceRepositoryImpl @Inject constructor(
     private val okHttpClient: OkHttpClient,
     private val resolutionEngine: EpgResolutionEngine,
     private val preferencesRepository: PreferencesRepository,
-    private val transactionRunner: DatabaseTransactionRunner
+    private val transactionRunner: DatabaseTransactionRunner,
+    /** Preset-owned sources get a 12-hour gap between attempts; every other source passes. */
+    private val refreshGate: EpgSourceRefreshGate = EpgSourceRefreshGate.AllowAll
 ) : EpgSourceRepository {
 
     companion object {
@@ -316,6 +319,12 @@ class EpgSourceRepositoryImpl @Inject constructor(
             // Rate-limit: skip if last successful refresh was less than 5 minutes ago
             if (shouldRateLimitEpgRefresh(source.lastRefreshAt, now, MIN_REFRESH_INTERVAL_MS)) {
                 Log.d(TAG, "Skipping refresh for source $sourceId: last refresh was ${(now - source.lastRefreshAt) / 1000}s ago")
+                return@withLock Result.success(Unit)
+            }
+
+            // Counts failures too: a preset source is attempted at most twice in 24 hours (FR-007).
+            if (!refreshGate.tryBeginRefreshAttempt(sourceId)) {
+                Log.d(TAG, "Skipping refresh for preset source $sourceId: inside the minimum gap between attempts")
                 return@withLock Result.success(Unit)
             }
 

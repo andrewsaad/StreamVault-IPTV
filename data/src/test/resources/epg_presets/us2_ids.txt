@@ -1,0 +1,32 @@
+# Sample US2 guide channels in the epgshare01 id style: xmltv id <TAB> display name.
+# A sample for matching tests, not a copy of the full US2 file.
+ABC.HD.us2	ABC HD
+CBS.HD.us2	CBS HD
+NBC.HD.us2	NBC HD
+Fox.HD.us2	Fox HD
+Freeform.HD.us2	Freeform HD
+USA.Network.HD.us2	USA Network HD
+NFL.Network.HD.us2	NFL Network HD
+NFL.RedZone.HD.us2	NFL RedZone HD
+ESPN.HD.us2	ESPN HD
+ESPN2.HD.us2	ESPN2 HD
+ESPNU.HD.us2	ESPNU HD
+ESPNews.HD.us2	ESPNews HD
+FS1.HD.us2	FS1 HD
+FS2.HD.us2	FS2 HD
+CBS.Sports.Network.HD.us2	CBS Sports Network HD
+MLB.Network.HD.us2	MLB Network HD
+NBA.TV.HD.us2	NBA TV HD
+NHL.Network.HD.us2	NHL Network HD
+Golf.Channel.HD.us2	Golf Channel HD
+Tennis.Channel.HD.us2	Tennis Channel HD
+TNT.HD.us2	TNT HD
+TBS.HD.us2	TBS HD
+AMC.HD.us2	AMC HD
+FX.HD.us2	FX HD
+CNN.HD.us2	CNN HD
+Fox.News.Channel.HD.us2	Fox News Channel HD
+MSNBC.HD.us2	MSNBC HD
+Discovery.Channel.HD.us2	Discovery Channel HD
+HGTV.HD.us2	HGTV HD
+Food.Network.HD.us2	Food Network HD

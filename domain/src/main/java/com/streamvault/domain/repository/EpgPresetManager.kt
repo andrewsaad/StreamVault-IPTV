@@ -12,6 +12,14 @@ data class EpgPresetStatus(
     val refreshing: Boolean,
 )
 
+/** Stable [Result.Error] messages from [EpgPresetManager]; the UI maps them to localized text. */
+object EpgPresetErrors {
+    const val UNKNOWN_PRESET = "epg_preset_unknown"
+    const val NOT_ENABLED = "epg_preset_not_enabled"
+    const val REFRESH_TOO_SOON = "epg_preset_refresh_too_soon"
+    const val SOURCE_UNAVAILABLE = "epg_preset_source_unavailable"
+}
+
 /** Device-local control of the built-in guide presets. Nothing here is shared between devices. */
 interface EpgPresetManager {
     /** One entry per preset in the catalog, in catalog order. */
