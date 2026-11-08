@@ -350,6 +350,32 @@ class EpgPresetManagerImplTest {
     }
 
     @Test
+    fun `turningAPresetOff_stopsEveryImportOfARow_includingOneStartedByAnAddressEdit`() = runTest {
+        val manager = EpgPresetManagerImpl(repo, { providerIds.toList() }, store, backgroundScope)
+        val release = CompletableDeferred<Unit>()
+        repo.refreshBlocker = release
+        val enabling = launch { manager.setEnabled(EpgPresetCatalog.EGYPT, true) }
+        runCurrent()
+        val ae1Id = sourceIdFor(ae1.url)
+
+        // The edit starts its own import while the enable's import is still running.
+        manager.updateAddress(EpgPresetCatalog.EGYPT, ae1.key, "https://mirror.example/ae1.xml")
+        runCurrent()
+        assertThat(repo.refreshCalls).containsExactly(ae1Id, ae1Id)
+
+        manager.setEnabled(EpgPresetCatalog.EGYPT, false)
+        release.complete(Unit)
+        enabling.join()
+        runCurrent()
+
+        // Both imports were stopped; neither ran on into the deleted row.
+        assertThat(repo.finishedImports).isEmpty()
+        assertThat(repo.rows.value).isEmpty()
+        val status = manager.observe().first().single { it.presetId == EpgPresetCatalog.EGYPT }
+        assertThat(status.refreshing).isFalse()
+    }
+
+    @Test
     fun `turningAPresetOff_importsAgainTheSharedFileItsStoppedBatchCarried`() = runTest {
         val manager = EpgPresetManagerImpl(repo, { providerIds.toList() }, store, backgroundScope)
         manager.setEnabled(EpgPresetCatalog.EGYPT, true)

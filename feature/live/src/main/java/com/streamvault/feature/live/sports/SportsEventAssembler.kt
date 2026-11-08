@@ -17,10 +17,12 @@ internal object SportsEventAssembler {
      * rebroadcast. Guides often list a rebroadcast with the plain match title (no "Replay"), so
      * without this it would be shown as LIVE while it airs. Shorter gaps are guide start-time
      * differences between channels carrying the same live match, or the same teams meeting twice in
-     * one day (keepsSameTeamsPlayingLaterInTheDayAsSeparateEvents).
+     * one day (keepsSameTeamsPlayingLaterInTheDayAsSeparateEvents). The window is short on purpose: the
+     * event identity has no date, so back-to-back days of one series (MLB, NBA playoffs) or daily
+     * coverage of one event must stay separate events; those start about 18 to 26 hours apart.
      */
     const val REBROADCAST_MIN_GAP_MS = 4 * 60 * 60 * 1_000L
-    private const val REBROADCAST_WINDOW_MS = 48 * 60 * 60 * 1_000L
+    private const val REBROADCAST_WINDOW_MS = 15 * 60 * 60 * 1_000L
 
     fun assemble(
         candidates: List<SportsEventCandidate>,

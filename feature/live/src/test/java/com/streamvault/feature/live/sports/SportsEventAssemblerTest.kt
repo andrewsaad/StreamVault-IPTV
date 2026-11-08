@@ -242,6 +242,20 @@ class SportsEventAssemblerTest {
     }
 
     @Test
+    fun keepsTheSameTeamsOnTheNextDay_soBackToBackSeriesGamesAreNotTakenForRebroadcasts() {
+        val start = 1_800_000_000_000L
+        val events = SportsEventAssembler.assemble(
+            listOf(
+                candidate("San Diego Padres vs Los Angeles Dodgers", channelId = 1L, startTime = start),
+                // Game two of the series, 18 hours later: a different game, not a rebroadcast.
+                candidate("San Diego Padres vs Los Angeles Dodgers", channelId = 1L, startTime = start + 18 * HOUR),
+            ),
+        )
+
+        assertThat(events).hasSize(2)
+    }
+
+    @Test
     fun keepsAMatchupThatReturnsAfterTheRebroadcastWindow_andOtherMatchupsInTheGap() {
         val start = 1_800_000_000_000L
         val events = SportsEventAssembler.assemble(

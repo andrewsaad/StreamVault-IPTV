@@ -75,8 +75,27 @@ class EpgPresetManagerImpl internal constructor(
         lateinit var job: Deferred<Result<Unit>>
     }
 
-    /** The import batch running for each source row, so turning a preset off can stop it (F19). */
-    private val importBatches = ConcurrentHashMap<Long, ImportBatch>()
+    /**
+     * The import batches running for each source row, so turning a preset off can stop all of them (F19).
+     * A row can have several: an address edit starts its own batch while an earlier one still runs.
+     */
+    private val importBatches = ConcurrentHashMap<Long, MutableSet<ImportBatch>>()
+
+    private fun registerBatch(batch: ImportBatch) {
+        batch.ids.forEach { id ->
+            importBatches.computeIfAbsent(id) { ConcurrentHashMap.newKeySet() }.add(batch)
+        }
+    }
+
+    private fun unregisterBatch(batch: ImportBatch) {
+        batch.ids.forEach { id ->
+            // Atomic with registerBatch: a key is dropped only while its set is empty.
+            importBatches.computeIfPresent(id) { _, set ->
+                set.remove(batch)
+                if (set.isEmpty()) null else set
+            }
+        }
+    }
 
     override fun observe(): Flow<List<EpgPresetStatus>> =
         combine(store.state, sources.getAllSources(), refreshing) { state, rows, busy ->
@@ -246,7 +265,7 @@ class EpgPresetManagerImpl internal constructor(
      * other sources (a file shared with another preset); those are imported again, in a new batch.
      */
     private suspend fun cancelImports(sourceIds: List<Long>) {
-        val batches = sourceIds.mapNotNull { importBatches[it] }.distinct()
+        val batches = sourceIds.flatMap { importBatches[it].orEmpty().toList() }.distinct()
         batches.forEach { it.job.cancelAndJoin() }
         val survivors = batches.flatMap { it.ids }.distinct().filter { it !in sourceIds }
         if (survivors.isNotEmpty()) importScope.launch { refresh(presetId = null, sourceIds = survivors) }
@@ -375,9 +394,9 @@ class EpgPresetManagerImpl internal constructor(
             if (errors.isEmpty()) Result.success(Unit) else Result.error(errors.joinToString("; "))
         }
         // Registered before it starts and cleaned up on completion, which also covers a cancel before the first step.
-        ids.forEach { importBatches.putIfAbsent(it, batch) }
+        registerBatch(batch)
         batch.job.invokeOnCompletion {
-            ids.forEach { importBatches.remove(it, batch) }
+            unregisterBatch(batch)
             if (presetId != null) refreshing.update { it - presetId }
         }
         batch.job.start()
