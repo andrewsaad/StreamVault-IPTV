@@ -344,6 +344,7 @@ class Media3PlayerEngine @Inject constructor(
 
     private val _isPlaying = MutableStateFlow(false)
     override val isPlaying: StateFlow<Boolean> = _isPlaying.asStateFlow()
+    override val playWhenReady: Boolean get() = exoPlayer?.playWhenReady == true
 
     private val _currentPosition = MutableStateFlow(0L)
     override val currentPosition: StateFlow<Long> = _currentPosition.asStateFlow()

@@ -241,11 +241,21 @@ internal fun PlayerViewModel.startTokenRenewalMonitoring(
     }
 }
 
+/**
+ * isPlaying is false while buffering, so a buffering stream the user meant to play is caught by play intent.
+ * ENDED and ERROR can keep playWhenReady=true, so they are excluded to avoid resuming them on foreground.
+ */
+internal fun shouldPauseOnBackground(engine: PlayerEngine): Boolean {
+    if (engine.isPlaying.value) return true
+    val state = engine.playbackState.value
+    return engine.playWhenReady && (state == PlaybackState.BUFFERING || state == PlaybackState.READY)
+}
+
 fun PlayerViewModel.onAppBackgrounded(): Job? {
     if (!isAppInForeground) return null
     isAppInForeground = false
     playerEngine.onAppVisibilityChanged(foreground = false)
-    shouldResumeAfterForeground = playerEngine.isPlaying.value
+    shouldResumeAfterForeground = shouldPauseOnBackground(playerEngine)
     if (shouldResumeAfterForeground) {
         playerEngine.pause()
     }

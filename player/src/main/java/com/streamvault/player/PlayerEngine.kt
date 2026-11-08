@@ -69,6 +69,9 @@ enum class VideoRenditionCapability {
 interface PlayerEngine {
     val playbackState: StateFlow<PlaybackState>
     val isPlaying: StateFlow<Boolean>
+
+    /** Play intent (playWhenReady). Stays true while buffering, when [isPlaying] is false. */
+    val playWhenReady: Boolean get() = isPlaying.value
     val currentPosition: StateFlow<Long>
     val duration: StateFlow<Long>
     val chapters: StateFlow<List<PlayerChapter>>
