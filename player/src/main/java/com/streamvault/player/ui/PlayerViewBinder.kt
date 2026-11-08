@@ -2,6 +2,7 @@ package com.streamvault.player.ui
 
 import android.content.Context
 import android.graphics.Color
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.SurfaceView
@@ -67,6 +68,7 @@ class PlayerViewBinder(
             boundPlayerView = playerView
             refreshRateController = DisplayRefreshRateController(playerView)
         } else if (playerView.player !== player) {
+            Log.i(REFRESH_TAG, "refresh-match player-rebound fps=$displayFrameRate")
             playerView.player = player
         }
         refreshRateController?.update(displayFrameRate)
@@ -76,6 +78,10 @@ class PlayerViewBinder(
     }
 
     fun attachPlayer(player: androidx.media3.exoplayer.ExoPlayer?) {
+        if (player !== boundPlayerView?.player) {
+            // A channel change recreates the player; logged to trace refresh-rate switches (living room, Nov 8).
+            Log.i(REFRESH_TAG, "refresh-match player-attached new=${player != null} fps=$displayFrameRate")
+        }
         refreshRateController?.update(if (player == null) null else displayFrameRate)
         boundPlayerView?.player = player
         boundPlayerView?.applyResizeMode(boundResizeMode)
@@ -127,6 +133,10 @@ class PlayerViewBinder(
             PlayerSurfaceResizeMode.FILL -> AspectRatioFrameLayout.RESIZE_MODE_FILL
             PlayerSurfaceResizeMode.ZOOM -> AspectRatioFrameLayout.RESIZE_MODE_ZOOM
         }
+    }
+
+    private companion object {
+        const val REFRESH_TAG = "DisplayRefreshRate"
     }
 
     private fun layoutResId(surfaceType: PlayerRenderSurfaceType): Int = when (surfaceType) {

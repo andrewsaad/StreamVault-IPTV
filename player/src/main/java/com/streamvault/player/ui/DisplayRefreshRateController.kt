@@ -116,6 +116,10 @@ internal class DisplayRefreshRateController(private val view: PlayerView) :
     }
 
     private fun clearVotes() {
+        // Logged so a device trace shows which event releases the mode during a channel change.
+        if (votedRate != null || originalModeId != null) {
+            Log.i(TAG, "refresh-match cleared fps=$votedRate attached=${view.isAttachedToWindow}")
+        }
         if (Build.VERSION.SDK_INT >= 30) {
             votedSurface?.takeIf { it.isValid }?.let { surface ->
                 runCatching {
