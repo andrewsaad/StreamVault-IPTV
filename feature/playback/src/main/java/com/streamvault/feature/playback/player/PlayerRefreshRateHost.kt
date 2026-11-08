@@ -1,5 +1,6 @@
 package com.streamvault.feature.playback.player
 
+import android.util.Log
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -57,6 +58,7 @@ internal fun PlayerRefreshRateHost(
             // Keep the previous mode during short channel transitions, but release it for radio,
             // stopped playback, or a source whose cadence cannot be established.
             delay(5_000)
+            Log.i("DisplayRefreshRate", "refresh-match grace-expired state=$playbackState")
             engine.setDisplayFrameRate(null)
         }
     }
