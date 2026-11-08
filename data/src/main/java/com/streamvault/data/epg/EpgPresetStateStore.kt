@@ -39,33 +39,18 @@ data class EpgPresetSourceRecord(
 )
 
 /**
- * Device-local preset state. Sources, [lastAttemptAtByKey] and [addresses] are keyed by
+ * Device-local preset state. Sources and [addresses] are keyed by
  * [com.streamvault.domain.model.EpgPresetSource.key]. [addresses] holds the user's edited
  * address per file and outlives the preset being off, so turning it on again reuses the edit.
- * [lastAttemptAtByKey] outlives it too: turning a preset off and on again deletes and recreates
- * its source row, and must not reset the cap of two attempts in 24 hours (SC-005).
  */
 data class EpgPresetState(
     val enabledPresetIds: Set<String> = emptySet(),
     val sources: Map<String, EpgPresetSourceRecord> = emptyMap(),
-    val lastAttemptAtByKey: Map<String, Long> = emptyMap(),
+    val lastAttemptAtBySourceId: Map<Long, Long> = emptyMap(),
     val addresses: Map<String, String> = emptyMap(),
 ) {
-    /** The last attempt of each preset-owned row now in use, found through the file key it serves. */
-    val lastAttemptAtBySourceId: Map<Long, Long>
-        get() = HashMap<Long, Long>().also { bySourceId ->
-            sources.forEach { (key, record) ->
-                val attempt = lastAttemptAtByKey[key]
-                if (record.owned && attempt != null) bySourceId.merge(record.sourceId, attempt) { a, b -> maxOf(a, b) }
-            }
-        }
-
     fun isPresetOwnedSource(sourceId: Long): Boolean =
         sources.values.any { it.owned && it.sourceId == sourceId }
-
-    /** The file keys a preset-owned row serves; usually one. */
-    fun presetKeysOf(sourceId: Long): List<String> =
-        sources.filterValues { it.owned && it.sourceId == sourceId }.keys.toList()
 }
 
 /** Lets the source refresh ask whether an attempt may start now; recording the attempt when it may. */
@@ -141,14 +126,14 @@ class EpgPresetStateStore internal constructor(
             }
             writeState(
                 preferences,
-                current.copy(lastAttemptAtByKey = current.lastAttemptAtByKey + current.presetKeysOf(sourceId).associateWith { now }),
+                current.copy(lastAttemptAtBySourceId = current.lastAttemptAtBySourceId + (sourceId to now)),
             )
         }
         return allowed
     }
 
     override suspend fun clearRefreshAttempt(sourceId: Long) {
-        update { it.copy(lastAttemptAtByKey = it.lastAttemptAtByKey - it.presetKeysOf(sourceId).toSet()) }
+        update { it.copy(lastAttemptAtBySourceId = it.lastAttemptAtBySourceId - sourceId) }
     }
 
     companion object {
@@ -158,11 +143,7 @@ class EpgPresetStateStore internal constructor(
 
         private val ENABLED_KEY = stringSetPreferencesKey("enabled_presets")
         private val SOURCES_KEY = stringPreferencesKey("sources")
-        /** Attempts per file key (F18). */
-        private val ATTEMPTS_KEY = stringPreferencesKey("attempts_by_key")
-
-        /** Attempts per source row id, written before F18; read to migrate, then removed on the next write. */
-        private val LEGACY_ATTEMPTS_KEY = stringPreferencesKey("attempts")
+        private val ATTEMPTS_KEY = stringPreferencesKey("attempts")
         private val ADDRESSES_KEY = stringPreferencesKey("addresses")
 
         private fun createDataStore(produceFile: () -> File): DataStore<Preferences> =
@@ -173,16 +154,13 @@ class EpgPresetStateStore internal constructor(
 
         private fun readState(preferences: Preferences): EpgPresetState {
             val sources = decodePresetSources(preferences[SOURCES_KEY])
-            // Lines saved by an older build are keyed by row id; the rows still in use give them a file key.
-            // Those of rows no longer in use are dropped. A line already keyed by file wins.
-            val keyBySourceId = sources.entries.associate { (key, record) -> record.sourceId to key }
-            val migrated = decodePresetAttempts(preferences[LEGACY_ATTEMPTS_KEY])
-                .mapNotNull { (sourceId, at) -> keyBySourceId[sourceId]?.let { it to at } }
-                .toMap()
+            val liveSourceIds = sources.values.mapTo(HashSet()) { it.sourceId }
             return EpgPresetState(
                 enabledPresetIds = preferences[ENABLED_KEY].orEmpty(),
                 sources = sources,
-                lastAttemptAtByKey = migrated + decodePresetAttemptsByKey(preferences[ATTEMPTS_KEY]),
+                // Attempts for rows the presets no longer use are dropped on read.
+                lastAttemptAtBySourceId = decodePresetAttempts(preferences[ATTEMPTS_KEY])
+                    .filterKeys { it in liveSourceIds },
                 addresses = decodePresetAddresses(preferences[ADDRESSES_KEY]),
             )
         }
@@ -190,8 +168,7 @@ class EpgPresetStateStore internal constructor(
         private fun writeState(preferences: MutablePreferences, state: EpgPresetState) {
             preferences[ENABLED_KEY] = state.enabledPresetIds
             preferences[SOURCES_KEY] = encodePresetSources(state.sources)
-            preferences[ATTEMPTS_KEY] = encodePresetAttemptsByKey(state.lastAttemptAtByKey)
-            preferences.remove(LEGACY_ATTEMPTS_KEY)
+            preferences[ATTEMPTS_KEY] = encodePresetAttempts(state.lastAttemptAtBySourceId)
             preferences[ADDRESSES_KEY] = encodePresetAddresses(state.addresses)
         }
     }
@@ -249,23 +226,11 @@ internal fun decodePresetAttempts(encoded: String?): Map<Long, Long> =
         }
         .toMap()
 
-internal fun decodePresetAttemptsByKey(encoded: String?): Map<String, Long> =
-    encoded.orEmpty()
-        .lineSequence()
-        .mapNotNull { line ->
-            val parts = line.split('\t')
-            if (parts.size != 2) return@mapNotNull null
-            val key = parts[0].trim()
-            val timestamp = parts[1].trim().toLongOrNull() ?: return@mapNotNull null
-            if (key.isEmpty() || timestamp <= 0L) null else key to timestamp
-        }
-        .toMap()
-
-internal fun encodePresetAttemptsByKey(attempts: Map<String, Long>): String =
+internal fun encodePresetAttempts(attempts: Map<Long, Long>): String =
     attempts.entries
-        .filter { (key, timestamp) -> key.isNotBlank() && '\t' !in key && '\n' !in key && timestamp > 0L }
+        .filter { (sourceId, timestamp) -> sourceId > 0L && timestamp > 0L }
         .sortedBy { it.key }
-        .joinToString("\n") { (key, timestamp) -> "$key\t$timestamp" }
+        .joinToString("\n") { (sourceId, timestamp) -> "$sourceId\t$timestamp" }
 
 internal fun decodePresetAddresses(encoded: String?): Map<String, String> =
     encoded.orEmpty()
