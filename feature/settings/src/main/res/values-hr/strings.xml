@@ -1030,4 +1030,14 @@
     <string name="epg_source_refreshed">Izvor vodiča je osvježen</string>
     <string name="epg_error_http_status">Poslužitelj vodiča vratio je pogrešku (HTTP %1$d).</string>
     <string name="settings_epg_timezone_refresh_failed">Vremenska zona je spremljena, ali osvježavanje nije uspjelo: %1$s</string>
+    <string name="epg_timezone_updated">Vremenska zona vodiča je ažurirana</string>
+    <string name="epg_error_load_assignments_failed">Dodjele vodiča nije bilo moguće učitati</string>
+    <string name="epg_error_add_source_failed">Izvor vodiča nije bilo moguće dodati</string>
+    <string name="epg_error_update_timezone_failed">Vremensku zonu vodiča nije bilo moguće ažurirati</string>
+    <string name="epg_error_delete_source_failed">Izvor vodiča nije bilo moguće izbrisati</string>
+    <string name="epg_error_update_source_failed">Izvor vodiča nije bilo moguće ažurirati</string>
+    <string name="epg_error_refresh_source_failed">Izvor vodiča nije bilo moguće osvježiti</string>
+    <string name="epg_error_assign_source_failed">Izvor vodiča nije bilo moguće dodijeliti</string>
+    <string name="epg_error_remove_source_failed">Izvor vodiča nije bilo moguće ukloniti</string>
+    <string name="epg_error_reorder_source_failed">Izvore vodiča nije bilo moguće presložiti</string>
 </resources>

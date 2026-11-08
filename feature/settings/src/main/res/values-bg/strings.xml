@@ -1027,4 +1027,14 @@
     <string name="epg_source_refreshed">Източникът на програмата е обновен</string>
     <string name="epg_error_http_status">Сървърът на програмата върна грешка (HTTP %1$d).</string>
     <string name="settings_epg_timezone_refresh_failed">Часовата зона е запазена, но обновяването не успя: %1$s</string>
+    <string name="epg_timezone_updated">Часовата зона на програмата е обновена</string>
+    <string name="epg_error_load_assignments_failed">Назначенията на програмата не можаха да се заредят</string>
+    <string name="epg_error_add_source_failed">Източникът на програмата не можа да се добави</string>
+    <string name="epg_error_update_timezone_failed">Часовата зона на програмата не можа да се обнови</string>
+    <string name="epg_error_delete_source_failed">Източникът на програмата не можа да се изтрие</string>
+    <string name="epg_error_update_source_failed">Източникът на програмата не можа да се обнови</string>
+    <string name="epg_error_refresh_source_failed">Източникът на програмата не можа да се опресни</string>
+    <string name="epg_error_assign_source_failed">Източникът на програмата не можа да се назначи</string>
+    <string name="epg_error_remove_source_failed">Източникът на програмата не можа да се премахне</string>
+    <string name="epg_error_reorder_source_failed">Източниците на програмата не можаха да се пренаредят</string>
 </resources>

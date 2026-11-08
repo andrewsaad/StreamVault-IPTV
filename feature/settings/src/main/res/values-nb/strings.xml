@@ -1029,4 +1029,14 @@
     <string name="epg_source_refreshed">Guidekilden er oppdatert</string>
     <string name="epg_error_http_status">Guideserveren returnerte en feil (HTTP %1$d).</string>
     <string name="settings_epg_timezone_refresh_failed">Tidssonen ble lagret, men oppdateringen mislyktes: %1$s</string>
+    <string name="epg_timezone_updated">Guidens tidssone er oppdatert</string>
+    <string name="epg_error_load_assignments_failed">Guidetilordningene kunne ikke lastes inn</string>
+    <string name="epg_error_add_source_failed">Guidekilden kunne ikke legges til</string>
+    <string name="epg_error_update_timezone_failed">Guidens tidssone kunne ikke oppdateres</string>
+    <string name="epg_error_delete_source_failed">Guidekilden kunne ikke slettes</string>
+    <string name="epg_error_update_source_failed">Guidekilden kunne ikke oppdateres</string>
+    <string name="epg_error_refresh_source_failed">Guidekilden kunne ikke oppfriskes</string>
+    <string name="epg_error_assign_source_failed">Guidekilden kunne ikke tilordnes</string>
+    <string name="epg_error_remove_source_failed">Guidekilden kunne ikke fjernes</string>
+    <string name="epg_error_reorder_source_failed">Guidekildene kunne ikke omordnes</string>
 </resources>

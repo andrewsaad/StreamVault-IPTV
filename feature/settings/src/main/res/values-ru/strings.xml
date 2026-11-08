@@ -1035,4 +1035,14 @@
     <string name="epg_source_refreshed">Источник программы передач обновлён</string>
     <string name="epg_error_http_status">Сервер программы передач вернул ошибку (HTTP %1$d).</string>
     <string name="settings_epg_timezone_refresh_failed">Часовой пояс сохранён, но обновление не удалось: %1$s</string>
+    <string name="epg_timezone_updated">Часовой пояс программы передач обновлён</string>
+    <string name="epg_error_load_assignments_failed">Не удалось загрузить назначения программы передач</string>
+    <string name="epg_error_add_source_failed">Не удалось добавить источник программы передач</string>
+    <string name="epg_error_update_timezone_failed">Не удалось обновить часовой пояс программы передач</string>
+    <string name="epg_error_delete_source_failed">Не удалось удалить источник программы передач</string>
+    <string name="epg_error_update_source_failed">Не удалось обновить источник программы передач</string>
+    <string name="epg_error_refresh_source_failed">Не удалось освежить источник программы передач</string>
+    <string name="epg_error_assign_source_failed">Не удалось назначить источник программы передач</string>
+    <string name="epg_error_remove_source_failed">Не удалось убрать источник программы передач</string>
+    <string name="epg_error_reorder_source_failed">Не удалось изменить порядок источников программы передач</string>
 </resources>

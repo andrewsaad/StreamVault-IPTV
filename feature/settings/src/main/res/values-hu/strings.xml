@@ -1029,4 +1029,14 @@
     <string name="epg_source_refreshed">Az útmutatóforrás frissítve</string>
     <string name="epg_error_http_status">Az útmutató szervere hibát adott vissza (HTTP %1$d).</string>
     <string name="settings_epg_timezone_refresh_failed">Az időzóna mentve, de a frissítés sikertelen volt: %1$s</string>
+    <string name="epg_timezone_updated">Az útmutató időzónája frissítve</string>
+    <string name="epg_error_load_assignments_failed">Az útmutató hozzárendeléseit nem sikerült betölteni</string>
+    <string name="epg_error_add_source_failed">Az útmutatóforrást nem sikerült hozzáadni</string>
+    <string name="epg_error_update_timezone_failed">Az útmutató időzónáját nem sikerült frissíteni</string>
+    <string name="epg_error_delete_source_failed">Az útmutatóforrást nem sikerült törölni</string>
+    <string name="epg_error_update_source_failed">Az útmutatóforrást nem sikerült frissíteni</string>
+    <string name="epg_error_refresh_source_failed">Az útmutatóforrást nem sikerült újratölteni</string>
+    <string name="epg_error_assign_source_failed">Az útmutatóforrást nem sikerült hozzárendelni</string>
+    <string name="epg_error_remove_source_failed">Az útmutatóforrást nem sikerült eltávolítani</string>
+    <string name="epg_error_reorder_source_failed">Az útmutatóforrások sorrendjét nem sikerült módosítani</string>
 </resources>

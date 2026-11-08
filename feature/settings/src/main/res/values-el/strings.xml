@@ -1029,4 +1029,14 @@
     <string name="epg_source_refreshed">Η πηγή οδηγού ενημερώθηκε</string>
     <string name="epg_error_http_status">Ο διακομιστής του οδηγού επέστρεψε σφάλμα (HTTP %1$d).</string>
     <string name="settings_epg_timezone_refresh_failed">Η ζώνη ώρας αποθηκεύτηκε, αλλά η ενημέρωση απέτυχε: %1$s</string>
+    <string name="epg_timezone_updated">Η ζώνη ώρας του οδηγού ενημερώθηκε</string>
+    <string name="epg_error_load_assignments_failed">Δεν ήταν δυνατή η φόρτωση των αντιστοιχίσεων του οδηγού</string>
+    <string name="epg_error_add_source_failed">Δεν ήταν δυνατή η προσθήκη της πηγής οδηγού</string>
+    <string name="epg_error_update_timezone_failed">Δεν ήταν δυνατή η ενημέρωση της ζώνης ώρας του οδηγού</string>
+    <string name="epg_error_delete_source_failed">Δεν ήταν δυνατή η διαγραφή της πηγής οδηγού</string>
+    <string name="epg_error_update_source_failed">Δεν ήταν δυνατή η ενημέρωση της πηγής οδηγού</string>
+    <string name="epg_error_refresh_source_failed">Δεν ήταν δυνατή η ανανέωση της πηγής οδηγού</string>
+    <string name="epg_error_assign_source_failed">Δεν ήταν δυνατή η αντιστοίχιση της πηγής οδηγού</string>
+    <string name="epg_error_remove_source_failed">Δεν ήταν δυνατή η αφαίρεση της πηγής οδηγού</string>
+    <string name="epg_error_reorder_source_failed">Δεν ήταν δυνατή η αναδιάταξη των πηγών οδηγού</string>
 </resources>

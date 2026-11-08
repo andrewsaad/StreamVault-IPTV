@@ -3,6 +3,7 @@ package com.streamvault.feature.settings.presentation
 import com.google.common.truth.Truth.assertThat
 import com.streamvault.domain.model.EpgPresetCatalog
 import com.streamvault.domain.model.EpgSource
+import com.streamvault.domain.model.ProviderEpgSourceAssignment
 import com.streamvault.domain.model.Result
 import com.streamvault.domain.repository.EpgPresetErrors
 import com.streamvault.domain.repository.EpgPresetManager
@@ -11,13 +12,16 @@ import com.streamvault.domain.repository.EpgPresetStatus
 import com.streamvault.domain.repository.EpgRefreshOutcome
 import com.streamvault.domain.repository.EpgSourceRepository
 import com.streamvault.domain.repository.EpgSourceErrors
+import com.streamvault.feature.settings.R
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 
@@ -311,6 +315,119 @@ class SettingsEpgPresetViewModelTest {
         assertThat(uiState.value.userMessage).isEqualTo(
             "notice:${com.streamvault.feature.settings.R.string.settings_epg_timezone_refresh_failed}:localized:HTTP 404"
         )
+    }
+
+    @Test
+    fun `a saved and refreshed timezone says so through the localized notice`() = runTest {
+        val repository: EpgSourceRepository = mock()
+        val source = EpgSource(id = 7L, name = "Mine", url = "https://example.com/mine.xml")
+        whenever(repository.updateSource(any())).thenReturn(Result.success(Unit))
+        whenever(repository.getProviderIdsForSource(7L)).thenReturn(emptyList())
+        whenever(repository.refreshSource(7L)).thenReturn(Result.success(EpgRefreshOutcome.REFRESHED))
+        val uiState = MutableStateFlow(SettingsUiState())
+        val actions = SettingsEpgActions(
+            repository, FakeEpgPresetManager(), uiState, epgNotice = { resId, _ -> "notice:$resId" },
+        )
+
+        actions.updateEpgSourceTimezone(this, source, "Europe/Amsterdam")
+        advanceUntilIdle()
+
+        assertThat(uiState.value.userMessage)
+            .isEqualTo("notice:${com.streamvault.feature.settings.R.string.epg_timezone_updated}")
+    }
+
+    @Test
+    fun `an unexpected guide failure without a message falls back to a localized notice`() = runTest {
+
+        val source = EpgSource(id = 7L, name = "Mine", url = "https://example.com/mine.xml")
+        val assignments = listOf(
+            ProviderEpgSourceAssignment(providerId = 1L, epgSourceId = 10L, priority = 1),
+            ProviderEpgSourceAssignment(providerId = 1L, epgSourceId = 11L, priority = 2),
+        )
+        val boom = RuntimeException()
+
+        // Each case builds its own repository so only the call under test throws.
+        val cases: List<Triple<Int, (EpgSourceRepository) -> Unit, (SettingsEpgActions, kotlinx.coroutines.CoroutineScope) -> Unit>> = listOf(
+            Triple(
+                R.string.epg_error_load_assignments_failed,
+                { r -> whenever(r.getAssignmentsForProvider(1L)).thenThrow(boom) },
+                { a, s -> a.loadEpgAssignments(s, 1L) },
+            ),
+            Triple(
+                R.string.epg_error_add_source_failed,
+                { r -> runBlocking { whenever(r.addSource(any(), any(), any(), anyOrNull())).thenThrow(boom) } },
+                { a, s -> a.addEpgSource(s, "Mine", "https://example.com/mine.xml", null) },
+            ),
+            Triple(
+                R.string.epg_error_update_timezone_failed,
+                { r -> runBlocking { whenever(r.updateSource(any())).thenThrow(boom) } },
+                { a, s -> a.updateEpgSourceTimezone(s, source, "Europe/Amsterdam") },
+            ),
+            Triple(
+                R.string.epg_error_delete_source_failed,
+                { r -> runBlocking { whenever(r.getProviderIdsForSource(7L)).thenThrow(boom) } },
+                { a, s -> a.deleteEpgSource(s, 7L) },
+            ),
+            Triple(
+                R.string.epg_error_update_source_failed,
+                { r -> runBlocking { whenever(r.getProviderIdsForSource(7L)).thenThrow(boom) } },
+                { a, s -> a.toggleEpgSourceEnabled(s, 7L, true) },
+            ),
+            Triple(
+                R.string.epg_error_refresh_source_failed,
+                { r -> runBlocking { whenever(r.getProviderIdsForSource(7L)).thenThrow(boom) } },
+                { a, s -> a.refreshEpgSource(s, 7L) },
+            ),
+            Triple(
+                R.string.epg_error_assign_source_failed,
+                { r -> runBlocking { whenever(r.assignSourceToProvider(any(), any(), any(), any())).thenThrow(boom) } },
+                { a, s -> a.assignEpgSourceToProvider(s, 1L, 10L) },
+            ),
+            Triple(
+                R.string.epg_error_remove_source_failed,
+                { r -> runBlocking { whenever(r.unassignSourceFromProvider(1L, 10L)).thenThrow(boom) } },
+                { a, s -> a.unassignEpgSourceFromProvider(s, 1L, 10L) },
+            ),
+            Triple(
+                R.string.epg_error_reorder_source_failed,
+                { r -> runBlocking { whenever(r.swapAssignmentPriorities(any(), any(), any(), any(), any())).thenThrow(boom) } },
+                { a, s -> a.moveEpgSourceAssignmentUp(s, 1L, 11L) },
+            ),
+            Triple(
+                R.string.epg_error_reorder_source_failed,
+                { r -> runBlocking { whenever(r.swapAssignmentPriorities(any(), any(), any(), any(), any())).thenThrow(boom) } },
+                { a, s -> a.moveEpgSourceAssignmentDown(s, 1L, 10L) },
+            ),
+        )
+
+        cases.forEach { (expectedRes, arrange, act) ->
+            val repository: EpgSourceRepository = mock()
+            arrange(repository)
+            val uiState = MutableStateFlow(SettingsUiState(epgSourceAssignments = mapOf(1L to assignments)))
+            val actions = SettingsEpgActions(
+                repository, FakeEpgPresetManager(), uiState, epgNotice = { resId, _ -> "notice:$resId" },
+            )
+
+            act(actions, this)
+            advanceUntilIdle()
+
+            assertThat(uiState.value.userMessage).isEqualTo("notice:$expectedRes")
+        }
+    }
+
+    @Test
+    fun `an unexpected guide failure with a message still shows that message`() = runTest {
+        val repository: EpgSourceRepository = mock()
+        whenever(repository.getProviderIdsForSource(7L)).thenThrow(RuntimeException("disk full"))
+        val uiState = MutableStateFlow(SettingsUiState())
+        val actions = SettingsEpgActions(
+            repository, FakeEpgPresetManager(), uiState, epgNotice = { resId, _ -> "notice:$resId" },
+        )
+
+        actions.deleteEpgSource(this, 7L)
+        advanceUntilIdle()
+
+        assertThat(uiState.value.userMessage).isEqualTo("disk full")
     }
 
     @Test

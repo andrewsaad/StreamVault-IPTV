@@ -145,7 +145,7 @@ class SettingsEpgActions(
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (error: Exception) {
-                showUnexpectedError(error, "Failed to load EPG assignments")
+                showUnexpectedError(error, R.string.epg_error_load_assignments_failed)
             }
         }
     }
@@ -181,7 +181,7 @@ class SettingsEpgActions(
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (error: Exception) {
-                showUnexpectedError(error, "Failed to add EPG source")
+                showUnexpectedError(error, R.string.epg_error_add_source_failed)
                 onError()
             }
         }
@@ -228,13 +228,13 @@ class SettingsEpgActions(
                     onError()
                 } else {
                     refreshLoadedResolutionSummaries(affectedProviders)
-                    uiState.update { it.copy(userMessage = "EPG timezone updated") }
+                    uiState.update { it.copy(userMessage = epgNotice(R.string.epg_timezone_updated, emptyList())) }
                     onSuccess()
                 }
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (error: Exception) {
-                showUnexpectedError(error, "Failed to update EPG timezone")
+                showUnexpectedError(error, R.string.epg_error_update_timezone_failed)
                 onError()
             }
         }
@@ -252,7 +252,7 @@ class SettingsEpgActions(
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (error: Exception) {
-                showUnexpectedError(error, "Failed to delete EPG source")
+                showUnexpectedError(error, R.string.epg_error_delete_source_failed)
             }
         }
     }
@@ -268,7 +268,7 @@ class SettingsEpgActions(
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (error: Exception) {
-                showUnexpectedError(error, "Failed to update EPG source")
+                showUnexpectedError(error, R.string.epg_error_update_source_failed)
             }
         }
     }
@@ -301,7 +301,7 @@ class SettingsEpgActions(
                 throw cancelled
             } catch (error: Exception) {
                 uiState.update { it.copy(refreshingEpgSourceIds = it.refreshingEpgSourceIds - sourceId) }
-                showUnexpectedError(error, "Failed to refresh EPG source")
+                showUnexpectedError(error, R.string.epg_error_refresh_source_failed)
             }
         }
     }
@@ -333,7 +333,7 @@ class SettingsEpgActions(
                 throw cancelled
             } catch (error: Exception) {
                 uiState.update { it.copy(refreshingEpgSourceIds = it.refreshingEpgSourceIds - epgSourceId) }
-                showUnexpectedError(error, "Failed to assign EPG source")
+                showUnexpectedError(error, R.string.epg_error_assign_source_failed)
             }
         }
     }
@@ -346,7 +346,7 @@ class SettingsEpgActions(
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (error: Exception) {
-                showUnexpectedError(error, "Failed to remove EPG source")
+                showUnexpectedError(error, R.string.epg_error_remove_source_failed)
             }
         }
     }
@@ -368,7 +368,7 @@ class SettingsEpgActions(
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (error: Exception) {
-                showUnexpectedError(error, "Failed to reorder EPG source")
+                showUnexpectedError(error, R.string.epg_error_reorder_source_failed)
             }
         }
     }
@@ -390,7 +390,7 @@ class SettingsEpgActions(
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (error: Exception) {
-                showUnexpectedError(error, "Failed to reorder EPG source")
+                showUnexpectedError(error, R.string.epg_error_reorder_source_failed)
             }
         }
     }

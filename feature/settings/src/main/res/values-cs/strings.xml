@@ -1035,4 +1035,14 @@
     <string name="epg_source_refreshed">Zdroj průvodce byl aktualizován</string>
     <string name="epg_error_http_status">Server průvodce vrátil chybu (HTTP %1$d).</string>
     <string name="settings_epg_timezone_refresh_failed">Časové pásmo bylo uloženo, ale aktualizace selhala: %1$s</string>
+    <string name="epg_timezone_updated">Časové pásmo průvodce bylo aktualizováno</string>
+    <string name="epg_error_load_assignments_failed">Přiřazení průvodce se nepodařilo načíst</string>
+    <string name="epg_error_add_source_failed">Zdroj průvodce se nepodařilo přidat</string>
+    <string name="epg_error_update_timezone_failed">Časové pásmo průvodce se nepodařilo aktualizovat</string>
+    <string name="epg_error_delete_source_failed">Zdroj průvodce se nepodařilo smazat</string>
+    <string name="epg_error_update_source_failed">Zdroj průvodce se nepodařilo upravit</string>
+    <string name="epg_error_refresh_source_failed">Zdroj průvodce se nepodařilo aktualizovat</string>
+    <string name="epg_error_assign_source_failed">Zdroj průvodce se nepodařilo přiřadit</string>
+    <string name="epg_error_remove_source_failed">Zdroj průvodce se nepodařilo odebrat</string>
+    <string name="epg_error_reorder_source_failed">Zdroje průvodce se nepodařilo přeřadit</string>
 </resources>

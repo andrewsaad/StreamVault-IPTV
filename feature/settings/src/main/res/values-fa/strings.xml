@@ -1027,4 +1027,14 @@
     <string name="epg_source_refreshed">منبع راهنما به‌روزرسانی شد</string>
     <string name="epg_error_http_status">سرور راهنما خطایی برگرداند (HTTP %1$d).</string>
     <string name="settings_epg_timezone_refresh_failed">منطقه زمانی ذخیره شد، اما به‌روزرسانی ناموفق بود: %1$s</string>
+    <string name="epg_timezone_updated">منطقه زمانی راهنما به‌روزرسانی شد</string>
+    <string name="epg_error_load_assignments_failed">بارگیری تخصیص‌های راهنما ممکن نبود</string>
+    <string name="epg_error_add_source_failed">افزودن منبع راهنما ممکن نبود</string>
+    <string name="epg_error_update_timezone_failed">به‌روزرسانی منطقه زمانی راهنما ممکن نبود</string>
+    <string name="epg_error_delete_source_failed">حذف منبع راهنما ممکن نبود</string>
+    <string name="epg_error_update_source_failed">به‌روزرسانی منبع راهنما ممکن نبود</string>
+    <string name="epg_error_refresh_source_failed">تازه‌سازی منبع راهنما ممکن نبود</string>
+    <string name="epg_error_assign_source_failed">تخصیص منبع راهنما ممکن نبود</string>
+    <string name="epg_error_remove_source_failed">برداشتن منبع راهنما ممکن نبود</string>
+    <string name="epg_error_reorder_source_failed">تغییر ترتیب منابع راهنما ممکن نبود</string>
 </resources>

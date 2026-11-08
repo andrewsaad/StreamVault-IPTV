@@ -1027,4 +1027,14 @@
     <string name="epg_source_refreshed">ガイドのソースを更新しました</string>
     <string name="epg_error_http_status">ガイドのサーバーがエラーを返しました（HTTP %1$d）。</string>
     <string name="settings_epg_timezone_refresh_failed">タイムゾーンを保存しましたが、更新に失敗しました：%1$s</string>
+    <string name="epg_timezone_updated">ガイドのタイムゾーンを更新しました</string>
+    <string name="epg_error_load_assignments_failed">ガイドの割り当てを読み込めませんでした</string>
+    <string name="epg_error_add_source_failed">ガイドのソースを追加できませんでした</string>
+    <string name="epg_error_update_timezone_failed">ガイドのタイムゾーンを更新できませんでした</string>
+    <string name="epg_error_delete_source_failed">ガイドのソースを削除できませんでした</string>
+    <string name="epg_error_update_source_failed">ガイドのソースを更新できませんでした</string>
+    <string name="epg_error_refresh_source_failed">ガイドのソースを再読み込みできませんでした</string>
+    <string name="epg_error_assign_source_failed">ガイドのソースを割り当てられませんでした</string>
+    <string name="epg_error_remove_source_failed">ガイドのソースを外せませんでした</string>
+    <string name="epg_error_reorder_source_failed">ガイドのソースの順序を変更できませんでした</string>
 </resources>

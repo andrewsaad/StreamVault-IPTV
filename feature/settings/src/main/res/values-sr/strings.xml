@@ -1030,4 +1030,14 @@
     <string name="epg_source_refreshed">Извор водича је освежен</string>
     <string name="epg_error_http_status">Сервер водича је вратио грешку (HTTP %1$d).</string>
     <string name="settings_epg_timezone_refresh_failed">Временска зона је сачувана, али освежавање није успело: %1$s</string>
+    <string name="epg_timezone_updated">Временска зона водича је ажурирана</string>
+    <string name="epg_error_load_assignments_failed">Доделе водича није било могуће учитати</string>
+    <string name="epg_error_add_source_failed">Извор водича није било могуће додати</string>
+    <string name="epg_error_update_timezone_failed">Временску зону водича није било могуће ажурирати</string>
+    <string name="epg_error_delete_source_failed">Извор водича није било могуће избрисати</string>
+    <string name="epg_error_update_source_failed">Извор водича није било могуће ажурирати</string>
+    <string name="epg_error_refresh_source_failed">Извор водича није било могуће освежити</string>
+    <string name="epg_error_assign_source_failed">Извор водича није било могуће доделити</string>
+    <string name="epg_error_remove_source_failed">Извор водича није било могуће уклонити</string>
+    <string name="epg_error_reorder_source_failed">Изворе водича није било могуће променити редом</string>
 </resources>

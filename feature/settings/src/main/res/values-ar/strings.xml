@@ -1041,4 +1041,14 @@
     <string name="epg_source_refreshed">تم تحديث مصدر الدليل</string>
     <string name="epg_error_http_status">أعاد خادم الدليل خطأً (HTTP %1$d).</string>
     <string name="settings_epg_timezone_refresh_failed">تم حفظ المنطقة الزمنية، لكن فشل التحديث: %1$s</string>
+    <string name="epg_timezone_updated">تم تحديث المنطقة الزمنية للدليل</string>
+    <string name="epg_error_load_assignments_failed">تعذّر تحميل تعيينات الدليل</string>
+    <string name="epg_error_add_source_failed">تعذّرت إضافة مصدر الدليل</string>
+    <string name="epg_error_update_timezone_failed">تعذّر تحديث المنطقة الزمنية للدليل</string>
+    <string name="epg_error_delete_source_failed">تعذّر حذف مصدر الدليل</string>
+    <string name="epg_error_update_source_failed">تعذّر تحديث مصدر الدليل</string>
+    <string name="epg_error_refresh_source_failed">تعذّر تحديث مصدر الدليل الآن</string>
+    <string name="epg_error_assign_source_failed">تعذّر تعيين مصدر الدليل</string>
+    <string name="epg_error_remove_source_failed">تعذّرت إزالة مصدر الدليل</string>
+    <string name="epg_error_reorder_source_failed">تعذّرت إعادة ترتيب مصادر الدليل</string>
 </resources>

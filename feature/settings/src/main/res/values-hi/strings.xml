@@ -1027,4 +1027,14 @@
     <string name="epg_source_refreshed">गाइड स्रोत रीफ़्रेश हो गया</string>
     <string name="epg_error_http_status">गाइड सर्वर ने त्रुटि लौटाई (HTTP %1$d)।</string>
     <string name="settings_epg_timezone_refresh_failed">समय क्षेत्र सहेज लिया गया, लेकिन रीफ़्रेश विफल रहा: %1$s</string>
+    <string name="epg_timezone_updated">गाइड का टाइमज़ोन अपडेट हो गया</string>
+    <string name="epg_error_load_assignments_failed">गाइड असाइनमेंट लोड नहीं हो सके</string>
+    <string name="epg_error_add_source_failed">गाइड स्रोत जोड़ा नहीं जा सका</string>
+    <string name="epg_error_update_timezone_failed">गाइड का टाइमज़ोन अपडेट नहीं हो सका</string>
+    <string name="epg_error_delete_source_failed">गाइड स्रोत हटाया नहीं जा सका</string>
+    <string name="epg_error_update_source_failed">गाइड स्रोत अपडेट नहीं हो सका</string>
+    <string name="epg_error_refresh_source_failed">गाइड स्रोत रीफ़्रेश नहीं हो सका</string>
+    <string name="epg_error_assign_source_failed">गाइड स्रोत असाइन नहीं हो सका</string>
+    <string name="epg_error_remove_source_failed">गाइड स्रोत निकाला नहीं जा सका</string>
+    <string name="epg_error_reorder_source_failed">गाइड स्रोतों का क्रम बदला नहीं जा सका</string>
 </resources>

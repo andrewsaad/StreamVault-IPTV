@@ -41,7 +41,17 @@ class SettingsStringsLocaleParityTest {
         "epg_source_refresh_skipped",
         "epg_source_refreshed",
         "epg_error_http_status",
-        "settings_epg_timezone_refresh_failed"
+        "settings_epg_timezone_refresh_failed",
+        "epg_timezone_updated",
+        "epg_error_load_assignments_failed",
+        "epg_error_add_source_failed",
+        "epg_error_update_timezone_failed",
+        "epg_error_delete_source_failed",
+        "epg_error_update_source_failed",
+        "epg_error_refresh_source_failed",
+        "epg_error_assign_source_failed",
+        "epg_error_remove_source_failed",
+        "epg_error_reorder_source_failed"
     )
 
     @Test

@@ -1029,4 +1029,14 @@
     <string name="epg_source_refreshed">Oppaan lähde päivitetty</string>
     <string name="epg_error_http_status">Oppaan palvelin palautti virheen (HTTP %1$d).</string>
     <string name="settings_epg_timezone_refresh_failed">Aikavyöhyke tallennettiin, mutta päivitys epäonnistui: %1$s</string>
+    <string name="epg_timezone_updated">Oppaan aikavyöhyke päivitetty</string>
+    <string name="epg_error_load_assignments_failed">Oppaan määrityksiä ei voitu ladata</string>
+    <string name="epg_error_add_source_failed">Oppaan lähdettä ei voitu lisätä</string>
+    <string name="epg_error_update_timezone_failed">Oppaan aikavyöhykettä ei voitu päivittää</string>
+    <string name="epg_error_delete_source_failed">Oppaan lähdettä ei voitu poistaa</string>
+    <string name="epg_error_update_source_failed">Oppaan lähdettä ei voitu päivittää</string>
+    <string name="epg_error_refresh_source_failed">Oppaan lähdettä ei voitu virkistää</string>
+    <string name="epg_error_assign_source_failed">Oppaan lähdettä ei voitu määrittää</string>
+    <string name="epg_error_remove_source_failed">Oppaan lähdettä ei voitu poistaa käytöstä</string>
+    <string name="epg_error_reorder_source_failed">Oppaan lähteiden järjestystä ei voitu muuttaa</string>
 </resources>

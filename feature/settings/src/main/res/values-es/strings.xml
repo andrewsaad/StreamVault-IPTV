@@ -1025,4 +1025,14 @@
     <string name="epg_source_refreshed">Fuente de la guía actualizada</string>
     <string name="epg_error_http_status">El servidor de la guía devolvió un error (HTTP %1$d).</string>
     <string name="settings_epg_timezone_refresh_failed">Zona horaria guardada, pero la actualización falló: %1$s</string>
+    <string name="epg_timezone_updated">Zona horaria de la guía actualizada</string>
+    <string name="epg_error_load_assignments_failed">No se pudieron cargar las asignaciones de la guía</string>
+    <string name="epg_error_add_source_failed">No se pudo añadir la fuente de la guía</string>
+    <string name="epg_error_update_timezone_failed">No se pudo actualizar la zona horaria de la guía</string>
+    <string name="epg_error_delete_source_failed">No se pudo eliminar la fuente de la guía</string>
+    <string name="epg_error_update_source_failed">No se pudo actualizar la fuente de la guía</string>
+    <string name="epg_error_refresh_source_failed">No se pudo refrescar la fuente de la guía</string>
+    <string name="epg_error_assign_source_failed">No se pudo asignar la fuente de la guía</string>
+    <string name="epg_error_remove_source_failed">No se pudo quitar la fuente de la guía</string>
+    <string name="epg_error_reorder_source_failed">No se pudieron reordenar las fuentes de la guía</string>
 </resources>

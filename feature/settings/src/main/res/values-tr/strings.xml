@@ -1029,4 +1029,14 @@
     <string name="epg_source_refreshed">Rehber kaynağı yenilendi</string>
     <string name="epg_error_http_status">Rehber sunucusu bir hata döndürdü (HTTP %1$d).</string>
     <string name="settings_epg_timezone_refresh_failed">Saat dilimi kaydedildi ancak yenileme başarısız oldu: %1$s</string>
+    <string name="epg_timezone_updated">Rehber saat dilimi güncellendi</string>
+    <string name="epg_error_load_assignments_failed">Rehber atamaları yüklenemedi</string>
+    <string name="epg_error_add_source_failed">Rehber kaynağı eklenemedi</string>
+    <string name="epg_error_update_timezone_failed">Rehber saat dilimi güncellenemedi</string>
+    <string name="epg_error_delete_source_failed">Rehber kaynağı silinemedi</string>
+    <string name="epg_error_update_source_failed">Rehber kaynağı güncellenemedi</string>
+    <string name="epg_error_refresh_source_failed">Rehber kaynağı yenilenemedi</string>
+    <string name="epg_error_assign_source_failed">Rehber kaynağı atanamadı</string>
+    <string name="epg_error_remove_source_failed">Rehber kaynağı kaldırılamadı</string>
+    <string name="epg_error_reorder_source_failed">Rehber kaynaklarının sırası değiştirilemedi</string>
 </resources>

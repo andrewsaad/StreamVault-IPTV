@@ -1032,4 +1032,14 @@
     <string name="epg_source_refreshed">מקור המדריך רוענן</string>
     <string name="epg_error_http_status">שרת המדריך החזיר שגיאה (HTTP %1$d).</string>
     <string name="settings_epg_timezone_refresh_failed">אזור הזמן נשמר, אך הרענון נכשל: %1$s</string>
+    <string name="epg_timezone_updated">אזור הזמן של המדריך עודכן</string>
+    <string name="epg_error_load_assignments_failed">לא ניתן היה לטעון את שיוכי המדריך</string>
+    <string name="epg_error_add_source_failed">לא ניתן היה להוסיף את מקור המדריך</string>
+    <string name="epg_error_update_timezone_failed">לא ניתן היה לעדכן את אזור הזמן של המדריך</string>
+    <string name="epg_error_delete_source_failed">לא ניתן היה למחוק את מקור המדריך</string>
+    <string name="epg_error_update_source_failed">לא ניתן היה לעדכן את מקור המדריך</string>
+    <string name="epg_error_refresh_source_failed">לא ניתן היה לרענן את מקור המדריך</string>
+    <string name="epg_error_assign_source_failed">לא ניתן היה לשייך את מקור המדריך</string>
+    <string name="epg_error_remove_source_failed">לא ניתן היה להסיר את מקור המדריך</string>
+    <string name="epg_error_reorder_source_failed">לא ניתן היה לשנות את סדר מקורות המדריך</string>
 </resources>

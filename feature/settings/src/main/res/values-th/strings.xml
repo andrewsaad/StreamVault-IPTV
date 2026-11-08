@@ -1024,4 +1024,14 @@
     <string name="epg_source_refreshed">รีเฟรชแหล่งข้อมูลคู่มือรายการแล้ว</string>
     <string name="epg_error_http_status">เซิร์ฟเวอร์คู่มือรายการส่งข้อผิดพลาดกลับมา (HTTP %1$d)</string>
     <string name="settings_epg_timezone_refresh_failed">บันทึกเขตเวลาแล้ว แต่รีเฟรชไม่สำเร็จ: %1$s</string>
+    <string name="epg_timezone_updated">อัปเดตเขตเวลาของคู่มือรายการแล้ว</string>
+    <string name="epg_error_load_assignments_failed">โหลดการกำหนดคู่มือรายการไม่สำเร็จ</string>
+    <string name="epg_error_add_source_failed">เพิ่มแหล่งข้อมูลคู่มือรายการไม่สำเร็จ</string>
+    <string name="epg_error_update_timezone_failed">อัปเดตเขตเวลาของคู่มือรายการไม่สำเร็จ</string>
+    <string name="epg_error_delete_source_failed">ลบแหล่งข้อมูลคู่มือรายการไม่สำเร็จ</string>
+    <string name="epg_error_update_source_failed">อัปเดตแหล่งข้อมูลคู่มือรายการไม่สำเร็จ</string>
+    <string name="epg_error_refresh_source_failed">รีเฟรชแหล่งข้อมูลคู่มือรายการไม่สำเร็จ</string>
+    <string name="epg_error_assign_source_failed">กำหนดแหล่งข้อมูลคู่มือรายการไม่สำเร็จ</string>
+    <string name="epg_error_remove_source_failed">นำแหล่งข้อมูลคู่มือรายการออกไม่สำเร็จ</string>
+    <string name="epg_error_reorder_source_failed">จัดลำดับแหล่งข้อมูลคู่มือรายการใหม่ไม่สำเร็จ</string>
 </resources>

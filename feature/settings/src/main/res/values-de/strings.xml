@@ -1025,4 +1025,14 @@
     <string name="epg_source_refreshed">Guide-Quelle aktualisiert</string>
     <string name="epg_error_http_status">Der Guide-Server hat einen Fehler zurückgegeben (HTTP %1$d).</string>
     <string name="settings_epg_timezone_refresh_failed">Zeitzone gespeichert, aber die Aktualisierung ist fehlgeschlagen: %1$s</string>
+    <string name="epg_timezone_updated">Zeitzone des Guides aktualisiert</string>
+    <string name="epg_error_load_assignments_failed">Die Guide-Zuordnungen konnten nicht geladen werden</string>
+    <string name="epg_error_add_source_failed">Die Guide-Quelle konnte nicht hinzugefügt werden</string>
+    <string name="epg_error_update_timezone_failed">Die Zeitzone des Guides konnte nicht aktualisiert werden</string>
+    <string name="epg_error_delete_source_failed">Die Guide-Quelle konnte nicht gelöscht werden</string>
+    <string name="epg_error_update_source_failed">Die Guide-Quelle konnte nicht aktualisiert werden</string>
+    <string name="epg_error_refresh_source_failed">Die Guide-Quelle konnte nicht neu geladen werden</string>
+    <string name="epg_error_assign_source_failed">Die Guide-Quelle konnte nicht zugewiesen werden</string>
+    <string name="epg_error_remove_source_failed">Die Guide-Quelle konnte nicht entfernt werden</string>
+    <string name="epg_error_reorder_source_failed">Die Guide-Quellen konnten nicht neu angeordnet werden</string>
 </resources>

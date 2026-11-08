@@ -1025,4 +1025,14 @@
     <string name="epg_source_refreshed">Fonte della guida aggiornata</string>
     <string name="epg_error_http_status">Il server della guida ha restituito un errore (HTTP %1$d).</string>
     <string name="settings_epg_timezone_refresh_failed">Fuso orario salvato, ma l\'aggiornamento non è riuscito: %1$s</string>
+    <string name="epg_timezone_updated">Fuso orario della guida aggiornato</string>
+    <string name="epg_error_load_assignments_failed">Impossibile caricare le assegnazioni della guida</string>
+    <string name="epg_error_add_source_failed">Impossibile aggiungere la fonte della guida</string>
+    <string name="epg_error_update_timezone_failed">Impossibile aggiornare il fuso orario della guida</string>
+    <string name="epg_error_delete_source_failed">Impossibile eliminare la fonte della guida</string>
+    <string name="epg_error_update_source_failed">Impossibile aggiornare la fonte della guida</string>
+    <string name="epg_error_refresh_source_failed">Impossibile ricaricare la fonte della guida</string>
+    <string name="epg_error_assign_source_failed">Impossibile assegnare la fonte della guida</string>
+    <string name="epg_error_remove_source_failed">Impossibile rimuovere la fonte della guida</string>
+    <string name="epg_error_reorder_source_failed">Impossibile riordinare le fonti della guida</string>
 </resources>

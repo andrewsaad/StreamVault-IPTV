@@ -1025,4 +1025,14 @@
     <string name="epg_source_refreshed">가이드 소스를 새로고침했습니다</string>
     <string name="epg_error_http_status">가이드 서버가 오류를 반환했습니다(HTTP %1$d).</string>
     <string name="settings_epg_timezone_refresh_failed">시간대를 저장했지만 새로고침에 실패했습니다: %1$s</string>
+    <string name="epg_timezone_updated">가이드 시간대를 업데이트했습니다</string>
+    <string name="epg_error_load_assignments_failed">가이드 할당을 불러오지 못했습니다</string>
+    <string name="epg_error_add_source_failed">가이드 소스를 추가하지 못했습니다</string>
+    <string name="epg_error_update_timezone_failed">가이드 시간대를 업데이트하지 못했습니다</string>
+    <string name="epg_error_delete_source_failed">가이드 소스를 삭제하지 못했습니다</string>
+    <string name="epg_error_update_source_failed">가이드 소스를 업데이트하지 못했습니다</string>
+    <string name="epg_error_refresh_source_failed">가이드 소스를 새로고침하지 못했습니다</string>
+    <string name="epg_error_assign_source_failed">가이드 소스를 할당하지 못했습니다</string>
+    <string name="epg_error_remove_source_failed">가이드 소스를 제거하지 못했습니다</string>
+    <string name="epg_error_reorder_source_failed">가이드 소스의 순서를 변경하지 못했습니다</string>
 </resources>

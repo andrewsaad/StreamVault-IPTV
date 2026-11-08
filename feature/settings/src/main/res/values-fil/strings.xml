@@ -1027,4 +1027,14 @@
     <string name="epg_source_refreshed">Na-refresh ang source ng guide</string>
     <string name="epg_error_http_status">Nagbalik ng error ang server ng guide (HTTP %1$d).</string>
     <string name="settings_epg_timezone_refresh_failed">Na-save ang timezone, pero nabigo ang pag-refresh: %1$s</string>
+    <string name="epg_timezone_updated">Na-update ang timezone ng guide</string>
+    <string name="epg_error_load_assignments_failed">Hindi ma-load ang mga assignment ng guide</string>
+    <string name="epg_error_add_source_failed">Hindi maidagdag ang source ng guide</string>
+    <string name="epg_error_update_timezone_failed">Hindi ma-update ang timezone ng guide</string>
+    <string name="epg_error_delete_source_failed">Hindi matanggal ang source ng guide</string>
+    <string name="epg_error_update_source_failed">Hindi ma-update ang source ng guide</string>
+    <string name="epg_error_refresh_source_failed">Hindi ma-refresh ang source ng guide</string>
+    <string name="epg_error_assign_source_failed">Hindi ma-assign ang source ng guide</string>
+    <string name="epg_error_remove_source_failed">Hindi maalis ang source ng guide</string>
+    <string name="epg_error_reorder_source_failed">Hindi maayos ang pagkakasunod-sunod ng mga source ng guide</string>
 </resources>

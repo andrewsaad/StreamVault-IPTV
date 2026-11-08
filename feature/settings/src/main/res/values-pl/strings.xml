@@ -1035,4 +1035,14 @@
     <string name="epg_source_refreshed">Źródło przewodnika odświeżone</string>
     <string name="epg_error_http_status">Serwer przewodnika zwrócił błąd (HTTP %1$d).</string>
     <string name="settings_epg_timezone_refresh_failed">Strefa czasowa została zapisana, ale odświeżanie nie powiodło się: %1$s</string>
+    <string name="epg_timezone_updated">Strefa czasowa przewodnika zaktualizowana</string>
+    <string name="epg_error_load_assignments_failed">Nie udało się wczytać przypisań przewodnika</string>
+    <string name="epg_error_add_source_failed">Nie udało się dodać źródła przewodnika</string>
+    <string name="epg_error_update_timezone_failed">Nie udało się zaktualizować strefy czasowej przewodnika</string>
+    <string name="epg_error_delete_source_failed">Nie udało się usunąć źródła przewodnika</string>
+    <string name="epg_error_update_source_failed">Nie udało się zaktualizować źródła przewodnika</string>
+    <string name="epg_error_refresh_source_failed">Nie udało się odświeżyć źródła przewodnika</string>
+    <string name="epg_error_assign_source_failed">Nie udało się przypisać źródła przewodnika</string>
+    <string name="epg_error_remove_source_failed">Nie udało się odpiąć źródła przewodnika</string>
+    <string name="epg_error_reorder_source_failed">Nie udało się zmienić kolejności źródeł przewodnika</string>
 </resources>

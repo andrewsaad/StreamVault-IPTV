@@ -1026,4 +1026,14 @@
     <string name="epg_source_refreshed">Đã làm mới nguồn hướng dẫn</string>
     <string name="epg_error_http_status">Máy chủ hướng dẫn trả về lỗi (HTTP %1$d).</string>
     <string name="settings_epg_timezone_refresh_failed">Đã lưu múi giờ nhưng làm mới không thành công: %1$s</string>
+    <string name="epg_timezone_updated">Đã cập nhật múi giờ của hướng dẫn</string>
+    <string name="epg_error_load_assignments_failed">Không thể tải các phân công hướng dẫn</string>
+    <string name="epg_error_add_source_failed">Không thể thêm nguồn hướng dẫn</string>
+    <string name="epg_error_update_timezone_failed">Không thể cập nhật múi giờ của hướng dẫn</string>
+    <string name="epg_error_delete_source_failed">Không thể xóa nguồn hướng dẫn</string>
+    <string name="epg_error_update_source_failed">Không thể cập nhật nguồn hướng dẫn</string>
+    <string name="epg_error_refresh_source_failed">Không thể làm mới nguồn hướng dẫn</string>
+    <string name="epg_error_assign_source_failed">Không thể phân công nguồn hướng dẫn</string>
+    <string name="epg_error_remove_source_failed">Không thể gỡ nguồn hướng dẫn</string>
+    <string name="epg_error_reorder_source_failed">Không thể sắp xếp lại các nguồn hướng dẫn</string>
 </resources>

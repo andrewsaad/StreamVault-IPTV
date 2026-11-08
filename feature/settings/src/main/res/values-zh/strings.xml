@@ -1025,4 +1025,14 @@
     <string name="epg_source_refreshed">指南来源已刷新</string>
     <string name="epg_error_http_status">指南服务器返回了错误（HTTP %1$d）。</string>
     <string name="settings_epg_timezone_refresh_failed">时区已保存，但刷新失败：%1$s</string>
+    <string name="epg_timezone_updated">指南时区已更新</string>
+    <string name="epg_error_load_assignments_failed">无法加载指南分配</string>
+    <string name="epg_error_add_source_failed">无法添加指南来源</string>
+    <string name="epg_error_update_timezone_failed">无法更新指南时区</string>
+    <string name="epg_error_delete_source_failed">无法删除指南来源</string>
+    <string name="epg_error_update_source_failed">无法更新指南来源</string>
+    <string name="epg_error_refresh_source_failed">无法刷新指南来源</string>
+    <string name="epg_error_assign_source_failed">无法分配指南来源</string>
+    <string name="epg_error_remove_source_failed">无法移除指南来源</string>
+    <string name="epg_error_reorder_source_failed">无法重新排序指南来源</string>
 </resources>

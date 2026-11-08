@@ -1033,4 +1033,14 @@
     <string name="epg_source_refreshed">Zdroj sprievodcu bol aktualizovaný</string>
     <string name="epg_error_http_status">Server sprievodcu vrátil chybu (HTTP %1$d).</string>
     <string name="settings_epg_timezone_refresh_failed">Časové pásmo bolo uložené, ale aktualizácia zlyhala: %1$s</string>
+    <string name="epg_timezone_updated">Časové pásmo sprievodcu bolo aktualizované</string>
+    <string name="epg_error_load_assignments_failed">Priradenia sprievodcu sa nepodarilo načítať</string>
+    <string name="epg_error_add_source_failed">Zdroj sprievodcu sa nepodarilo pridať</string>
+    <string name="epg_error_update_timezone_failed">Časové pásmo sprievodcu sa nepodarilo aktualizovať</string>
+    <string name="epg_error_delete_source_failed">Zdroj sprievodcu sa nepodarilo odstrániť</string>
+    <string name="epg_error_update_source_failed">Zdroj sprievodcu sa nepodarilo upraviť</string>
+    <string name="epg_error_refresh_source_failed">Zdroj sprievodcu sa nepodarilo obnoviť</string>
+    <string name="epg_error_assign_source_failed">Zdroj sprievodcu sa nepodarilo priradiť</string>
+    <string name="epg_error_remove_source_failed">Zdroj sprievodcu sa nepodarilo odobrať</string>
+    <string name="epg_error_reorder_source_failed">Zdroje sprievodcu sa nepodarilo preradiť</string>
 </resources>

@@ -1024,4 +1024,14 @@
     <string name="epg_source_refreshed">Sumber panduan disegarkan</string>
     <string name="epg_error_http_status">Pelayan panduan memulangkan ralat (HTTP %1$d).</string>
     <string name="settings_epg_timezone_refresh_failed">Zon waktu disimpan, tetapi penyegaran gagal: %1$s</string>
+    <string name="epg_timezone_updated">Zon waktu panduan dikemas kini</string>
+    <string name="epg_error_load_assignments_failed">Tugasan panduan tidak dapat dimuatkan</string>
+    <string name="epg_error_add_source_failed">Sumber panduan tidak dapat ditambah</string>
+    <string name="epg_error_update_timezone_failed">Zon waktu panduan tidak dapat dikemas kini</string>
+    <string name="epg_error_delete_source_failed">Sumber panduan tidak dapat dipadam</string>
+    <string name="epg_error_update_source_failed">Sumber panduan tidak dapat dikemas kini</string>
+    <string name="epg_error_refresh_source_failed">Sumber panduan tidak dapat disegarkan</string>
+    <string name="epg_error_assign_source_failed">Sumber panduan tidak dapat ditugaskan</string>
+    <string name="epg_error_remove_source_failed">Sumber panduan tidak dapat dialih keluar</string>
+    <string name="epg_error_reorder_source_failed">Susunan sumber panduan tidak dapat diubah</string>
 </resources>

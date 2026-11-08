@@ -1027,4 +1027,14 @@
     <string name="epg_source_refreshed">Burimi i guidës u rifreskua</string>
     <string name="epg_error_http_status">Serveri i guidës ktheu një gabim (HTTP %1$d).</string>
     <string name="settings_epg_timezone_refresh_failed">Zona kohore u ruajt, por rifreskimi dështoi: %1$s</string>
+    <string name="epg_timezone_updated">Zona kohore e guidës u përditësua</string>
+    <string name="epg_error_load_assignments_failed">Caktimet e guidës nuk u ngarkuan dot</string>
+    <string name="epg_error_add_source_failed">Burimi i guidës nuk u shtua dot</string>
+    <string name="epg_error_update_timezone_failed">Zona kohore e guidës nuk u përditësua dot</string>
+    <string name="epg_error_delete_source_failed">Burimi i guidës nuk u fshi dot</string>
+    <string name="epg_error_update_source_failed">Burimi i guidës nuk u përditësua dot</string>
+    <string name="epg_error_refresh_source_failed">Burimi i guidës nuk u rifreskua dot</string>
+    <string name="epg_error_assign_source_failed">Burimi i guidës nuk u caktua dot</string>
+    <string name="epg_error_remove_source_failed">Burimi i guidës nuk u hoq dot</string>
+    <string name="epg_error_reorder_source_failed">Burimet e guidës nuk u renditën dot përsëri</string>
 </resources>

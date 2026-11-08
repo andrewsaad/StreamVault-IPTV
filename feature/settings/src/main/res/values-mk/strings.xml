@@ -1027,4 +1027,14 @@
     <string name="epg_source_refreshed">Изворот на водичот е освежен</string>
     <string name="epg_error_http_status">Серверот на водичот врати грешка (HTTP %1$d).</string>
     <string name="settings_epg_timezone_refresh_failed">Временската зона е зачувана, но освежувањето не успеа: %1$s</string>
+    <string name="epg_timezone_updated">Временската зона на водичот е ажурирана</string>
+    <string name="epg_error_load_assignments_failed">Доделувањата на водичот не можеа да се вчитаат</string>
+    <string name="epg_error_add_source_failed">Изворот на водичот не можеше да се додаде</string>
+    <string name="epg_error_update_timezone_failed">Временската зона на водичот не можеше да се ажурира</string>
+    <string name="epg_error_delete_source_failed">Изворот на водичот не можеше да се избрише</string>
+    <string name="epg_error_update_source_failed">Изворот на водичот не можеше да се ажурира</string>
+    <string name="epg_error_refresh_source_failed">Изворот на водичот не можеше да се освежи</string>
+    <string name="epg_error_assign_source_failed">Изворот на водичот не можеше да се додели</string>
+    <string name="epg_error_remove_source_failed">Изворот на водичот не можеше да се отстрани</string>
+    <string name="epg_error_reorder_source_failed">Изворите на водичот не можеа да се преуредат</string>
 </resources>
