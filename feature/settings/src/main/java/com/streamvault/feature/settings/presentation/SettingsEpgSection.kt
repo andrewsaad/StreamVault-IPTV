@@ -261,12 +261,7 @@ private fun LazyListScope.epgPresetsSection(
             onToggle = { enabled -> viewModel.toggleEpgPreset(preset.presetId, enabled) },
             onRefreshNow = { viewModel.refreshEpgPresetNow(preset.presetId) },
             onUpdateAddress = { source, url, onSuccess, onError ->
-                val sourceId = source.sourceId
-                if (sourceId == null) {
-                    onError()
-                } else {
-                    viewModel.updateEpgPresetAddress(preset.presetId, source.key, sourceId, url, onSuccess, onError)
-                }
+                viewModel.updateEpgPresetAddress(preset.presetId, source.key, url, onSuccess, onError)
             },
             switchModifier = if (preset.presetId == presets.firstOrNull()?.presetId) firstFocusModifier else Modifier,
         )

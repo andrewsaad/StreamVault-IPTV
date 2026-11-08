@@ -8,6 +8,7 @@ import com.streamvault.domain.model.EpgPresetSource
 import com.streamvault.domain.model.Result
 import com.streamvault.domain.repository.EpgPresetErrors
 import com.streamvault.domain.repository.EpgPresetManager
+import com.streamvault.domain.repository.EpgPresetSourceStatus
 import com.streamvault.domain.repository.EpgPresetStatus
 import com.streamvault.domain.repository.EpgSourceRepository
 import java.net.URI
@@ -79,6 +80,10 @@ class EpgPresetManagerImpl internal constructor(
                     lastSuccessAt = presetRows.map { it.lastSuccessAt }.filter { it > 0L }.maxOrNull(),
                     lastError = presetRows.firstNotNullOfOrNull { row -> row.lastError?.takeIf(String::isNotBlank) },
                     refreshing = preset.id in busy,
+                    sources = preset.sources.map { source ->
+                        val row = if (enabled) state.sources[source.key]?.let { rowsById[it.sourceId] } else null
+                        EpgPresetSourceStatus(source.key, row?.id, row?.url ?: addressFor(source, state))
+                    },
                 )
             }
         }.distinctUntilChanged()
@@ -98,6 +103,31 @@ class EpgPresetManagerImpl internal constructor(
         return refresh(preset.id, due)
     }
 
+    override suspend fun updateAddress(presetId: String, sourceKey: String, url: String): Result<Unit> {
+        val preset = EpgPresetCatalog.byId(presetId) ?: return Result.error(EpgPresetErrors.UNKNOWN_PRESET)
+        val source = preset.sources.firstOrNull { it.key == sourceKey }
+            ?: return Result.error(EpgPresetErrors.UNKNOWN_PRESET)
+        val trimmed = url.trim()
+        return mutex.withLock {
+            val state = store.current()
+            if (preset.id !in state.enabledPresetIds) return@withLock Result.error(EpgPresetErrors.NOT_ENABLED)
+            // The repository accepts a blank address (it means "no guide"), which a preset file never is.
+            if (trimmed.isEmpty()) return@withLock Result.error(EpgPresetErrors.INVALID_ADDRESS)
+            val row = state.sources[source.key]?.let { sources.getSourceById(it.sourceId) }
+                ?: return@withLock Result.error(EpgPresetErrors.SOURCE_UNAVAILABLE)
+            // Saving the same address again is not a new file, so it keeps the gap (FR-007).
+            if (trimmed == row.url) return@withLock Result.success(Unit)
+            val updated = sources.updateSource(row.copy(url = trimmed))
+            if (updated is Result.Error) return@withLock updated
+            // The repository may normalize the address, so remember what it stored.
+            val saved = sources.getSourceById(row.id)?.url ?: trimmed
+            store.update { it.copy(addresses = it.addresses.remembering(source, saved)) }
+            // A new address is a new file, so the gap left by the old one no longer applies.
+            store.clearRefreshAttempt(row.id)
+            Result.success(Unit)
+        }
+    }
+
     override suspend fun reconcile() {
         val due = mutex.withLock {
             val state = store.current()
@@ -110,7 +140,7 @@ class EpgPresetManagerImpl internal constructor(
             var records = state.sources.filterKeys { it in usedKeys }
             enabled.flatMap { it.sources }.distinctBy { it.key }.forEach { source ->
                 val before = records[source.key]
-                val record = ensureSource(source, before) ?: return@forEach
+                val record = ensureSource(source, before, addressFor(source, state)) ?: return@forEach
                 if (record.sourceId != before?.sourceId) fresh += record.sourceId
                 records = records + (source.key to assignToAllProviders(record))
             }
@@ -134,7 +164,7 @@ class EpgPresetManagerImpl internal constructor(
             val state = store.current()
             val records = state.sources.toMutableMap()
             for (source in preset.sources) {
-                val record = ensureSource(source, records[source.key])
+                val record = ensureSource(source, records[source.key], addressFor(source, state))
                     ?: return Result.error(EpgPresetErrors.SOURCE_UNAVAILABLE)
                 records[source.key] = record
                 // Saved before assigning, so a crash mid-way leaves a row reconcile() can still find.
@@ -156,9 +186,18 @@ class EpgPresetManagerImpl internal constructor(
         val stillUsed = EpgPresetCatalog.all
             .filter { it.id in remaining }
             .flatMapTo(HashSet()) { other -> other.sources.map { it.key } }
-        val released = preset.sources.map { it.key }.filterNot { it in stillUsed }
-        released.forEach { key -> state.sources[key]?.let { release(it) } }
-        store.update { it.copy(enabledPresetIds = remaining, sources = it.sources - released.toSet()) }
+        val released = preset.sources.filterNot { it.key in stillUsed }
+        var addresses = state.addresses
+        released.forEach { source ->
+            val record = state.sources[source.key] ?: return@forEach
+            // An address changed in any editor is kept, so turning the preset on again reuses it.
+            sources.getSourceById(record.sourceId)?.let { row -> addresses = addresses.remembering(source, row.url) }
+            release(record)
+        }
+        val releasedKeys = released.mapTo(HashSet()) { it.key }
+        store.update {
+            it.copy(enabledPresetIds = remaining, sources = it.sources - releasedKeys, addresses = addresses)
+        }
         Result.success(Unit)
     }
 
@@ -171,16 +210,20 @@ class EpgPresetManagerImpl internal constructor(
         }
     }
 
-    /** The row for [source]: the remembered one if it still exists, else a hand-added row with the address, else a new one. */
-    private suspend fun ensureSource(source: EpgPresetSource, remembered: EpgPresetSourceRecord?): EpgPresetSourceRecord? {
+    /** The row for [source]: the remembered one if it still exists, else a hand-added row with [url], else a new one. */
+    private suspend fun ensureSource(
+        source: EpgPresetSource,
+        remembered: EpgPresetSourceRecord?,
+        url: String,
+    ): EpgPresetSourceRecord? {
         if (remembered != null && sources.getSourceById(remembered.sourceId) != null) return remembered
-        val existing = sources.getAllSources().first().firstOrNull { it.url == source.url }
+        val existing = sources.getAllSources().first().firstOrNull { it.url == url }
         if (existing != null) {
             // Our own row survives under the same id; anything else was added by hand and is never deleted.
             val owned = remembered?.owned == true && remembered.sourceId == existing.id
             return EpgPresetSourceRecord(existing.id, owned = owned, assignedProviderIds = emptySet())
         }
-        return when (val added = sources.addSource(name = sourceName(source), url = source.url)) {
+        return when (val added = sources.addSource(name = sourceName(source), url = url)) {
             is Result.Success -> EpgPresetSourceRecord(added.data.id, owned = true, assignedProviderIds = emptySet())
             else -> {
                 Log.w(TAG, "Could not add preset source ${source.key}: ${added.errorMessageOrNull()}")
@@ -225,6 +268,16 @@ class EpgPresetManagerImpl internal constructor(
                 if (presetId != null) refreshing.update { it - presetId }
             }
         }.await()
+    }
+
+    /** The user's edited address for [source], else the built-in one. */
+    private fun addressFor(source: EpgPresetSource, state: EpgPresetState): String =
+        state.addresses[source.key] ?: source.url
+
+    /** Keeps [url] as the edit for [source], or forgets the edit when it is blank or the built-in address again. */
+    private fun Map<String, String>.remembering(source: EpgPresetSource, url: String): Map<String, String> {
+        val trimmed = url.trim()
+        return if (trimmed.isEmpty() || trimmed == source.url) this - source.key else this + (source.key to trimmed)
     }
 
     /** "epgshare01 AE1", "open-epg QATAR1": the site, then the file. A source name, never translated. */

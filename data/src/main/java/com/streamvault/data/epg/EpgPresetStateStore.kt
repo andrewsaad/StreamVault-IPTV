@@ -34,11 +34,16 @@ data class EpgPresetSourceRecord(
     val handledProviderIds: Set<Long> = assignedProviderIds,
 )
 
-/** Device-local preset state. Sources are keyed by [com.streamvault.domain.model.EpgPresetSource.key]. */
+/**
+ * Device-local preset state. Sources and [addresses] are keyed by
+ * [com.streamvault.domain.model.EpgPresetSource.key]. [addresses] holds the user's edited
+ * address per file and outlives the preset being off, so turning it on again reuses the edit.
+ */
 data class EpgPresetState(
     val enabledPresetIds: Set<String> = emptySet(),
     val sources: Map<String, EpgPresetSourceRecord> = emptyMap(),
     val lastAttemptAtBySourceId: Map<Long, Long> = emptyMap(),
+    val addresses: Map<String, String> = emptyMap(),
 ) {
     fun isPresetOwnedSource(sourceId: Long): Boolean =
         sources.values.any { it.owned && it.sourceId == sourceId }
@@ -135,6 +140,7 @@ class EpgPresetStateStore internal constructor(
         private val ENABLED_KEY = stringSetPreferencesKey("enabled_presets")
         private val SOURCES_KEY = stringPreferencesKey("sources")
         private val ATTEMPTS_KEY = stringPreferencesKey("attempts")
+        private val ADDRESSES_KEY = stringPreferencesKey("addresses")
 
         private fun createDataStore(produceFile: () -> File): DataStore<Preferences> =
             PreferenceDataStoreFactory.create(
@@ -151,6 +157,7 @@ class EpgPresetStateStore internal constructor(
                 // Attempts for rows the presets no longer use are dropped on read.
                 lastAttemptAtBySourceId = decodePresetAttempts(preferences[ATTEMPTS_KEY])
                     .filterKeys { it in liveSourceIds },
+                addresses = decodePresetAddresses(preferences[ADDRESSES_KEY]),
             )
         }
 
@@ -158,6 +165,7 @@ class EpgPresetStateStore internal constructor(
             preferences[ENABLED_KEY] = state.enabledPresetIds
             preferences[SOURCES_KEY] = encodePresetSources(state.sources)
             preferences[ATTEMPTS_KEY] = encodePresetAttempts(state.lastAttemptAtBySourceId)
+            preferences[ADDRESSES_KEY] = encodePresetAddresses(state.addresses)
         }
     }
 }
@@ -217,3 +225,21 @@ internal fun encodePresetAttempts(attempts: Map<Long, Long>): String =
         .filter { (sourceId, timestamp) -> sourceId > 0L && timestamp > 0L }
         .sortedBy { it.key }
         .joinToString("\n") { (sourceId, timestamp) -> "$sourceId\t$timestamp" }
+
+internal fun decodePresetAddresses(encoded: String?): Map<String, String> =
+    encoded.orEmpty()
+        .lineSequence()
+        .mapNotNull { line ->
+            val parts = line.split('\t')
+            if (parts.size != 2) return@mapNotNull null
+            val key = parts[0].trim()
+            val url = parts[1].trim()
+            if (key.isEmpty() || url.isEmpty()) null else key to url
+        }
+        .toMap()
+
+internal fun encodePresetAddresses(addresses: Map<String, String>): String =
+    addresses.entries
+        .filter { (key, url) -> listOf(key, url).all { it.isNotBlank() && '\t' !in it && '\n' !in it } }
+        .sortedBy { it.key }
+        .joinToString("\n") { (key, url) -> "$key\t$url" }

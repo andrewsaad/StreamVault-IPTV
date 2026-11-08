@@ -2,23 +2,17 @@ package com.streamvault.feature.settings.presentation
 
 import com.google.common.truth.Truth.assertThat
 import com.streamvault.domain.model.EpgPresetCatalog
-import com.streamvault.domain.model.EpgSource
 import com.streamvault.domain.model.Result
 import com.streamvault.domain.repository.EpgPresetManager
+import com.streamvault.domain.repository.EpgPresetSourceStatus
 import com.streamvault.domain.repository.EpgPresetStatus
-import com.streamvault.domain.repository.EpgSourceRepository
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
-import org.mockito.kotlin.any
-import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.mock
-import org.mockito.kotlin.never
-import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class SettingsEpgPresetViewModelTest {
@@ -29,6 +23,8 @@ class SettingsEpgPresetViewModelTest {
         )
         val setEnabledCalls = mutableListOf<Pair<String, Boolean>>()
         val refreshCalls = mutableListOf<String>()
+        val addressCalls = mutableListOf<Triple<String, String, String>>()
+        var nextAddressResult: Result<Unit> = Result.Success(Unit)
         var reconcileCalls = 0
         var nextResult: Result<Unit> = Result.Success(Unit)
 
@@ -44,12 +40,18 @@ class SettingsEpgPresetViewModelTest {
             return nextResult
         }
 
+        override suspend fun updateAddress(presetId: String, sourceKey: String, url: String): Result<Unit> {
+            addressCalls += Triple(presetId, sourceKey, url)
+            return nextAddressResult
+        }
+
         override suspend fun reconcile() {
             reconcileCalls++
         }
     }
 
     private val beinUrls = EpgPresetCatalog.byId(EpgPresetCatalog.BEIN)!!.sources.map { it.url }
+    private val beinKeys = EpgPresetCatalog.byId(EpgPresetCatalog.BEIN)!!.sources.map { it.key }
 
     // ── Mapping ─────────────────────────────────────────────────────
 
@@ -69,7 +71,6 @@ class SettingsEpgPresetViewModelTest {
     fun `presets missing from the manager output stay off`() {
         val models = mapEpgPresetUiModels(
             statuses = listOf(EpgPresetStatus(EpgPresetCatalog.US, true, 1_000L, null, false)),
-            epgSources = emptyList(),
         )
 
         assertThat(models.map { it.presetId })
@@ -83,7 +84,7 @@ class SettingsEpgPresetViewModelTest {
     @Test
     fun `status line reflects off, refreshing, error and last update`() {
         fun line(status: EpgPresetStatus) =
-            mapEpgPresetUiModels(listOf(status), emptyList()).single { it.presetId == status.presetId }.statusLine
+            mapEpgPresetUiModels(listOf(status)).single { it.presetId == status.presetId }.statusLine
 
         val id = EpgPresetCatalog.BEIN
         assertThat(line(EpgPresetStatus(id, false, 5L, "boom", true))).isEqualTo(EpgPresetStatusLine.Off)
@@ -96,31 +97,20 @@ class SettingsEpgPresetViewModelTest {
     }
 
     @Test
-    fun `preset sources are linked to existing guide sources by address`() {
+    fun `each preset file takes its row and address from the manager`() {
         val models = mapEpgPresetUiModels(
-            statuses = listOf(EpgPresetStatus(EpgPresetCatalog.BEIN, true, null, null, false)),
-            epgSources = listOf(
-                EpgSource(id = 7L, name = "beIN", url = beinUrls[0]),
-                EpgSource(id = 9L, name = "other", url = "https://example.com/guide.xml"),
+            statuses = listOf(
+                EpgPresetStatus(
+                    EpgPresetCatalog.BEIN, true, null, null, false,
+                    sources = listOf(EpgPresetSourceStatus(beinKeys[0], 7L, "https://mirror.example/qatar.xml")),
+                )
             ),
         )
 
         val bein = models.single { it.presetId == EpgPresetCatalog.BEIN }
-        assertThat(bein.sources.map { it.sourceId }).containsExactly(7L, null).inOrder()
-        assertThat(bein.sources.map { it.url }).containsExactly(beinUrls[0], beinUrls[1]).inOrder()
-    }
-
-    @Test
-    fun `an edited address stays linked through the remembered source id`() {
-        val models = mapEpgPresetUiModels(
-            statuses = listOf(EpgPresetStatus(EpgPresetCatalog.BEIN, true, null, null, false)),
-            epgSources = listOf(EpgSource(id = 7L, name = "beIN", url = "https://mirror.example/bein.xml")),
-            knownSourceIds = mapOf(epgPresetSourceKey(EpgPresetCatalog.BEIN, "BEIN1") to 7L),
-        )
-
-        val first = models.single { it.presetId == EpgPresetCatalog.BEIN }.sources.first()
-        assertThat(first.sourceId).isEqualTo(7L)
-        assertThat(first.url).isEqualTo("https://mirror.example/bein.xml")
+        assertThat(bein.sources.map { it.sourceId }).containsExactly(7L, null, null).inOrder()
+        assertThat(bein.sources.map { it.url })
+            .containsExactly("https://mirror.example/qatar.xml", beinUrls[1], beinUrls[2]).inOrder()
     }
 
     // ── Actions ─────────────────────────────────────────────────────
@@ -172,59 +162,52 @@ class SettingsEpgPresetViewModelTest {
     }
 
     @Test
-    fun `changing an address updates the existing guide source and keeps its id`() = runTest {
-        val repository = mock<EpgSourceRepository>()
-        val source = EpgSource(id = 7L, name = "beIN", url = beinUrls[0])
-        whenever(repository.getSourceById(7L)).thenReturn(source)
-        whenever(repository.updateSource(any())).thenReturn(Result.Success(Unit))
+    fun `changing an address goes through the manager and then tries the new address`() = runTest {
+        val manager = FakeEpgPresetManager()
         val uiState = MutableStateFlow(SettingsUiState())
-        val actions = SettingsEpgActions(repository, FakeEpgPresetManager(), uiState)
+        val actions = SettingsEpgActions(mock(), manager, uiState)
         var succeeded = false
 
         actions.updateEpgPresetAddress(
             scope = this,
             presetId = EpgPresetCatalog.BEIN,
             sourceKey = "BEIN1",
-            sourceId = 7L,
             url = "  https://mirror.example/bein.xml ",
             onSuccess = { succeeded = true },
         )
         advanceUntilIdle()
 
-        val captor = argumentCaptor<EpgSource>()
-        verify(repository).updateSource(captor.capture())
-        assertThat(captor.firstValue.id).isEqualTo(7L)
-        assertThat(captor.firstValue.url).isEqualTo("https://mirror.example/bein.xml")
+        assertThat(manager.addressCalls)
+            .containsExactly(Triple(EpgPresetCatalog.BEIN, "BEIN1", "  https://mirror.example/bein.xml "))
+        assertThat(manager.refreshCalls).containsExactly(EpgPresetCatalog.BEIN)
         assertThat(succeeded).isTrue()
     }
 
     @Test
-    fun `a blank address is rejected without touching the source`() = runTest {
-        val repository = mock<EpgSourceRepository>()
-        val uiState = MutableStateFlow(SettingsUiState())
-        val actions = SettingsEpgActions(repository, FakeEpgPresetManager(), uiState)
+    fun `a blank address is rejected without asking the manager`() = runTest {
+        val manager = FakeEpgPresetManager()
+        val actions = SettingsEpgActions(mock(), manager, MutableStateFlow(SettingsUiState()))
         var failed = false
 
-        actions.updateEpgPresetAddress(this, EpgPresetCatalog.BEIN, "BEIN1", 7L, "   ", onError = { failed = true })
+        actions.updateEpgPresetAddress(this, EpgPresetCatalog.BEIN, "BEIN1", "   ", onError = { failed = true })
         advanceUntilIdle()
 
-        verify(repository, never()).updateSource(any())
+        assertThat(manager.addressCalls).isEmpty()
         assertThat(failed).isTrue()
     }
 
     @Test
-    fun `a failed address update reports the repository error`() = runTest {
-        val repository = mock<EpgSourceRepository>()
-        whenever(repository.getSourceById(7L)).thenReturn(EpgSource(id = 7L, name = "beIN", url = beinUrls[0]))
-        whenever(repository.updateSource(any())).thenReturn(Result.Error("Address not allowed"))
+    fun `a refused address change reports the error and tries nothing`() = runTest {
+        val manager = FakeEpgPresetManager().apply { nextAddressResult = Result.Error("Address not allowed") }
         val uiState = MutableStateFlow(SettingsUiState())
-        val actions = SettingsEpgActions(repository, FakeEpgPresetManager(), uiState)
+        val actions = SettingsEpgActions(mock(), manager, uiState)
         var failed = false
 
-        actions.updateEpgPresetAddress(this, EpgPresetCatalog.BEIN, "BEIN1", 7L, "http://x", onError = { failed = true })
+        actions.updateEpgPresetAddress(this, EpgPresetCatalog.BEIN, "BEIN1", "http://x", onError = { failed = true })
         advanceUntilIdle()
 
         assertThat(uiState.value.userMessage).isEqualTo("Address not allowed")
+        assertThat(manager.refreshCalls).isEmpty()
         assertThat(failed).isTrue()
     }
 }

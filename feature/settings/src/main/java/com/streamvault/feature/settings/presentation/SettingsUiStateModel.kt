@@ -29,7 +29,6 @@ import com.streamvault.domain.model.ContentType
 import com.streamvault.domain.model.DecoderMode
 import com.streamvault.domain.model.EpgPresetCatalog
 import com.streamvault.domain.model.EpgResolutionSummary
-import com.streamvault.domain.model.EpgSource
 import com.streamvault.domain.repository.EpgPresetStatus
 import com.streamvault.domain.model.GroupedChannelLabelMode
 import com.streamvault.domain.model.LiveChannelGroupingMode
@@ -214,7 +213,7 @@ data class SettingsUiState(
     val refreshingEpgSourceIds: Set<Long> = emptySet(),
     val epgPendingDeleteSourceId: Long? = null,
     val epgTimeShiftMinutesByProvider: Map<Long, Int> = emptyMap(),
-    val epgPresets: List<EpgPresetUiModel> = mapEpgPresetUiModels(emptyList(), emptyList()),
+    val epgPresets: List<EpgPresetUiModel> = mapEpgPresetUiModels(emptyList()),
     val autoCheckAppUpdates: Boolean = false,
     val autoDownloadAppUpdates: Boolean = false,
     val isCheckingForUpdates: Boolean = false,
@@ -258,20 +257,13 @@ data class EpgPresetUiModel(
         }
 }
 
-internal fun epgPresetSourceKey(presetId: String, sourceKey: String): String = "$presetId/$sourceKey"
-
 /**
  * Builds one entry per catalog preset, in catalog order. A preset the manager has not reported
- * is shown as off (FR-002). Each preset file is linked to a guide source by [knownSourceIds]
- * first (so an edited address stays linked), then by its built-in address.
+ * is shown as off (FR-002). Each preset file takes its row and address from the manager, which
+ * keeps them across restarts and address edits; a file it did not report shows the built-in one.
  */
-internal fun mapEpgPresetUiModels(
-    statuses: List<EpgPresetStatus>,
-    epgSources: List<EpgSource>,
-    knownSourceIds: Map<String, Long> = emptyMap(),
-): List<EpgPresetUiModel> {
+internal fun mapEpgPresetUiModels(statuses: List<EpgPresetStatus>): List<EpgPresetUiModel> {
     val statusById = statuses.associateBy { it.presetId }
-    val sourcesById = epgSources.associateBy { it.id }
     return EpgPresetCatalog.all.map { preset ->
         val status = statusById[preset.id]
         EpgPresetUiModel(
@@ -281,13 +273,11 @@ internal fun mapEpgPresetUiModels(
             lastSuccessAt = status?.lastSuccessAt,
             lastError = status?.lastError,
             sources = preset.sources.map { presetSource ->
-                val linked = knownSourceIds[epgPresetSourceKey(preset.id, presetSource.key)]
-                    ?.let(sourcesById::get)
-                    ?: epgSources.firstOrNull { it.url.trim().equals(presetSource.url, ignoreCase = true) }
+                val reported = status?.sources?.firstOrNull { it.key == presetSource.key }
                 EpgPresetSourceUiModel(
                     key = presetSource.key,
-                    url = linked?.url ?: presetSource.url,
-                    sourceId = linked?.id,
+                    url = reported?.url ?: presetSource.url,
+                    sourceId = reported?.sourceId,
                 )
             },
         )

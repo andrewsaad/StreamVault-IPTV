@@ -315,6 +315,116 @@ class EpgPresetManagerImplTest {
         assertThat(repo.refreshCalls).hasSize(1)
     }
 
+    // ── F9: editing a preset's address ───────────────────────────────
+
+    @Test
+    fun `status_reportsEachFileWithItsRowAndAddress_soAnEditedRowStaysLinkedAfterARestart`() = runTest {
+        manager.setEnabled(EpgPresetCatalog.EGYPT, true)
+        val ae1Id = sourceIdFor(ae1.url)
+        manager.updateAddress(EpgPresetCatalog.EGYPT, ae1.key, "https://mirror.example/ae1.xml")
+
+        // A new manager over the same store, like the app after a restart.
+        val restarted = EpgPresetManagerImpl(repo, EpgPresetProviderDirectory { providerIds.toList() }, store)
+        val egypt = restarted.observe().first().single { it.presetId == EpgPresetCatalog.EGYPT }
+
+        assertThat(egypt.sources.map { Triple(it.key, it.sourceId, it.url) })
+            .containsExactly(Triple(ae1.key, ae1Id, "https://mirror.example/ae1.xml"))
+    }
+
+    @Test
+    fun `status_ofAnOffPreset_listsItsFilesWithoutRows`() = runTest {
+        val us = manager.observe().first().single { it.presetId == EpgPresetCatalog.US }
+
+        assertThat(us.sources.map { it.key to it.sourceId })
+            .containsExactlyElementsIn(EpgPresetCatalog.byId(EpgPresetCatalog.US)!!.sources.map { it.key to null })
+            .inOrder()
+    }
+
+    @Test
+    fun `updateAddress_changesTheSameRow_andAllowsAnAttemptInsideTheGap`() = runTest {
+        manager.setEnabled(EpgPresetCatalog.EGYPT, true)
+        val ae1Id = sourceIdFor(ae1.url)
+        now += 60_000L
+
+        val result = manager.updateAddress(EpgPresetCatalog.EGYPT, ae1.key, "  https://mirror.example/ae1.xml ")
+        val refreshed = manager.refreshNow(EpgPresetCatalog.EGYPT)
+
+        assertThat(result.isSuccess).isTrue()
+        assertThat(repo.rows.value.single().id).isEqualTo(ae1Id)
+        assertThat(repo.rows.value.single().url).isEqualTo("https://mirror.example/ae1.xml")
+        assertThat(refreshed.isSuccess).isTrue()
+        assertThat(repo.refreshCalls).containsExactly(ae1Id, ae1Id)
+    }
+
+    @Test
+    fun `updateAddress_withTheSameAddress_keepsTheGap`() = runTest {
+        manager.setEnabled(EpgPresetCatalog.EGYPT, true)
+
+        val result = manager.updateAddress(EpgPresetCatalog.EGYPT, ae1.key, " ${ae1.url} ")
+
+        assertThat(result.isSuccess).isTrue()
+        assertThat(manager.refreshNow(EpgPresetCatalog.EGYPT).errorMessageOrNull())
+            .isEqualTo(EpgPresetErrors.REFRESH_TOO_SOON)
+    }
+
+    @Test
+    fun `updateAddress_survivesTurningThePresetOffAndOn`() = runTest {
+        manager.setEnabled(EpgPresetCatalog.EGYPT, true)
+        manager.updateAddress(EpgPresetCatalog.EGYPT, ae1.key, "https://mirror.example/ae1.xml")
+
+        manager.setEnabled(EpgPresetCatalog.EGYPT, false)
+        assertThat(repo.rows.value).isEmpty()
+        manager.setEnabled(EpgPresetCatalog.EGYPT, true)
+
+        assertThat(repo.rows.value.map { it.url }).containsExactly("https://mirror.example/ae1.xml")
+    }
+
+    @Test
+    fun `anAddressEditedInTheOrdinarySourceEditor_alsoSurvivesOffAndOn`() = runTest {
+        manager.setEnabled(EpgPresetCatalog.EGYPT, true)
+        val row = repo.rows.value.single()
+        repo.updateSource(row.copy(url = "https://mirror.example/ae1.xml"))
+
+        manager.setEnabled(EpgPresetCatalog.EGYPT, false)
+        manager.setEnabled(EpgPresetCatalog.EGYPT, true)
+
+        assertThat(repo.rows.value.map { it.url }).containsExactly("https://mirror.example/ae1.xml")
+    }
+
+    @Test
+    fun `updateAddress_backToTheBuiltInAddress_forgetsTheEdit`() = runTest {
+        manager.setEnabled(EpgPresetCatalog.EGYPT, true)
+        manager.updateAddress(EpgPresetCatalog.EGYPT, ae1.key, "https://mirror.example/ae1.xml")
+        manager.updateAddress(EpgPresetCatalog.EGYPT, ae1.key, ae1.url)
+
+        assertThat(store.current().addresses).isEmpty()
+    }
+
+    @Test
+    fun `updateAddress_refusesUnknownFilesOffPresetsAndBlankAddresses`() = runTest {
+        assertThat(manager.updateAddress("nope", ae1.key, "https://x.example/a.xml").errorMessageOrNull())
+            .isEqualTo(EpgPresetErrors.UNKNOWN_PRESET)
+        assertThat(manager.updateAddress(EpgPresetCatalog.EGYPT, "US2", "https://x.example/a.xml").errorMessageOrNull())
+            .isEqualTo(EpgPresetErrors.UNKNOWN_PRESET)
+        assertThat(manager.updateAddress(EpgPresetCatalog.EGYPT, ae1.key, "https://x.example/a.xml").errorMessageOrNull())
+            .isEqualTo(EpgPresetErrors.NOT_ENABLED)
+        manager.setEnabled(EpgPresetCatalog.EGYPT, true)
+        assertThat(manager.updateAddress(EpgPresetCatalog.EGYPT, ae1.key, "   ").errorMessageOrNull())
+            .isEqualTo(EpgPresetErrors.INVALID_ADDRESS)
+        assertThat(repo.rows.value.single().url).isEqualTo(ae1.url)
+    }
+
+    @Test
+    fun `updateAddress_passesOnTheRepositoryRefusal_andRemembersNothing`() = runTest {
+        manager.setEnabled(EpgPresetCatalog.EGYPT, true)
+        repo.refuseUpdatesWith = "Address not allowed"
+
+        val result = manager.updateAddress(EpgPresetCatalog.EGYPT, ae1.key, "ftp://x.example/a.xml")
+
+        assertThat(result.errorMessageOrNull()).isEqualTo("Address not allowed")
+        assertThat(store.current().addresses).isEmpty()
+    }
+
     @Test
     fun `stateIsDeviceLocal_aSecondStoreFileSeesEveryPresetOff`() = runTest {
         manager.setEnabled(EpgPresetCatalog.EGYPT, true)
@@ -352,7 +462,10 @@ private class FakeEpgSourceRepository(private val gate: EpgSourceRefreshGate) : 
         return Result.success(source)
     }
 
+    var refuseUpdatesWith: String? = null
+
     override suspend fun updateSource(source: EpgSource): Result<Unit> {
+        refuseUpdatesWith?.let { return Result.error(it) }
         rows.value = rows.value.map { if (it.id == source.id) source else it }
         return Result.success(Unit)
     }

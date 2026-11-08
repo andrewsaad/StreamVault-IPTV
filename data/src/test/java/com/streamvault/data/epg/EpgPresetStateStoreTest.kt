@@ -47,6 +47,24 @@ class EpgPresetStateStoreTest {
     }
 
     @Test
+    fun `codec_keepsEditedAddresses_andDropsLinesWithoutOne`() {
+        val addresses = mapOf("AE1" to "https://mirror.example/ae1.xml", "US2" to "https://x.example/us2.xml?a=1&b=2")
+
+        assertThat(decodePresetAddresses(encodePresetAddresses(addresses))).isEqualTo(addresses)
+        assertThat(decodePresetAddresses("AE1\t\n\thttps://x.example/a.xml\nbad\nUS2\thttps://x.example/u.xml"))
+            .containsExactly("US2", "https://x.example/u.xml")
+    }
+
+    @Test
+    fun `editedAddresses_surviveInTheStore_whenThePresetIsOff`() = runTest {
+        val store = store()
+        store.update { it.copy(addresses = mapOf("AE1" to "https://mirror.example/ae1.xml")) }
+
+        assertThat(store.current().enabledPresetIds).isEmpty()
+        assertThat(store.current().addresses).containsExactly("AE1", "https://mirror.example/ae1.xml")
+    }
+
+    @Test
     fun `newStore_isEmpty_soEveryPresetIsOff`() = runTest {
         assertThat(store().current()).isEqualTo(EpgPresetState())
     }

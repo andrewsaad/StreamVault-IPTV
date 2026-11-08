@@ -1778,12 +1778,11 @@ class SettingsViewModel @Inject constructor(
     fun updateEpgPresetAddress(
         presetId: String,
         sourceKey: String,
-        sourceId: Long,
         url: String,
         onSuccess: () -> Unit = {},
         onError: () -> Unit = {}
     ) {
-        epgActions.updateEpgPresetAddress(viewModelScope, presetId, sourceKey, sourceId, url, onSuccess, onError)
+        epgActions.updateEpgPresetAddress(viewModelScope, presetId, sourceKey, url, onSuccess, onError)
     }
 
 }

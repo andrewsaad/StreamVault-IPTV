@@ -8,8 +8,6 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -24,9 +22,6 @@ class SettingsEpgActions(
     // cancel the old coroutine rather than leaking it in viewModelScope.
     private val assignmentJobs = ConcurrentHashMap<Long, Job>()
 
-    // Preset file -> guide source id, remembered so a preset stays linked to its source after
-    // the user changes the address (the built-in address no longer matches then).
-    private val knownPresetSourceIds = ConcurrentHashMap<String, Long>()
     private var presetObserverJob: Job? = null
 
     // ── Guide presets ────────────────────────────────────────────────
@@ -45,17 +40,7 @@ class SettingsEpgActions(
                 }
             }
             try {
-                combine(
-                    epgPresetManager.observe(),
-                    uiState.map { it.epgSources }.distinctUntilChanged()
-                ) { statuses, sources ->
-                    mapEpgPresetUiModels(statuses, sources, knownPresetSourceIds.toMap())
-                }.collect { presets ->
-                    presets.forEach { preset ->
-                        preset.sources.forEach { source ->
-                            source.sourceId?.let { knownPresetSourceIds[epgPresetSourceKey(preset.presetId, source.key)] = it }
-                        }
-                    }
+                epgPresetManager.observe().map(::mapEpgPresetUiModels).collect { presets ->
                     uiState.update { it.copy(epgPresets = presets) }
                 }
             } catch (cancelled: CancellationException) {
@@ -98,37 +83,31 @@ class SettingsEpgActions(
     }
 
     /**
-     * Changes the address of a preset file through the ordinary guide source update, so the
-     * source keeps its id (and with it the preset link and the refresh limit). FR-006, FR-023.
+     * Changes the address of a preset file on the same guide source row, then tries the new
+     * address at once; the manager lifts the gap for it. FR-006, FR-023.
      */
     fun updateEpgPresetAddress(
         scope: CoroutineScope,
         presetId: String,
         sourceKey: String,
-        sourceId: Long,
         url: String,
         onSuccess: () -> Unit = {},
         onError: () -> Unit = {}
     ) {
-        val trimmedUrl = url.trim()
-        if (trimmedUrl.isEmpty()) {
+        if (url.isBlank()) {
             onError()
             return
         }
         scope.launch {
             try {
-                val source = epgSourceRepository.getSourceById(sourceId)
-                if (source == null) {
-                    onError()
-                    return@launch
-                }
-                knownPresetSourceIds[epgPresetSourceKey(presetId, sourceKey)] = sourceId
-                val result = epgSourceRepository.updateSource(source.copy(url = trimmedUrl))
+                val result = epgPresetManager.updateAddress(presetId, sourceKey, url)
                 if (result is Result.Error) {
                     uiState.update { it.copy(userMessage = result.message) }
                     onError()
                 } else {
                     onSuccess()
+                    // Progress and the outcome show in the preset's own status line.
+                    refreshEpgPresetNow(scope, presetId)
                 }
             } catch (cancelled: CancellationException) {
                 throw cancelled
