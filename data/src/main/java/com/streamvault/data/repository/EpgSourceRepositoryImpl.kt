@@ -273,7 +273,8 @@ class EpgSourceRepositoryImpl @Inject constructor(
     override suspend fun assignSourceToProvider(
         providerId: Long,
         epgSourceId: Long,
-        priority: Int
+        priority: Int,
+        resolve: Boolean
     ): Result<Unit> {
         val source = epgSourceDao.getById(epgSourceId) ?: return Result.error("Source not found")
         providerEpgSourceDao.insert(
@@ -283,7 +284,7 @@ class EpgSourceRepositoryImpl @Inject constructor(
                 priority = priority
             )
         )
-        resolveProviderUsingPreferences(providerId)
+        if (resolve) resolveProviderUsingPreferences(providerId)
         return Result.success(Unit)
     }
 
@@ -292,11 +293,11 @@ class EpgSourceRepositoryImpl @Inject constructor(
         resolveProviderUsingPreferences(providerId)
     }
 
-    override suspend fun updateAssignmentPriority(providerId: Long, epgSourceId: Long, priority: Int) {
+    override suspend fun updateAssignmentPriority(providerId: Long, epgSourceId: Long, priority: Int, resolve: Boolean) {
         val assignments = providerEpgSourceDao.getForProviderSync(providerId)
         val target = assignments.find { it.epgSourceId == epgSourceId } ?: return
         providerEpgSourceDao.update(target.copy(priority = priority))
-        resolveProviderUsingPreferences(providerId)
+        if (resolve) resolveProviderUsingPreferences(providerId)
     }
 
     override suspend fun swapAssignmentPriorities(
@@ -599,6 +600,21 @@ class EpgSourceRepositoryImpl @Inject constructor(
             Result.success(Unit)
         } else {
             Result.error("Some sources failed: ${errors.joinToString("; ")}")
+        }
+    }
+
+    override suspend fun refreshSources(sourceIds: List<Long>, alsoResolve: Set<Long>): Map<Long, Result<Unit>> {
+        val toResolve = LinkedHashSet(alsoResolve)
+        try {
+            return sourceIds.distinct().associateWith { sourceId ->
+                refreshSourceInternal(sourceId, resolveAffectedProviders = false).also { result ->
+                    // A failed import changed nothing, as with refreshSource.
+                    if (result !is Result.Error) toResolve += providerEpgSourceDao.getProviderIdsForSourceSync(sourceId)
+                }
+            }
+        } finally {
+            // Also after a failure or a cancelled wait, so assignments made for these imports take effect.
+            withContext(NonCancellable) { resolveAffectedProviders(toResolve) }
         }
     }
 

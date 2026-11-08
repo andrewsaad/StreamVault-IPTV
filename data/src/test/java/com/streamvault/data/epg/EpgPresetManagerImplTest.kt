@@ -577,6 +577,39 @@ class EpgPresetManagerImplTest {
         assertThat(store.current().sources).isEmpty()
     }
 
+    // ── F13: one guide match pass per provider ─────────────────────────
+
+    @Test
+    fun `enablingBein_runsOneMatchPassPerProvider_notOnePerFileAndRanking`() = runTest {
+        manager.setEnabled(EpgPresetCatalog.BEIN, true)
+
+        assertThat(repo.resolves.sorted()).containsExactly(1L, 2L).inOrder()
+    }
+
+    @Test
+    fun `aSharedFileInsideItsGap_stillGetsItsNewProvidersResolved`() = runTest {
+        manager.setEnabled(EpgPresetCatalog.EGYPT, true)
+        providerIds += 3L
+        repo.resolves.clear()
+
+        // AE1 is shared and inside its gap, so its import is skipped; provider 3 is new to it.
+        manager.setEnabled(EpgPresetCatalog.BEIN, true)
+
+        assertThat(repo.resolves.count { it == 3L }).isEqualTo(1)
+        assertThat(repo.resolves.groupingBy { it }.eachCount().values.all { it == 1 }).isTrue()
+    }
+
+    @Test
+    fun `reconcile_resolvesAProviderAddedLater_once_evenWithNothingToImport`() = runTest {
+        manager.setEnabled(EpgPresetCatalog.BEIN, true)
+        providerIds += 3L
+        repo.resolves.clear()
+
+        manager.reconcile()
+
+        assertThat(repo.resolves).containsExactly(3L)
+    }
+
     @Test
     fun `stateIsDeviceLocal_aSecondStoreFileSeesEveryPresetOff`() = runTest {
         manager.setEnabled(EpgPresetCatalog.EGYPT, true)
@@ -644,9 +677,18 @@ private class FakeEpgSourceRepository(private val gate: EpgSourceRefreshGate) : 
     /** Assigning to this provider throws, like the process dying mid-enable. */
     var dieOnAssignTo: Long? = null
 
-    override suspend fun assignSourceToProvider(providerId: Long, epgSourceId: Long, priority: Int): Result<Unit> {
+    /** Each guide match pass the real repository would run, by provider, in order (F13). */
+    val resolves = mutableListOf<Long>()
+
+    override suspend fun assignSourceToProvider(
+        providerId: Long,
+        epgSourceId: Long,
+        priority: Int,
+        resolve: Boolean,
+    ): Result<Unit> {
         if (providerId == dieOnAssignTo) throw IllegalStateException("process died")
         assignments.getOrPut(providerId) { mutableMapOf() }[epgSourceId] = priority
+        if (resolve) resolves += providerId
         return Result.success(Unit)
     }
 
@@ -654,8 +696,16 @@ private class FakeEpgSourceRepository(private val gate: EpgSourceRefreshGate) : 
         assignments[providerId]?.remove(epgSourceId)
     }
 
-    override suspend fun updateAssignmentPriority(providerId: Long, epgSourceId: Long, priority: Int) {
+    override suspend fun updateAssignmentPriority(providerId: Long, epgSourceId: Long, priority: Int, resolve: Boolean) {
         assignments[providerId]?.let { if (epgSourceId in it) it[epgSourceId] = priority }
+        if (resolve) resolves += providerId
+    }
+
+    override suspend fun refreshSources(sourceIds: List<Long>, alsoResolve: Set<Long>): Map<Long, Result<Unit>> {
+        val results = sourceIds.distinct().associateWith { importWithoutResolving(it) }
+        val changed = results.filterValues { it !is Result.Error }.keys.flatMap { getProviderIdsForSource(it) }
+        resolves += (alsoResolve + changed).distinct()
+        return results
     }
     override suspend fun swapAssignmentPriorities(
         providerId: Long,
@@ -665,7 +715,12 @@ private class FakeEpgSourceRepository(private val gate: EpgSourceRefreshGate) : 
         newPriority2: Int,
     ) = Unit
 
-    override suspend fun refreshSource(sourceId: Long): Result<Unit> {
+    override suspend fun refreshSource(sourceId: Long): Result<Unit> =
+        importWithoutResolving(sourceId).also { result ->
+            if (result !is Result.Error) resolves += getProviderIdsForSource(sourceId)
+        }
+
+    private suspend fun importWithoutResolving(sourceId: Long): Result<Unit> {
         if (!gate.tryBeginRefreshAttempt(sourceId)) return Result.success(Unit)
         refreshCalls += sourceId
         refreshBlocker?.await()

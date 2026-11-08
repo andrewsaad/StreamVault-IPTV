@@ -211,6 +211,45 @@ class EpgSourceRepositoryImplTest {
     }
 
     @Test
+    fun `assignSourceToProvider_withoutResolve_leavesTheMatchPassToTheCaller`() = runTest {
+        whenever(epgSourceDao.getById(10L)).thenReturn(
+            EpgSourceEntity(id = 10L, name = "Primary", url = "https://example.com/epg.xml")
+        )
+
+        val result = repository.assignSourceToProvider(providerId = 7L, epgSourceId = 10L, priority = 1, resolve = false)
+        repository.updateAssignmentPriority(providerId = 7L, epgSourceId = 10L, priority = 2, resolve = false)
+
+        assertThat(result is Result.Success).isTrue()
+        verify(providerEpgSourceDao).insert(any())
+        verifyNoMoreInteractions(resolutionEngine)
+    }
+
+    @Test
+    fun `refreshSources_resolvesEachProviderOnce_includingOnesWhoseImportWasSkipped`() = runTest {
+        // F13: two files of one provider, refreshed together, give it one match pass, not two.
+        val justRefreshed = System.currentTimeMillis()
+        whenever(epgSourceDao.getById(10L)).thenReturn(
+            EpgSourceEntity(id = 10L, name = "A", url = "https://example.com/a.xml", lastRefreshAt = justRefreshed)
+        )
+        whenever(epgSourceDao.getById(11L)).thenReturn(
+            EpgSourceEntity(id = 11L, name = "B", url = "https://example.com/b.xml", lastRefreshAt = justRefreshed)
+        )
+        whenever(providerEpgSourceDao.getProviderIdsForSourceSync(10L)).thenReturn(listOf(7L))
+        whenever(providerEpgSourceDao.getProviderIdsForSourceSync(11L)).thenReturn(listOf(7L))
+        // Row 12 is gone, so its import fails and its providers are not resolved for it.
+        whenever(providerEpgSourceDao.getProviderIdsForSourceSync(12L)).thenReturn(listOf(9L))
+
+        val results = repository.refreshSources(listOf(10L, 11L, 12L, 10L), alsoResolve = setOf(8L))
+
+        assertThat(results.keys).containsExactly(10L, 11L, 12L).inOrder()
+        assertThat(results.getValue(10L) is Result.Success).isTrue()
+        assertThat(results.getValue(12L) is Result.Error).isTrue()
+        verify(resolutionEngine).resolveForProvider(8L, emptySet())
+        verify(resolutionEngine).resolveForProvider(7L, emptySet())
+        verifyNoMoreInteractions(resolutionEngine)
+    }
+
+    @Test
     fun `setSourceEnabled_resolvesEachAffectedProviderOnce`() = runTest {
         whenever(providerEpgSourceDao.getProviderIdsForSourceSync(10L)).thenReturn(listOf(7L, 8L, 7L))
         whenever(preferencesRepository.getHiddenCategoryIds(7L, ContentType.LIVE)).thenReturn(flowOf(setOf(101L)))

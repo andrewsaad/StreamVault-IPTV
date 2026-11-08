@@ -131,6 +131,8 @@ class EpgPresetManagerImpl internal constructor(
     }
 
     override suspend fun reconcile() {
+        // Providers given a preset row here; their matches are recomputed once, after the imports.
+        val newlyAssigned = HashSet<Long>()
         val due = mutex.withLock {
             val state = store.current()
             val enabled = EpgPresetCatalog.all.filter { it.id in state.enabledPresetIds }
@@ -140,7 +142,6 @@ class EpgPresetManagerImpl internal constructor(
             state.sources.filterKeys { it !in usedKeys }.values.forEach { release(it) }
             val fresh = mutableListOf<Long>()
             var records = state.sources.filterKeys { it in usedKeys }
-            val newlyAssigned = HashSet<Long>()
             enabled.flatMap { it.sources }.distinctBy { it.key }.forEach { source ->
                 val before = records[source.key]
                 val ensured = ensureSource(source, before, addressFor(source, state)) ?: return@forEach
@@ -157,7 +158,9 @@ class EpgPresetManagerImpl internal constructor(
             unfinished.forEach { store.clearRefreshAttempt(it) }
             fresh + unfinished
         }
-        if (due.isNotEmpty()) refresh(presetId = null, sourceIds = due)
+        if (due.isNotEmpty() || newlyAssigned.isNotEmpty()) {
+            refresh(presetId = null, sourceIds = due, alsoResolve = newlyAssigned)
+        }
     }
 
     /** No success and no error: the import never reached an outcome, usually because the process died. */
@@ -167,13 +170,14 @@ class EpgPresetManagerImpl internal constructor(
     }
 
     private suspend fun enable(preset: EpgPreset): Result<Unit> {
-        val sourceIds = mutex.withLock {
+        // Providers given a preset row here; their matches are recomputed once, after the imports.
+        val newlyAssigned = HashSet<Long>()
+        val sourceIds: List<Long>? = mutex.withLock {
             val state = store.current()
             val records = state.sources.toMutableMap()
-            val newlyAssigned = HashSet<Long>()
             for (source in preset.sources) {
                 val record = ensureSource(source, records[source.key], addressFor(source, state))
-                    ?: return Result.error(EpgPresetErrors.SOURCE_UNAVAILABLE)
+                    ?: return@withLock null
                 records[source.key] = record
                 // Saved before assigning, so a crash mid-way leaves a row reconcile() can still find.
                 store.update { it.copy(sources = it.sources + (source.key to record)) }
@@ -185,8 +189,14 @@ class EpgPresetManagerImpl internal constructor(
             store.update { it.copy(enabledPresetIds = it.enabledPresetIds + preset.id, sources = records) }
             preset.sources.map { records.getValue(it.key).sourceId }
         }
-        // The first attempt of a new row is always allowed; a shared row inside its gap is skipped.
-        refresh(preset.id, sourceIds)
+        if (sourceIds == null) {
+            // The assignments made before the failure skipped their pass; they still get one, outside the lock.
+            if (newlyAssigned.isNotEmpty()) sources.refreshSources(emptyList(), alsoResolve = newlyAssigned)
+            return Result.error(EpgPresetErrors.SOURCE_UNAVAILABLE)
+        }
+        // The first attempt of a new row is always allowed; a shared row inside its gap is skipped,
+        // but the providers it was just assigned to are still resolved.
+        refresh(preset.id, sourceIds, alsoResolve = newlyAssigned)
         return Result.success(Unit)
     }
 
@@ -284,7 +294,8 @@ class EpgPresetManagerImpl internal constructor(
         for (providerId in providers.providerIds()) {
             if (providerId in handled) continue
             val lowest = sources.getAssignmentsForProvider(providerId).first().maxOfOrNull { it.priority } ?: -1
-            if (sources.assignSourceToProvider(providerId, record.sourceId, lowest + 1) is Result.Success) {
+            // No pass per assignment (F13): the caller resolves each provider once, after importing.
+            if (sources.assignSourceToProvider(providerId, record.sourceId, lowest + 1, resolve = false) is Result.Success) {
                 current = current.copy(
                     assignedProviderIds = current.assignedProviderIds + providerId,
                     handledProviderIds = current.handledProviderIds + providerId,
@@ -312,21 +323,26 @@ class EpgPresetManagerImpl internal constructor(
                 .distinct()
             val slots = ranked.map(priorities::getValue).sorted()
             ranked.zip(slots).forEach { (sourceId, priority) ->
-                if (priorities[sourceId] != priority) sources.updateAssignmentPriority(providerId, sourceId, priority)
+                if (priorities[sourceId] != priority) {
+                    sources.updateAssignmentPriority(providerId, sourceId, priority, resolve = false)
+                }
             }
         }
     }
 
-    /** Runs in [importScope], so an import outlives the screen that started it; only the wait is cancelled. */
-    private suspend fun refresh(presetId: String?, sourceIds: List<Long>): Result<Unit> {
+    /**
+     * Runs in [importScope], so an import outlives the screen that started it; only the wait is
+     * cancelled. Every provider is resolved once after all the imports, plus [alsoResolve] (F13).
+     */
+    private suspend fun refresh(presetId: String?, sourceIds: List<Long>, alsoResolve: Set<Long> = emptySet()): Result<Unit> {
         val ids = sourceIds.distinct()
+        val providersToResolve = alsoResolve.toSet()
         if (presetId != null) refreshing.update { it + presetId }
         inFlightSourceIds += ids
         return importScope.async {
             try {
-                val errors = ids.mapNotNull { sourceId ->
-                    (sources.refreshSource(sourceId) as? Result.Error)?.message
-                }
+                val errors = sources.refreshSources(ids, providersToResolve).values
+                    .mapNotNull { (it as? Result.Error)?.message }
                 if (errors.isEmpty()) Result.success(Unit) else Result.error(errors.joinToString("; "))
             } finally {
                 inFlightSourceIds -= ids.toSet()

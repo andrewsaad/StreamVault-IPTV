@@ -453,7 +453,7 @@ class SyncManagerTest {
                     )
                 )
             }
-            org.mockito.kotlin.whenever(epgSourceRepo.assignSourceToProvider(any(), any(), any()))
+            org.mockito.kotlin.whenever(epgSourceRepo.assignSourceToProvider(any(), any(), any(), any()))
                 .thenReturn(Result.success(Unit))
         }
     }
@@ -5087,7 +5087,7 @@ class SyncManagerTest {
                 else -> Result.success(EpgSource(id = 3L, name = "Third", url = url))
             }
         }
-        org.mockito.kotlin.whenever(epgSourceRepo.assignSourceToProvider(any(), any(), any())).thenAnswer { invocation ->
+        org.mockito.kotlin.whenever(epgSourceRepo.assignSourceToProvider(any(), any(), any(), any())).thenAnswer { invocation ->
             if (invocation.getArgument<Long>(1) == 2L) throw IOException("second assignment unavailable")
             Result.success(Unit)
         }

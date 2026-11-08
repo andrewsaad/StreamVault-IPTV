@@ -41,11 +41,21 @@ interface EpgSourceRepository {
 
     fun getAssignmentsForProvider(providerId: Long): Flow<List<ProviderEpgSourceAssignment>>
 
-    suspend fun assignSourceToProvider(providerId: Long, epgSourceId: Long, priority: Int): Result<Unit>
+    /**
+     * With [resolve] false the provider's guide matches are not recomputed; the caller must
+     * resolve the provider afterwards, for example through [refreshSources].
+     */
+    suspend fun assignSourceToProvider(
+        providerId: Long,
+        epgSourceId: Long,
+        priority: Int,
+        resolve: Boolean = true,
+    ): Result<Unit>
 
     suspend fun unassignSourceFromProvider(providerId: Long, epgSourceId: Long)
 
-    suspend fun updateAssignmentPriority(providerId: Long, epgSourceId: Long, priority: Int)
+    /** [resolve] works as in [assignSourceToProvider]. */
+    suspend fun updateAssignmentPriority(providerId: Long, epgSourceId: Long, priority: Int, resolve: Boolean = true)
 
     /** Atomically swaps the priorities of two assignments within a single database transaction. */
     suspend fun swapAssignmentPriorities(
@@ -61,6 +71,13 @@ interface EpgSourceRepository {
     suspend fun refreshSource(sourceId: Long): Result<Unit>
 
     suspend fun refreshAllForProvider(providerId: Long): Result<Unit>
+
+    /**
+     * Imports each of [sourceIds] without recomputing guide matches, then recomputes them once
+     * for every provider using a source that did not fail, plus every provider in [alsoResolve]
+     * even when every import failed or was cancelled. Returns each source's outcome.
+     */
+    suspend fun refreshSources(sourceIds: List<Long>, alsoResolve: Set<Long> = emptySet()): Map<Long, Result<Unit>>
 
     // ── Resolution ─────────────────────────────────────────────────
 
