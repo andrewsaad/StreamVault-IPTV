@@ -1024,4 +1024,7 @@
     <string name="epg_preset_error_invalid_address">ガイドのアドレスを入力してください。</string>
     <string name="epg_source_error_empty_payload">番組表ファイルに番組がなかったため、前回の正常な番組表を保持しました。</string>
     <string name="epg_source_refresh_skipped">このガイドのソースは最近更新されたため、再度の更新は行われませんでした。しばらくしてからもう一度お試しください。</string>
+    <string name="epg_source_refreshed">ガイドのソースを更新しました</string>
+    <string name="epg_error_http_status">ガイドのサーバーがエラーを返しました（HTTP %1$d）。</string>
+    <string name="settings_epg_timezone_refresh_failed">タイムゾーンを保存しましたが、更新に失敗しました：%1$s</string>
 </resources>

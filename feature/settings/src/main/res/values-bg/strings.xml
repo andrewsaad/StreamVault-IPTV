@@ -1024,4 +1024,7 @@
     <string name="epg_preset_error_invalid_address">Въведете адрес на програмата.</string>
     <string name="epg_source_error_empty_payload">Файлът с програмата нямаше предавания, затова последната изправна програма е запазена.</string>
     <string name="epg_source_refresh_skipped">Този източник на програмата е обновен наскоро, затова не е обновен отново. Опитайте по-късно.</string>
+    <string name="epg_source_refreshed">Източникът на програмата е обновен</string>
+    <string name="epg_error_http_status">Сървърът на програмата върна грешка (HTTP %1$d).</string>
+    <string name="settings_epg_timezone_refresh_failed">Часовата зона е запазена, но обновяването не успя: %1$s</string>
 </resources>

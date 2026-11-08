@@ -1026,4 +1026,7 @@
     <string name="epg_preset_error_invalid_address">Anna oppaan osoite.</string>
     <string name="epg_source_error_empty_payload">Oppaan tiedostossa ei ollut ohjelmia, joten viimeisin toimiva opas säilytettiin.</string>
     <string name="epg_source_refresh_skipped">Tämä oppaan lähde päivitettiin äskettäin, joten sitä ei päivitetty uudelleen. Yritä myöhemmin uudelleen.</string>
+    <string name="epg_source_refreshed">Oppaan lähde päivitetty</string>
+    <string name="epg_error_http_status">Oppaan palvelin palautti virheen (HTTP %1$d).</string>
+    <string name="settings_epg_timezone_refresh_failed">Aikavyöhyke tallennettiin, mutta päivitys epäonnistui: %1$s</string>
 </resources>

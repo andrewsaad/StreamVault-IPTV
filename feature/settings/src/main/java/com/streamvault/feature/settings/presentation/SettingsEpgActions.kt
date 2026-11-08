@@ -218,7 +218,12 @@ class SettingsEpgActions(
                 val refreshResult = epgSourceRepository.refreshSource(source.id)
                 if (refreshResult is Result.Error) {
                     uiState.update {
-                        it.copy(userMessage = "Timezone saved, but refresh failed: ${refreshResult.message}")
+                        it.copy(
+                            userMessage = epgNotice(
+                                R.string.settings_epg_timezone_refresh_failed,
+                                listOf(epgErrorText(refreshResult.message)),
+                            )
+                        )
                     }
                     onError()
                 } else {
@@ -287,7 +292,7 @@ class SettingsEpgActions(
                             // Nothing was downloaded (rate limit or preset gap), so do not claim a refresh.
                             result.getOrNull() == EpgRefreshOutcome.SKIPPED ->
                                 epgNotice(R.string.epg_source_refresh_skipped, emptyList())
-                            else -> "EPG source refreshed"
+                            else -> epgNotice(R.string.epg_source_refreshed, emptyList())
                         }
                     )
                 }

@@ -1027,4 +1027,7 @@
     <string name="epg_preset_error_invalid_address">Unesite adresu vodiča.</string>
     <string name="epg_source_error_empty_payload">Datoteka vodiča nije sadržavala emisije pa je zadržan posljednji ispravan vodič.</string>
     <string name="epg_source_refresh_skipped">Ovaj izvor vodiča nedavno je ažuriran pa nije ponovno osvježen. Pokušajte kasnije.</string>
+    <string name="epg_source_refreshed">Izvor vodiča je osvježen</string>
+    <string name="epg_error_http_status">Poslužitelj vodiča vratio je pogrešku (HTTP %1$d).</string>
+    <string name="settings_epg_timezone_refresh_failed">Vremenska zona je spremljena, ali osvježavanje nije uspjelo: %1$s</string>
 </resources>

@@ -1024,4 +1024,7 @@
     <string name="epg_preset_error_invalid_address">Vendosni një adresë të guidës.</string>
     <string name="epg_source_error_empty_payload">Skedari i udhëzuesit nuk kishte programe, prandaj u mbajt udhëzuesi i fundit i mirë.</string>
     <string name="epg_source_refresh_skipped">Ky burim guide u përditësua së fundmi, ndaj nuk u rifreskua përsëri. Provoni më vonë.</string>
+    <string name="epg_source_refreshed">Burimi i guidës u rifreskua</string>
+    <string name="epg_error_http_status">Serveri i guidës ktheu një gabim (HTTP %1$d).</string>
+    <string name="settings_epg_timezone_refresh_failed">Zona kohore u ruajt, por rifreskimi dështoi: %1$s</string>
 </resources>

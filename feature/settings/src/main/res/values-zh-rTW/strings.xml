@@ -1021,4 +1021,7 @@
     <string name="epg_preset_error_invalid_address">請輸入指南位址。</string>
     <string name="epg_source_error_empty_payload">節目指南檔案中沒有節目，因此保留了上一次正常的指南。</string>
     <string name="epg_source_refresh_skipped">此指南來源最近剛更新過，因此沒有再次重新整理。請稍後再試。</string>
+    <string name="epg_source_refreshed">指南來源已重新整理</string>
+    <string name="epg_error_http_status">指南伺服器傳回錯誤（HTTP %1$d）。</string>
+    <string name="settings_epg_timezone_refresh_failed">時區已儲存，但重新整理失敗：%1$s</string>
 </resources>

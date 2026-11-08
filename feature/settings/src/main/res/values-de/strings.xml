@@ -1022,4 +1022,7 @@
     <string name="epg_preset_error_invalid_address">Gib eine Guide-Adresse ein.</string>
     <string name="epg_source_error_empty_payload">Die Programmdatei enthielt keine Sendungen, daher wurde der letzte gültige Programmführer beibehalten.</string>
     <string name="epg_source_refresh_skipped">Diese Guide-Quelle wurde kürzlich aktualisiert und deshalb nicht erneut aktualisiert. Versuche es später erneut.</string>
+    <string name="epg_source_refreshed">Guide-Quelle aktualisiert</string>
+    <string name="epg_error_http_status">Der Guide-Server hat einen Fehler zurückgegeben (HTTP %1$d).</string>
+    <string name="settings_epg_timezone_refresh_failed">Zeitzone gespeichert, aber die Aktualisierung ist fehlgeschlagen: %1$s</string>
 </resources>

@@ -1026,4 +1026,7 @@
     <string name="epg_preset_error_invalid_address">Bir rehber adresi girin.</string>
     <string name="epg_source_error_empty_payload">Rehber dosyasında hiç program yoktu, bu yüzden son geçerli rehber korundu.</string>
     <string name="epg_source_refresh_skipped">Bu rehber kaynağı kısa süre önce güncellendiği için yeniden yenilenmedi. Daha sonra tekrar deneyin.</string>
+    <string name="epg_source_refreshed">Rehber kaynağı yenilendi</string>
+    <string name="epg_error_http_status">Rehber sunucusu bir hata döndürdü (HTTP %1$d).</string>
+    <string name="settings_epg_timezone_refresh_failed">Saat dilimi kaydedildi ancak yenileme başarısız oldu: %1$s</string>
 </resources>

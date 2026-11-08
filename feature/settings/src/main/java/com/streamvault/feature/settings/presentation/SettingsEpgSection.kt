@@ -428,7 +428,10 @@ private fun epgPresetStatusText(status: EpgPresetStatusLine, appTimeFormat: AppT
 
 /** A stored guide error in localized text when it is one of the known keys, else as it is. */
 @Composable
-internal fun epgErrorText(message: String): String = epgPresetErrorRes(message)?.let { stringResource(it) } ?: message
+internal fun epgErrorText(message: String): String =
+    epgPresetErrorRes(message)?.let { stringResource(it) }
+        ?: epgHttpStatus(message)?.let { stringResource(R.string.epg_error_http_status, it) }
+        ?: message
 
 private fun epgPresetNameRes(presetId: String): Int = when (presetId) {
     EpgPresetCatalog.BEIN -> R.string.epg_preset_bein_name

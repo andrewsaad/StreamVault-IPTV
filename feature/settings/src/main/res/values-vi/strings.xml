@@ -1023,4 +1023,7 @@
     <string name="epg_preset_error_invalid_address">Nhập địa chỉ hướng dẫn.</string>
     <string name="epg_source_error_empty_payload">Tệp hướng dẫn không có chương trình nào, nên hướng dẫn hợp lệ gần nhất được giữ lại.</string>
     <string name="epg_source_refresh_skipped">Nguồn hướng dẫn này vừa được cập nhật gần đây nên không được làm mới lại. Hãy thử lại sau.</string>
+    <string name="epg_source_refreshed">Đã làm mới nguồn hướng dẫn</string>
+    <string name="epg_error_http_status">Máy chủ hướng dẫn trả về lỗi (HTTP %1$d).</string>
+    <string name="settings_epg_timezone_refresh_failed">Đã lưu múi giờ nhưng làm mới không thành công: %1$s</string>
 </resources>

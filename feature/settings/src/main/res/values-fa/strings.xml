@@ -1024,4 +1024,7 @@
     <string name="epg_preset_error_invalid_address">یک نشانی راهنما وارد کنید.</string>
     <string name="epg_source_error_empty_payload">فایل راهنما هیچ برنامه‌ای نداشت، بنابراین آخرین راهنمای سالم حفظ شد.</string>
     <string name="epg_source_refresh_skipped">این منبع راهنما به‌تازگی به‌روزرسانی شده است، بنابراین دوباره به‌روزرسانی نشد. بعداً دوباره امتحان کنید.</string>
+    <string name="epg_source_refreshed">منبع راهنما به‌روزرسانی شد</string>
+    <string name="epg_error_http_status">سرور راهنما خطایی برگرداند (HTTP %1$d).</string>
+    <string name="settings_epg_timezone_refresh_failed">منطقه زمانی ذخیره شد، اما به‌روزرسانی ناموفق بود: %1$s</string>
 </resources>

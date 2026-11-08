@@ -1021,4 +1021,7 @@
     <string name="epg_preset_error_invalid_address">Masukkan alamat panduan.</string>
     <string name="epg_source_error_empty_payload">Fail panduan tidak mengandungi rancangan, jadi panduan baik yang terakhir dikekalkan.</string>
     <string name="epg_source_refresh_skipped">Sumber panduan ini baru dikemas kini, jadi ia tidak disegarkan semula. Cuba lagi nanti.</string>
+    <string name="epg_source_refreshed">Sumber panduan disegarkan</string>
+    <string name="epg_error_http_status">Pelayan panduan memulangkan ralat (HTTP %1$d).</string>
+    <string name="settings_epg_timezone_refresh_failed">Zon waktu disimpan, tetapi penyegaran gagal: %1$s</string>
 </resources>

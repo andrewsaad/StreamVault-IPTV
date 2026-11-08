@@ -1032,4 +1032,7 @@
     <string name="epg_preset_error_invalid_address">Введите адрес гида.</string>
     <string name="epg_source_error_empty_payload">В файле телепрограммы не было передач, поэтому сохранена последняя рабочая телепрограмма.</string>
     <string name="epg_source_refresh_skipped">Этот источник программы передач был недавно обновлён, поэтому повторное обновление не выполнялось. Повторите попытку позже.</string>
+    <string name="epg_source_refreshed">Источник программы передач обновлён</string>
+    <string name="epg_error_http_status">Сервер программы передач вернул ошибку (HTTP %1$d).</string>
+    <string name="settings_epg_timezone_refresh_failed">Часовой пояс сохранён, но обновление не удалось: %1$s</string>
 </resources>

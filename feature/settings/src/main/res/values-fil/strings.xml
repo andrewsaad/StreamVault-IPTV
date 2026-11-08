@@ -1024,4 +1024,7 @@
     <string name="epg_preset_error_invalid_address">Maglagay ng address ng guide.</string>
     <string name="epg_source_error_empty_payload">Walang programa ang file ng gabay, kaya pinanatili ang huling maayos na gabay.</string>
     <string name="epg_source_refresh_skipped">Kamakailan lang na-update ang source ng guide na ito, kaya hindi ito ni-refresh muli. Subukang muli mamaya.</string>
+    <string name="epg_source_refreshed">Na-refresh ang source ng guide</string>
+    <string name="epg_error_http_status">Nagbalik ng error ang server ng guide (HTTP %1$d).</string>
+    <string name="settings_epg_timezone_refresh_failed">Na-save ang timezone, pero nabigo ang pag-refresh: %1$s</string>
 </resources>

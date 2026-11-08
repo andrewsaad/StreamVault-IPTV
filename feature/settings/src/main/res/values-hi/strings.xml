@@ -1024,4 +1024,7 @@
     <string name="epg_preset_error_invalid_address">गाइड का पता दर्ज करें।</string>
     <string name="epg_source_error_empty_payload">गाइड फ़ाइल में कोई कार्यक्रम नहीं था, इसलिए पिछली सही गाइड रखी गई।</string>
     <string name="epg_source_refresh_skipped">यह गाइड स्रोत हाल ही में अपडेट हुआ था, इसलिए इसे दोबारा रीफ़्रेश नहीं किया गया। बाद में फिर कोशिश करें।</string>
+    <string name="epg_source_refreshed">गाइड स्रोत रीफ़्रेश हो गया</string>
+    <string name="epg_error_http_status">गाइड सर्वर ने त्रुटि लौटाई (HTTP %1$d)।</string>
+    <string name="settings_epg_timezone_refresh_failed">समय क्षेत्र सहेज लिया गया, लेकिन रीफ़्रेश विफल रहा: %1$s</string>
 </resources>

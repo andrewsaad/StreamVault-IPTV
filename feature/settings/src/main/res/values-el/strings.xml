@@ -1026,4 +1026,7 @@
     <string name="epg_preset_error_invalid_address">Εισαγάγετε μια διεύθυνση οδηγού.</string>
     <string name="epg_source_error_empty_payload">Το αρχείο οδηγού δεν είχε προγράμματα, οπότε διατηρήθηκε ο τελευταίος έγκυρος οδηγός.</string>
     <string name="epg_source_refresh_skipped">Αυτή η πηγή οδηγού ενημερώθηκε πρόσφατα, γι\' αυτό δεν ενημερώθηκε ξανά. Δοκιμάστε ξανά αργότερα.</string>
+    <string name="epg_source_refreshed">Η πηγή οδηγού ενημερώθηκε</string>
+    <string name="epg_error_http_status">Ο διακομιστής του οδηγού επέστρεψε σφάλμα (HTTP %1$d).</string>
+    <string name="settings_epg_timezone_refresh_failed">Η ζώνη ώρας αποθηκεύτηκε, αλλά η ενημέρωση απέτυχε: %1$s</string>
 </resources>

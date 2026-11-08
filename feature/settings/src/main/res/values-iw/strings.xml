@@ -1029,4 +1029,7 @@
     <string name="epg_preset_error_invalid_address">יש להזין כתובת מדריך.</string>
     <string name="epg_source_error_empty_payload">קובץ המדריך לא הכיל תוכניות, ולכן נשמר המדריך התקין האחרון.</string>
     <string name="epg_source_refresh_skipped">מקור המדריך הזה עודכן לאחרונה, ולכן לא רוענן שוב. נסו שוב מאוחר יותר.</string>
+    <string name="epg_source_refreshed">מקור המדריך רוענן</string>
+    <string name="epg_error_http_status">שרת המדריך החזיר שגיאה (HTTP %1$d).</string>
+    <string name="settings_epg_timezone_refresh_failed">אזור הזמן נשמר, אך הרענון נכשל: %1$s</string>
 </resources>

@@ -1030,4 +1030,7 @@
     <string name="epg_preset_error_invalid_address">Zadajte adresu sprievodcu.</string>
     <string name="epg_source_error_empty_payload">Súbor sprievodcu neobsahoval žiadne relácie, preto bol ponechaný posledný funkčný sprievodca.</string>
     <string name="epg_source_refresh_skipped">Tento zdroj sprievodcu bol nedávno aktualizovaný, preto sa znova neaktualizoval. Skúste to neskôr.</string>
+    <string name="epg_source_refreshed">Zdroj sprievodcu bol aktualizovaný</string>
+    <string name="epg_error_http_status">Server sprievodcu vrátil chybu (HTTP %1$d).</string>
+    <string name="settings_epg_timezone_refresh_failed">Časové pásmo bolo uložené, ale aktualizácia zlyhala: %1$s</string>
 </resources>

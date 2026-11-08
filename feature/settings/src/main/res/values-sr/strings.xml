@@ -1027,4 +1027,7 @@
     <string name="epg_preset_error_invalid_address">Унесите адресу водича.</string>
     <string name="epg_source_error_empty_payload">Датотека водича није имала емисије, па је задржан последњи исправан водич.</string>
     <string name="epg_source_refresh_skipped">Овај извор водича је недавно ажуриран, па није поново освежен. Покушајте касније.</string>
+    <string name="epg_source_refreshed">Извор водича је освежен</string>
+    <string name="epg_error_http_status">Сервер водича је вратио грешку (HTTP %1$d).</string>
+    <string name="settings_epg_timezone_refresh_failed">Временска зона је сачувана, али освежавање није успело: %1$s</string>
 </resources>

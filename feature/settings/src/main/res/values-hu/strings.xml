@@ -1026,4 +1026,7 @@
     <string name="epg_preset_error_invalid_address">Adjon meg egy műsorújság-címet.</string>
     <string name="epg_source_error_empty_payload">A műsorújság-fájl nem tartalmazott műsorokat, ezért az utolsó jó műsorújság megmaradt.</string>
     <string name="epg_source_refresh_skipped">Ennek az útmutatóforrásnak a frissítése nemrég megtörtént, ezért nem frissítettük újra. Próbálja újra később.</string>
+    <string name="epg_source_refreshed">Az útmutatóforrás frissítve</string>
+    <string name="epg_error_http_status">Az útmutató szervere hibát adott vissza (HTTP %1$d).</string>
+    <string name="settings_epg_timezone_refresh_failed">Az időzóna mentve, de a frissítés sikertelen volt: %1$s</string>
 </resources>

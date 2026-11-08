@@ -249,13 +249,20 @@ internal fun epgPresetErrorRes(message: String): Int? = when (message) {
     else -> null
 }
 
+/** The status code of a download error stored as "HTTP 404", or wrapped as "Failed to download EPG: HTTP 404". */
+internal fun epgHttpStatus(message: String): Int? =
+    EPG_HTTP_STATUS_ERROR.matchEntire(message.trim())?.groupValues?.get(1)?.toIntOrNull()
+
+private val EPG_HTTP_STATUS_ERROR = Regex("""(?:Failed to download EPG: )?HTTP (\d{3})""")
+
 /**
- * [message] with every known error key in it replaced by its localized text. A preset refresh
- * that failed on several files joins their errors with "; ", so each part is looked up alone.
+ * [message] with every known error key, and every HTTP status error, in it replaced by its localized
+ * text. A preset refresh that failed on several files joins their errors with "; ", so each part is
+ * looked up alone.
  */
-internal fun localizeEpgError(message: String, text: (Int) -> String): String =
+internal fun localizeEpgError(message: String, text: (Int) -> String, httpStatusText: (Int) -> String): String =
     message.split(EPG_ERROR_SEPARATOR).joinToString(EPG_ERROR_SEPARATOR) { part ->
-        epgPresetErrorRes(part)?.let(text) ?: part
+        epgPresetErrorRes(part)?.let(text) ?: epgHttpStatus(part)?.let(httpStatusText) ?: part
     }
 
 private const val EPG_ERROR_SEPARATOR = "; "

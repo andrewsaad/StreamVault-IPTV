@@ -1026,4 +1026,7 @@
     <string name="epg_preset_error_invalid_address">Voer een gidsadres in.</string>
     <string name="epg_source_error_empty_payload">Het gidsbestand bevatte geen programma\'s, dus de laatste goede gids is behouden.</string>
     <string name="epg_source_refresh_skipped">Deze gidsbron is onlangs bijgewerkt en is daarom niet opnieuw vernieuwd. Probeer het later opnieuw.</string>
+    <string name="epg_source_refreshed">Gidsbron vernieuwd</string>
+    <string name="epg_error_http_status">De gidsserver gaf een fout terug (HTTP %1$d).</string>
+    <string name="settings_epg_timezone_refresh_failed">Tijdzone opgeslagen, maar vernieuwen is mislukt: %1$s</string>
 </resources>

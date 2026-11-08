@@ -222,7 +222,13 @@ class SettingsViewModel @Inject constructor(
         epgSourceRepository = epgSourceRepository,
         epgPresetManager = epgPresetManager,
         uiState = _uiState,
-        epgErrorText = { message -> localizeEpgError(message, appContext::getString) },
+        epgErrorText = { message ->
+            localizeEpgError(
+                message,
+                text = appContext::getString,
+                httpStatusText = { code -> appContext.getString(R.string.epg_error_http_status, code) },
+            )
+        },
         epgNotice = { resId, args -> appContext.getString(resId, *args.toTypedArray()) },
     )
 
