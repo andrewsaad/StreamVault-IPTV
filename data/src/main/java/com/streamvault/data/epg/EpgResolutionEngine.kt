@@ -109,11 +109,29 @@ class EpgResolutionEngine @Inject constructor(
         providerId: Long,
         hiddenLiveCategoryIds: Set<Long> = emptySet()
     ): EpgResolutionSummary = withContext(Dispatchers.Default) {
-        val channels = channelDao.getByProviderSync(providerId)
+        val allChannels = channelDao.getByProviderSync(providerId)
+        val channels = allChannels
             .filterNot { channel -> channel.categoryId != null && channel.categoryId in hiddenLiveCategoryIds }
         val guideSourcePolicy = providerSnapshotDao.getConfig(providerId)?.guideSourcePolicy ?: GuideSourcePolicy.AUTO
+
+        // FR-013: a manual match is kept while its channel is hidden, so it is still there when the
+        // category is shown again. One whose source is no longer assigned to this provider (removed
+        // or deleted) can never show a guide, so it is dropped and the channel matches automatically.
+        val existingMappings = channelEpgMappingDao.getForProvider(providerId)
+        val assignedSourceIds = providerEpgSourceDao.getForProviderSync(providerId).mapTo(HashSet()) { it.epgSourceId }
+        val manualOverrides = existingMappings
+            .filter { it.isManualOverride && !it.pointsAtAnUnassignedSource(assignedSourceIds) }
+            .associateBy { it.providerChannelId }
+        val visibleChannelIds = channels.mapTo(HashSet()) { it.id }
+        val hiddenChannelIds = allChannels.mapTo(HashSet()) { it.id } - visibleChannelIds
+        val hiddenOverrides = manualOverrides.values.filter { it.providerChannelId in hiddenChannelIds }
+
         if (channels.isEmpty()) {
-            channelEpgMappingDao.deleteByProvider(providerId)
+            if (hiddenOverrides.isEmpty()) {
+                channelEpgMappingDao.deleteByProvider(providerId)
+            } else {
+                channelEpgMappingDao.replaceForProvider(providerId, hiddenOverrides)
+            }
             return@withContext EpgResolutionSummary()
         }
 
@@ -173,11 +191,7 @@ class EpgResolutionEngine @Inject constructor(
             emptySet()
         }
 
-        // Preserve existing manual overrides
-        val existingMappings = channelEpgMappingDao.getForProvider(providerId)
         val existingMappingsByChannel = existingMappings.associateBy { it.providerChannelId }
-        val manualOverrides = existingMappings.filter { it.isManualOverride }
-            .associateBy { it.providerChannelId }
 
         val now = System.currentTimeMillis()
         var exactIdMatches = 0
@@ -357,7 +371,7 @@ class EpgResolutionEngine @Inject constructor(
             existingMappingsByChannel[mapping.providerChannelId]
                 ?.takeIf { existing -> existing.hasSameResolutionAs(mapping) }
                 ?: mapping
-        }
+        } + hiddenOverrides
         val unchanged = stableMappings.size == existingMappings.size &&
             stableMappings.all { mapping -> existingMappingsByChannel[mapping.providerChannelId] === mapping }
         if (!unchanged) {
@@ -501,6 +515,10 @@ class EpgResolutionEngine @Inject constructor(
 
     private fun allowsProviderNativeMappings(policy: GuideSourcePolicy): Boolean =
         policy == GuideSourcePolicy.AUTO || policy == GuideSourcePolicy.PROVIDER_ONLY
+
+    /** An external manual match whose source this provider no longer has. */
+    private fun ChannelEpgMappingEntity.pointsAtAnUnassignedSource(assignedSourceIds: Set<Long>): Boolean =
+        sourceType == EpgSourceType.EXTERNAL.name && (epgSourceId == null || epgSourceId !in assignedSourceIds)
 
     private fun isMappingAllowed(mapping: ChannelEpgMappingEntity, policy: GuideSourcePolicy): Boolean = when (mapping.sourceType) {
         EpgSourceType.EXTERNAL.name -> allowsExternalMappings(policy)

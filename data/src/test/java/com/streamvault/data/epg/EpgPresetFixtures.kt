@@ -78,11 +78,12 @@ internal object EpgResolutionHarness {
         whenever(channelDao.getByProviderSync(PROVIDER_ID)).thenReturn(channels)
         whenever(mappingDao.getForProvider(PROVIDER_ID)).thenReturn(existing)
         val sourceIds = guideBySource.map { it.first }
-        whenever(providerEpgSourceDao.getEnabledForProviderSync(PROVIDER_ID)).thenReturn(
-            sourceIds.mapIndexed { index, sourceId ->
-                ProviderEpgSourceEntity(id = index + 1L, providerId = PROVIDER_ID, epgSourceId = sourceId, priority = index)
-            }
-        )
+        val assignments = sourceIds.mapIndexed { index, sourceId ->
+            ProviderEpgSourceEntity(id = index + 1L, providerId = PROVIDER_ID, epgSourceId = sourceId, priority = index)
+        }
+        // Every assigned source is switched on in these fixtures.
+        whenever(providerEpgSourceDao.getEnabledForProviderSync(PROVIDER_ID)).thenReturn(assignments)
+        whenever(providerEpgSourceDao.getForProviderSync(PROVIDER_ID)).thenReturn(assignments)
         whenever(epgChannelDao.getBySources(sourceIds)).thenReturn(guideBySource.flatMap { it.second })
         val engine = EpgResolutionEngine(
             channelDao = channelDao,

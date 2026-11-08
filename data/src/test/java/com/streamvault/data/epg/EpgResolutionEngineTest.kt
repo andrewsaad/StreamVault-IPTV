@@ -247,6 +247,11 @@ class EpgResolutionEngineTest {
             confidence = 1.0f, isManualOverride = true, updatedAt = 1000L
         )
         whenever(channelEpgMappingDao.getForProvider(PROVIDER_ID)).thenReturn(listOf(manualMapping))
+        // SOURCE_2 is assigned to the provider but switched off: the override stays (F14).
+        whenever(providerEpgSourceDao.getForProviderSync(PROVIDER_ID)).thenReturn(listOf(
+            ProviderEpgSourceEntity(id = 1, providerId = PROVIDER_ID, epgSourceId = SOURCE_1, priority = 0),
+            ProviderEpgSourceEntity(id = 2, providerId = PROVIDER_ID, epgSourceId = SOURCE_2, priority = 1, enabled = false),
+        ))
 
         engine.resolveForProvider(PROVIDER_ID)
 
@@ -257,6 +262,96 @@ class EpgResolutionEngineTest {
         assertThat(mapping.isManualOverride).isTrue()
         assertThat(mapping.xmltvChannelId).isEqualTo("bbc1.manual")
         assertThat(mapping.epgSourceId).isEqualTo(SOURCE_2)
+    }
+
+    // ── F14 / FR-013: manual matches are never lost by accident ─────
+
+    private fun manualRow(channelId: Long, sourceId: Long) = ChannelEpgMappingEntity(
+        id = 90 + channelId, providerChannelId = channelId, providerId = PROVIDER_ID,
+        sourceType = EpgSourceType.EXTERNAL.name, epgSourceId = sourceId,
+        xmltvChannelId = "manual.$channelId", matchType = EpgMatchType.MANUAL.name,
+        confidence = 1.0f, isManualOverride = true, updatedAt = 1000L
+    )
+
+    private suspend fun assigned(vararg sourceIds: Long) {
+        whenever(providerEpgSourceDao.getForProviderSync(PROVIDER_ID)).thenReturn(
+            sourceIds.mapIndexed { i, id ->
+                ProviderEpgSourceEntity(id = i + 1L, providerId = PROVIDER_ID, epgSourceId = id, priority = i)
+            }
+        )
+    }
+
+    @Test
+    fun `resolveForProvider_keepsTheManualMatchOfAChannelInAHiddenCategory`() = runTest {
+        val visible = makeChannel(id = 1, name = "BBC One", epgChannelId = "bbc1").copy(categoryId = 5L)
+        val hidden = makeChannel(id = 2, name = "Hidden Sport", epgChannelId = null).copy(categoryId = 6L)
+        whenever(channelDao.getByProviderSync(PROVIDER_ID)).thenReturn(listOf(visible, hidden))
+        whenever(providerEpgSourceDao.getEnabledForProviderSync(PROVIDER_ID)).thenReturn(emptyList())
+        assigned(SOURCE_1)
+        val pinned = manualRow(channelId = 2, sourceId = SOURCE_1)
+        whenever(channelEpgMappingDao.getForProvider(PROVIDER_ID)).thenReturn(listOf(pinned))
+
+        engine.resolveForProvider(PROVIDER_ID, hiddenLiveCategoryIds = setOf(6L))
+
+        val captor = argumentCaptor<List<ChannelEpgMappingEntity>>()
+        verify(channelEpgMappingDao).replaceForProvider(eq(PROVIDER_ID), captor.capture())
+        assertThat(captor.firstValue.map { it.providerChannelId }).containsExactly(1L, 2L)
+        assertThat(captor.firstValue.single { it.providerChannelId == 2L }).isSameInstanceAs(pinned)
+    }
+
+    @Test
+    fun `resolveForProvider_withEveryChannelHidden_stillKeepsTheirManualMatches`() = runTest {
+        val hidden = makeChannel(id = 2, name = "Hidden Sport", epgChannelId = null).copy(categoryId = 6L)
+        whenever(channelDao.getByProviderSync(PROVIDER_ID)).thenReturn(listOf(hidden))
+        assigned(SOURCE_1)
+        val pinned = manualRow(channelId = 2, sourceId = SOURCE_1)
+        val automatic = pinned.copy(id = 7, providerChannelId = 3, isManualOverride = false, matchType = EpgMatchType.EXACT_ID.name)
+        whenever(channelEpgMappingDao.getForProvider(PROVIDER_ID)).thenReturn(listOf(pinned, automatic))
+
+        engine.resolveForProvider(PROVIDER_ID, hiddenLiveCategoryIds = setOf(6L))
+
+        verify(channelEpgMappingDao, times(0)).deleteByProvider(any())
+        verify(channelEpgMappingDao).replaceForProvider(PROVIDER_ID, listOf(pinned))
+    }
+
+    @Test
+    fun `resolveForProvider_dropsAManualMatchWhoseSourceIsNoLongerAssigned_andMatchesAutomatically`() = runTest {
+        val channel = makeChannel(id = 1, name = "BBC One", epgChannelId = "bbc1")
+        whenever(channelDao.getByProviderSync(PROVIDER_ID)).thenReturn(listOf(channel))
+        whenever(providerEpgSourceDao.getEnabledForProviderSync(PROVIDER_ID)).thenReturn(
+            listOf(ProviderEpgSourceEntity(id = 1, providerId = PROVIDER_ID, epgSourceId = SOURCE_1, priority = 0))
+        )
+        assigned(SOURCE_1)
+        whenever(epgChannelDao.getBySources(listOf(SOURCE_1))).thenReturn(
+            listOf(EpgChannelEntity(id = 1, epgSourceId = SOURCE_1, xmltvChannelId = "bbc1", displayName = "BBC One", normalizedName = "bbcone"))
+        )
+        // SOURCE_2 was deleted or removed from this provider, so this override can never show a guide.
+        whenever(channelEpgMappingDao.getForProvider(PROVIDER_ID)).thenReturn(listOf(manualRow(channelId = 1, sourceId = SOURCE_2)))
+
+        engine.resolveForProvider(PROVIDER_ID)
+
+        val captor = argumentCaptor<List<ChannelEpgMappingEntity>>()
+        verify(channelEpgMappingDao).replaceForProvider(eq(PROVIDER_ID), captor.capture())
+        val mapping = captor.firstValue.single()
+        assertThat(mapping.isManualOverride).isFalse()
+        assertThat(mapping.matchType).isEqualTo(EpgMatchType.EXACT_ID.name)
+        assertThat(mapping.epgSourceId).isEqualTo(SOURCE_1)
+    }
+
+    @Test
+    fun `resolveForProvider_keepsAManualMatchToTheProvidersOwnGuide_withNoSourceAssigned`() = runTest {
+        val channel = makeChannel(id = 1, name = "BBC One", epgChannelId = "bbc1")
+        whenever(channelDao.getByProviderSync(PROVIDER_ID)).thenReturn(listOf(channel))
+        whenever(providerEpgSourceDao.getEnabledForProviderSync(PROVIDER_ID)).thenReturn(emptyList())
+        val pinned = manualRow(channelId = 1, sourceId = SOURCE_1)
+            .copy(sourceType = EpgSourceType.PROVIDER.name, epgSourceId = null)
+        whenever(channelEpgMappingDao.getForProvider(PROVIDER_ID)).thenReturn(listOf(pinned))
+
+        engine.resolveForProvider(PROVIDER_ID)
+
+        val captor = argumentCaptor<List<ChannelEpgMappingEntity>>()
+        verify(channelEpgMappingDao).replaceForProvider(eq(PROVIDER_ID), captor.capture())
+        assertThat(captor.firstValue.single().isManualOverride).isTrue()
     }
 
     @Test
