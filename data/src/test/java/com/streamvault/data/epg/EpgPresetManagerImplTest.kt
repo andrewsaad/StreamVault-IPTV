@@ -20,6 +20,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Before
@@ -48,6 +50,10 @@ class EpgPresetManagerImplTest {
     }
 
     private fun sourceIdFor(url: String): Long = repo.rows.value.single { it.url == url }.id
+
+    /** A manager whose background imports run on the test's scheduler, so a test can wait for them. */
+    private fun TestScope.managerOnTestScheduler() =
+        EpgPresetManagerImpl(repo, EpgPresetProviderDirectory { providerIds.toList() }, store, importScope = backgroundScope)
 
     @Test
     fun `offByDefault_everyPresetIsOff_andNothingIsDownloaded`() = runTest {
@@ -435,9 +441,11 @@ class EpgPresetManagerImplTest {
 
     @Test
     fun `status_reportsEachFileWithItsRowAndAddress_soAnEditedRowStaysLinkedAfterARestart`() = runTest {
+        val manager = managerOnTestScheduler()
         manager.setEnabled(EpgPresetCatalog.EGYPT, true)
         val ae1Id = sourceIdFor(ae1.url)
         manager.updateAddress(EpgPresetCatalog.EGYPT, ae1.key, "https://mirror.example/ae1.xml")
+        advanceUntilIdle()
 
         // A new manager over the same store, like the app after a restart.
         val restarted = EpgPresetManagerImpl(repo, EpgPresetProviderDirectory { providerIds.toList() }, store)
@@ -457,19 +465,39 @@ class EpgPresetManagerImplTest {
     }
 
     @Test
-    fun `updateAddress_changesTheSameRow_andAllowsAnAttemptInsideTheGap`() = runTest {
+    fun `updateAddress_changesTheSameRow_andImportsItAtOnceInsideTheGap`() = runTest {
+        val manager = managerOnTestScheduler()
         manager.setEnabled(EpgPresetCatalog.EGYPT, true)
         val ae1Id = sourceIdFor(ae1.url)
         now += 60_000L
 
         val result = manager.updateAddress(EpgPresetCatalog.EGYPT, ae1.key, "  https://mirror.example/ae1.xml ")
-        val refreshed = manager.refreshNow(EpgPresetCatalog.EGYPT)
+        advanceUntilIdle()
 
         assertThat(result.isSuccess).isTrue()
         assertThat(repo.rows.value.single().id).isEqualTo(ae1Id)
         assertThat(repo.rows.value.single().url).isEqualTo("https://mirror.example/ae1.xml")
-        assertThat(refreshed.isSuccess).isTrue()
+        // The enable's import, then the edited file's own; nobody had to ask for it.
         assertThat(repo.refreshCalls).containsExactly(ae1Id, ae1Id)
+    }
+
+    @Test
+    fun `updateAddress_importsOnlyTheEditedFile_andNothingWhenTheAddressIsUnchanged`() = runTest {
+        // Review nit 7: Settings used to refresh the whole preset after every save.
+        val manager = managerOnTestScheduler()
+        manager.setEnabled(EpgPresetCatalog.BEIN, true)
+        val bein = EpgPresetCatalog.byId(EpgPresetCatalog.BEIN)!!.sources
+        val edited = bein.single { it.key == "BEIN1" }
+        repo.refreshCalls.clear()
+        now += 25 * 60 * 60_000L // every file is past its gap, so a whole-preset refresh would take them all
+
+        manager.updateAddress(EpgPresetCatalog.BEIN, edited.key, edited.url)
+        advanceUntilIdle()
+        assertThat(repo.refreshCalls).isEmpty()
+
+        manager.updateAddress(EpgPresetCatalog.BEIN, edited.key, "https://mirror.example/bein1.xml")
+        advanceUntilIdle()
+        assertThat(repo.refreshCalls).containsExactly(sourceIdFor("https://mirror.example/bein1.xml"))
     }
 
     @Test
@@ -500,8 +528,10 @@ class EpgPresetManagerImplTest {
 
     @Test
     fun `updateAddress_survivesTurningThePresetOffAndOn`() = runTest {
+        val manager = managerOnTestScheduler()
         manager.setEnabled(EpgPresetCatalog.EGYPT, true)
         manager.updateAddress(EpgPresetCatalog.EGYPT, ae1.key, "https://mirror.example/ae1.xml")
+        advanceUntilIdle()
 
         manager.setEnabled(EpgPresetCatalog.EGYPT, false)
         assertThat(repo.rows.value).isEmpty()
@@ -524,9 +554,12 @@ class EpgPresetManagerImplTest {
 
     @Test
     fun `updateAddress_backToTheBuiltInAddress_forgetsTheEdit`() = runTest {
+        val manager = managerOnTestScheduler()
         manager.setEnabled(EpgPresetCatalog.EGYPT, true)
         manager.updateAddress(EpgPresetCatalog.EGYPT, ae1.key, "https://mirror.example/ae1.xml")
+        advanceUntilIdle()
         manager.updateAddress(EpgPresetCatalog.EGYPT, ae1.key, ae1.url)
+        advanceUntilIdle()
 
         assertThat(store.current().addresses).isEmpty()
     }

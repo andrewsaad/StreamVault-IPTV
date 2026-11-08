@@ -85,8 +85,8 @@ class SettingsEpgActions(
     }
 
     /**
-     * Changes the address of a preset file on the same guide source row, then tries the new
-     * address at once; the manager lifts the gap for it. FR-006, FR-023.
+     * Changes the address of a preset file on the same guide source row. The manager lifts the
+     * gap and imports only that file in the background, so the editor can close at once. FR-006, FR-023.
      */
     fun updateEpgPresetAddress(
         scope: CoroutineScope,
@@ -107,9 +107,9 @@ class SettingsEpgActions(
                     uiState.update { it.copy(userMessage = epgErrorText(result.message)) }
                     onError()
                 } else {
+                    // The manager imports the edited file itself when its address changed; progress
+                    // and the outcome show in the preset's own status line.
                     onSuccess()
-                    // Progress and the outcome show in the preset's own status line.
-                    refreshEpgPresetNow(scope, presetId)
                 }
             } catch (cancelled: CancellationException) {
                 throw cancelled

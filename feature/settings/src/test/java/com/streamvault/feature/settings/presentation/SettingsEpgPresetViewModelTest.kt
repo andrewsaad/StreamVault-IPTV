@@ -206,7 +206,7 @@ class SettingsEpgPresetViewModelTest {
     }
 
     @Test
-    fun `changing an address goes through the manager and then tries the new address`() = runTest {
+    fun `changing an address goes through the manager, which imports it, with no whole-preset refresh`() = runTest {
         val manager = FakeEpgPresetManager()
         val uiState = MutableStateFlow(SettingsUiState())
         val actions = SettingsEpgActions(mock(), manager, uiState)
@@ -223,7 +223,8 @@ class SettingsEpgPresetViewModelTest {
 
         assertThat(manager.addressCalls)
             .containsExactly(Triple(EpgPresetCatalog.BEIN, "BEIN1", "  https://mirror.example/bein.xml "))
-        assertThat(manager.refreshCalls).containsExactly(EpgPresetCatalog.BEIN)
+        // Review nit 7: the manager imports only the edited file, so Settings must not refresh them all.
+        assertThat(manager.refreshCalls).isEmpty()
         assertThat(succeeded).isTrue()
     }
 

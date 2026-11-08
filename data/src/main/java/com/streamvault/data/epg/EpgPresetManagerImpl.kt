@@ -25,6 +25,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
@@ -126,6 +127,8 @@ class EpgPresetManagerImpl internal constructor(
             store.update { it.copy(addresses = it.addresses.remembering(source, saved)) }
             // A new address is a new file, so the gap left by the old one no longer applies.
             store.clearRefreshAttempt(row.id)
+            // Only this file is imported; the editor closes at once and the status line shows progress.
+            importScope.launch { refresh(preset.id, listOf(row.id)) }
             Result.success(Unit)
         }
     }
