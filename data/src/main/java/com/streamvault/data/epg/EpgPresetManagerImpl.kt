@@ -138,13 +138,17 @@ class EpgPresetManagerImpl internal constructor(
             state.sources.filterKeys { it !in usedKeys }.values.forEach { release(it) }
             val fresh = mutableListOf<Long>()
             var records = state.sources.filterKeys { it in usedKeys }
+            val newlyAssigned = HashSet<Long>()
             enabled.flatMap { it.sources }.distinctBy { it.key }.forEach { source ->
                 val before = records[source.key]
                 val ensured = ensureSource(source, before, addressFor(source, state)) ?: return@forEach
                 val (record, moved) = followBuiltInAddress(source, ensured, state)
                 if (record.sourceId != before?.sourceId || moved) fresh += record.sourceId
-                records = records + (source.key to assignToAllProviders(record))
+                val assigned = assignToAllProviders(record)
+                newlyAssigned += assigned.assignedProviderIds - record.assignedProviderIds
+                records = records + (source.key to assigned)
             }
+            rankInCatalogOrder(records, newlyAssigned)
             store.update { it.copy(sources = records) }
             val unfinished = records.values.map { it.sourceId }.distinct()
                 .filter { it !in fresh && it !in inFlightSourceIds && neverFinished(it) }
@@ -164,14 +168,18 @@ class EpgPresetManagerImpl internal constructor(
         val sourceIds = mutex.withLock {
             val state = store.current()
             val records = state.sources.toMutableMap()
+            val newlyAssigned = HashSet<Long>()
             for (source in preset.sources) {
                 val record = ensureSource(source, records[source.key], addressFor(source, state))
                     ?: return Result.error(EpgPresetErrors.SOURCE_UNAVAILABLE)
                 records[source.key] = record
                 // Saved before assigning, so a crash mid-way leaves a row reconcile() can still find.
                 store.update { it.copy(sources = it.sources + (source.key to record)) }
-                records[source.key] = assignToAllProviders(record)
+                val assigned = assignToAllProviders(record)
+                newlyAssigned += assigned.assignedProviderIds - record.assignedProviderIds
+                records[source.key] = assigned
             }
+            rankInCatalogOrder(records, newlyAssigned)
             store.update { it.copy(enabledPresetIds = it.enabledPresetIds + preset.id, sources = records) }
             preset.sources.map { records.getValue(it.key).sourceId }
         }
@@ -277,6 +285,27 @@ class EpgPresetManagerImpl internal constructor(
         return record.copy(assignedProviderIds = kept + assignedNow, handledProviderIds = handled + assignedNow)
     }
 
+    /**
+     * Puts the preset's own rows of each provider in [providerIds] in catalog order (QATAR1 before
+     * BEIN1 before AE1, whichever preset was turned on first), reusing the priorities those rows
+     * already hold, so hand-added sources keep their place above them. Runs only for providers
+     * that just got a new preset row, so a user's own reordering stands until then.
+     */
+    private suspend fun rankInCatalogOrder(records: Map<String, EpgPresetSourceRecord>, providerIds: Set<Long>) {
+        for (providerId in providerIds) {
+            val priorities = sources.getAssignmentsForProvider(providerId).first()
+                .associate { it.epgSourceId to it.priority }
+            val ranked = CATALOG_KEY_ORDER.mapNotNull(records::get)
+                .filter { providerId in it.assignedProviderIds && it.sourceId in priorities }
+                .map { it.sourceId }
+                .distinct()
+            val slots = ranked.map(priorities::getValue).sorted()
+            ranked.zip(slots).forEach { (sourceId, priority) ->
+                if (priorities[sourceId] != priority) sources.updateAssignmentPriority(providerId, sourceId, priority)
+            }
+        }
+    }
+
     /** Runs in [importScope], so an import outlives the screen that started it; only the wait is cancelled. */
     private suspend fun refresh(presetId: String?, sourceIds: List<Long>): Result<Unit> {
         val ids = sourceIds.distinct()
@@ -314,5 +343,8 @@ class EpgPresetManagerImpl internal constructor(
 
     private companion object {
         const val TAG = "EpgPresetManager"
+
+        /** Every preset file key, in the order the catalog lists them. */
+        val CATALOG_KEY_ORDER: List<String> = EpgPresetCatalog.all.flatMap { it.sources }.map { it.key }.distinct()
     }
 }

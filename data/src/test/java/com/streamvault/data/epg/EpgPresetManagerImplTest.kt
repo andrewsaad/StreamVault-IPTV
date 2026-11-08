@@ -315,6 +315,54 @@ class EpgPresetManagerImplTest {
         assertThat(repo.refreshCalls).hasSize(1)
     }
 
+    // ── F12: preset rows rank in catalog order ───────────────────────
+
+    private val beinSources = EpgPresetCatalog.byId(EpgPresetCatalog.BEIN)!!.sources
+
+    /** The preset files assigned to [providerId], best ranked first. */
+    private fun rankedKeys(providerId: Long): List<String> {
+        val keyById = repo.rows.value.associate { row -> row.id to beinSources.firstOrNull { it.url == row.url }?.key }
+        return repo.assignments.getValue(providerId).entries.sortedBy { it.value }.mapNotNull { keyById[it.key] }
+    }
+
+    @Test
+    fun `enablingEgyptBeforeBein_stillRanksTheBeinFilesInCatalogOrder_belowHandAddedSources`() = runTest {
+        val handAdded = repo.addSource("Mine", "https://example.com/mine.xml").getOrNull()!!
+        repo.assignSourceToProvider(1L, handAdded.id, priority = 0)
+
+        manager.setEnabled(EpgPresetCatalog.EGYPT, true)
+        manager.setEnabled(EpgPresetCatalog.BEIN, true)
+
+        assertThat(rankedKeys(1L)).containsExactly("QATAR1", "BEIN1", "AE1").inOrder()
+        assertThat(rankedKeys(2L)).containsExactly("QATAR1", "BEIN1", "AE1").inOrder()
+        val lowestPreset = repo.assignments.getValue(1L).filterKeys { it != handAdded.id }.values.min()
+        assertThat(repo.assignments.getValue(1L).getValue(handAdded.id)).isLessThan(lowestPreset)
+    }
+
+    @Test
+    fun `aFileAddedToTheCatalogLater_takesItsCatalogPlace_notTheLast`() = runTest {
+        // A device that turned beIN on before QATAR1 existed: only BEIN1 and AE1 were assigned.
+        manager.setEnabled(EpgPresetCatalog.BEIN, true)
+        val qatarId = sourceIdFor(beinSources.first().url)
+        repo.deleteSource(qatarId)
+        store.update { it.copy(sources = it.sources - "QATAR1") }
+
+        manager.reconcile()
+
+        assertThat(rankedKeys(1L)).containsExactly("QATAR1", "BEIN1", "AE1").inOrder()
+    }
+
+    @Test
+    fun `reconcile_keepsTheUsersOwnOrderOfPresetRows_whenNothingNewIsAssigned`() = runTest {
+        manager.setEnabled(EpgPresetCatalog.BEIN, true)
+        val ae1Id = sourceIdFor(ae1.url)
+        repo.updateAssignmentPriority(1L, ae1Id, -1)
+
+        manager.reconcile()
+
+        assertThat(rankedKeys(1L).first()).isEqualTo("AE1")
+    }
+
     // ── F10: a corrected built-in address ────────────────────────────
 
     /** The row as an earlier build left it: created at [oldUrl], which was then the built-in address. */
@@ -563,7 +611,9 @@ private class FakeEpgSourceRepository(private val gate: EpgSourceRefreshGate) : 
         assignments[providerId]?.remove(epgSourceId)
     }
 
-    override suspend fun updateAssignmentPriority(providerId: Long, epgSourceId: Long, priority: Int) = Unit
+    override suspend fun updateAssignmentPriority(providerId: Long, epgSourceId: Long, priority: Int) {
+        assignments[providerId]?.let { if (epgSourceId in it) it[epgSourceId] = priority }
+    }
     override suspend fun swapAssignmentPriorities(
         providerId: Long,
         epgSourceId1: Long,

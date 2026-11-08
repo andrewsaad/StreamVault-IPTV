@@ -10,7 +10,7 @@ Guide presets are ready-made program guide sources you can turn on in Settings u
 | `egypt` (Egypt) | Al Ahly and Egyptian sports channels | `epg_ripper_AE1.xml.gz` |
 | `us` (US sports and networks) | NFL, MLS, MLB and national US channels | `epg_ripper_US2.xml.gz`, `epg_ripper_US_SPORTS1.xml.gz` |
 
-The epgshare01 files come from `https://epgshare01.online/epgshare01/`, and the Qatar file from `https://www.open-epg.com/files/`. Qatar comes first for beIN because BEIN1's channel ids do not match provider beIN names and its times look about 2 hours late (`specs/001-epg-presets-matches/validation-precision.md`). When two presets use the same file (AE1), the app keeps one source and shares it. Turning one preset off keeps the source while the other preset still needs it.
+The epgshare01 files come from `https://epgshare01.online/epgshare01/`, and the Qatar file from `https://www.open-epg.com/files/`. Qatar comes first for beIN because BEIN1's channel ids do not match provider beIN names and its times look about 2 hours late (`specs/001-epg-presets-matches/validation-precision.md`). When two presets use the same file (AE1), the app keeps one source and shares it. Preset files rank in the order of this table on every provider, whichever preset you turn on first, and always below guide sources you added by hand. If you reorder preset files yourself, that order stays until a preset adds a new file to that provider. Turning one preset off keeps the source while the other preset still needs it.
 
 ## Behavior
 
