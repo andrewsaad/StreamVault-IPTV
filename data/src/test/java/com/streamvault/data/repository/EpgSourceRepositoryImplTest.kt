@@ -30,6 +30,7 @@ import com.streamvault.domain.model.EpgResolutionSummary
 import com.streamvault.domain.model.EpgSourceType
 import com.streamvault.domain.model.Result
 import com.streamvault.domain.model.XmltvTimezonePolicy
+import com.streamvault.domain.repository.EpgSourceErrors
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.IOException
@@ -681,7 +682,7 @@ class EpgSourceRepositoryImplTest {
         val result = repository.refreshSource(10L)
 
         assertThat(result is Result.Error).isTrue()
-        assertThat((result as Result.Error).message).isEqualTo("EPG source contained no programmes")
+        assertThat((result as Result.Error).message).isEqualTo(EpgSourceErrors.EMPTY_PAYLOAD)
         verify(epgProgrammeDao, never()).deleteBySource(10L)
         verify(epgChannelDao, never()).deleteBySource(10L)
         verify(epgProgrammeDao, never()).moveToSource(any(), any())
@@ -692,7 +693,7 @@ class EpgSourceRepositoryImplTest {
         verify(epgSourceDao, never()).updateRefreshSuccess(any(), any())
         // The etag is not stored, so the next attempt downloads the file again instead of a 304.
         verify(epgSourceDao, never()).updateConditionalHeaders(any(), anyOrNull(), anyOrNull())
-        verify(epgSourceDao).updateRefreshError(eq(10L), eq("EPG source contained no programmes"), any())
+        verify(epgSourceDao).updateRefreshError(eq(10L), eq(EpgSourceErrors.EMPTY_PAYLOAD), any())
     }
 
     @Test

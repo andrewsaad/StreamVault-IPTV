@@ -1022,4 +1022,5 @@
     <string name="epg_preset_error_refresh_too_soon">U përditësua së fundi. Paracaktimet përditësohen më së shumti dy herë në ditë; provoni përsëri më vonë.</string>
     <string name="epg_preset_error_source_unavailable">Burimi i guidës për këtë paracaktim nuk mund të konfigurohej. Provoni përsëri.</string>
     <string name="epg_preset_error_invalid_address">Vendosni një adresë të guidës.</string>
+    <string name="epg_source_error_empty_payload">Skedari i udhëzuesit nuk kishte programe, prandaj u mbajt udhëzuesi i fundit i mirë.</string>
 </resources>

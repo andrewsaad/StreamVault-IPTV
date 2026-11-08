@@ -1024,4 +1024,5 @@
     <string name="epg_preset_error_refresh_too_soon">Nyligen uppdaterat. Förval uppdateras högst två gånger om dagen; försök igen senare.</string>
     <string name="epg_preset_error_source_unavailable">Det gick inte att konfigurera guidekällan för det här förvalet. Försök igen.</string>
     <string name="epg_preset_error_invalid_address">Ange en guideadress.</string>
+    <string name="epg_source_error_empty_payload">Guidefilen innehöll inga program, så den senaste fungerande guiden behölls.</string>
 </resources>

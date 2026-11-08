@@ -1022,4 +1022,5 @@
     <string name="epg_preset_error_refresh_too_soon">हाल ही में अपडेट हुआ। प्रीसेट दिन में अधिकतम दो बार अपडेट होते हैं; बाद में फिर कोशिश करें।</string>
     <string name="epg_preset_error_source_unavailable">इस प्रीसेट के लिए गाइड स्रोत सेट नहीं हो सका। फिर से कोशिश करें।</string>
     <string name="epg_preset_error_invalid_address">गाइड का पता दर्ज करें।</string>
+    <string name="epg_source_error_empty_payload">गाइड फ़ाइल में कोई कार्यक्रम नहीं था, इसलिए पिछली सही गाइड रखी गई।</string>
 </resources>

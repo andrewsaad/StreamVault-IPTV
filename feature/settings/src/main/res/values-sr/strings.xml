@@ -1025,4 +1025,5 @@
     <string name="epg_preset_error_refresh_too_soon">Недавно ажурирано. Готова подешавања се ажурирају највише двапут дневно; покушајте поново касније.</string>
     <string name="epg_preset_error_source_unavailable">Извор водича за ово готово подешавање није могуће подесити. Покушајте поново.</string>
     <string name="epg_preset_error_invalid_address">Унесите адресу водича.</string>
+    <string name="epg_source_error_empty_payload">Датотека водича није имала емисије, па је задржан последњи исправан водич.</string>
 </resources>

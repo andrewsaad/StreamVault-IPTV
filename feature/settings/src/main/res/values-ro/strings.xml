@@ -1027,4 +1027,5 @@
     <string name="epg_preset_error_refresh_too_soon">Actualizat recent. Presetările se actualizează de cel mult două ori pe zi; încearcă din nou mai târziu.</string>
     <string name="epg_preset_error_source_unavailable">Sursa ghidului pentru această presetare nu a putut fi configurată. Încearcă din nou.</string>
     <string name="epg_preset_error_invalid_address">Introdu o adresă a ghidului.</string>
+    <string name="epg_source_error_empty_payload">Fișierul ghidului nu conținea programe, așa că a fost păstrat ultimul ghid valid.</string>
 </resources>

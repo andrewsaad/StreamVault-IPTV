@@ -1024,4 +1024,5 @@
     <string name="epg_preset_error_refresh_too_soon">Nemrég frissült. Az előbeállítások naponta legfeljebb kétszer frissülnek; próbálja újra később.</string>
     <string name="epg_preset_error_source_unavailable">Nem sikerült beállítani az előbeállítás műsorújság-forrását. Próbálja újra.</string>
     <string name="epg_preset_error_invalid_address">Adjon meg egy műsorújság-címet.</string>
+    <string name="epg_source_error_empty_payload">A műsorújság-fájl nem tartalmazott műsorokat, ezért az utolsó jó műsorújság megmaradt.</string>
 </resources>

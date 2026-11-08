@@ -1030,4 +1030,5 @@
     <string name="epg_preset_error_refresh_too_soon">Нещодавно оновлено. Готові набори оновлюються не частіше ніж двічі на день; спробуйте пізніше.</string>
     <string name="epg_preset_error_source_unavailable">Не вдалося налаштувати джерело гіда для цього готового набору. Спробуйте ще раз.</string>
     <string name="epg_preset_error_invalid_address">Введіть адресу гіда.</string>
+    <string name="epg_source_error_empty_payload">У файлі телепрограми не було передач, тому збережено останню справну телепрограму.</string>
 </resources>

@@ -7,6 +7,7 @@ import com.streamvault.domain.repository.EpgPresetErrors
 import com.streamvault.domain.repository.EpgPresetManager
 import com.streamvault.domain.repository.EpgPresetSourceStatus
 import com.streamvault.domain.repository.EpgPresetStatus
+import com.streamvault.domain.repository.EpgSourceErrors
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -162,10 +163,28 @@ class SettingsEpgPresetViewModelTest {
     }
 
     @Test
+    fun `every stored refresh error key has a localized message, even among several`() {
+        // Review R3: an empty guide file used to be stored and shown as English text.
+        val keys = EpgSourceErrors::class.java.declaredFields
+            .filter { it.type == String::class.java }
+            .map { it.get(null) as String }
+        val text = { res: Int -> "res:$res" }
+
+        assertThat(keys).isNotEmpty()
+        assertThat(keys.filter { epgPresetErrorRes(it) == null }).isEmpty()
+        val empty = EpgSourceErrors.EMPTY_PAYLOAD
+        assertThat(localizeEpgError(empty, text))
+            .isEqualTo("res:${com.streamvault.feature.settings.R.string.epg_source_error_empty_payload}")
+        assertThat(localizeEpgError("HTTP 404; $empty", text))
+            .isEqualTo("HTTP 404; res:${com.streamvault.feature.settings.R.string.epg_source_error_empty_payload}")
+        assertThat(localizeEpgError("Failed to download EPG: HTTP 503", text)).isEqualTo("Failed to download EPG: HTTP 503")
+    }
+
+    @Test
     fun `a refusal is shown through the error text resolver`() = runTest {
         val manager = FakeEpgPresetManager().apply { nextResult = Result.Error(EpgPresetErrors.REFRESH_TOO_SOON) }
         val uiState = MutableStateFlow(SettingsUiState())
-        val actions = SettingsEpgActions(mock(), manager, uiState, presetErrorText = { "localized:$it" })
+        val actions = SettingsEpgActions(mock(), manager, uiState, epgErrorText = { "localized:$it" })
 
         actions.refreshEpgPresetNow(this, EpgPresetCatalog.US)
         advanceUntilIdle()

@@ -1021,4 +1021,5 @@
     <string name="epg_preset_error_refresh_too_soon">Vừa được cập nhật. Cài đặt sẵn cập nhật tối đa hai lần mỗi ngày; hãy thử lại sau.</string>
     <string name="epg_preset_error_source_unavailable">Không thể thiết lập nguồn hướng dẫn cho cài đặt sẵn này. Hãy thử lại.</string>
     <string name="epg_preset_error_invalid_address">Nhập địa chỉ hướng dẫn.</string>
+    <string name="epg_source_error_empty_payload">Tệp hướng dẫn không có chương trình nào, nên hướng dẫn hợp lệ gần nhất được giữ lại.</string>
 </resources>

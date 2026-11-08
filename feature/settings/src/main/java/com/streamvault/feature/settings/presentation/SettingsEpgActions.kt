@@ -17,8 +17,8 @@ class SettingsEpgActions(
     private val epgSourceRepository: EpgSourceRepository,
     private val epgPresetManager: EpgPresetManager,
     private val uiState: MutableStateFlow<SettingsUiState>,
-    /** Turns a preset refusal into the text shown; the view model maps manager keys to localized strings. */
-    private val presetErrorText: (String) -> String = { it },
+    /** Turns a preset refusal or guide refresh error into the text shown; the view model maps known keys to localized strings. */
+    private val epgErrorText: (String) -> String = { it },
 ) {
     // Tracks the active assignment-collector job per provider so recompositions
     // cancel the old coroutine rather than leaking it in viewModelScope.
@@ -58,7 +58,7 @@ class SettingsEpgActions(
             try {
                 val result = epgPresetManager.setEnabled(presetId, enabled)
                 if (result is Result.Error) {
-                    uiState.update { it.copy(userMessage = presetErrorText(result.message)) }
+                    uiState.update { it.copy(userMessage = epgErrorText(result.message)) }
                 }
             } catch (cancelled: CancellationException) {
                 throw cancelled
@@ -74,7 +74,7 @@ class SettingsEpgActions(
                 // Progress and the outcome show in the preset's own status line.
                 val result = epgPresetManager.refreshNow(presetId)
                 if (result is Result.Error) {
-                    uiState.update { it.copy(userMessage = presetErrorText(result.message)) }
+                    uiState.update { it.copy(userMessage = epgErrorText(result.message)) }
                 }
             } catch (cancelled: CancellationException) {
                 throw cancelled
@@ -104,7 +104,7 @@ class SettingsEpgActions(
             try {
                 val result = epgPresetManager.updateAddress(presetId, sourceKey, url)
                 if (result is Result.Error) {
-                    uiState.update { it.copy(userMessage = presetErrorText(result.message)) }
+                    uiState.update { it.copy(userMessage = epgErrorText(result.message)) }
                     onError()
                 } else {
                     onSuccess()
@@ -278,7 +278,7 @@ class SettingsEpgActions(
                 uiState.update {
                     it.copy(
                         refreshingEpgSourceIds = it.refreshingEpgSourceIds - sourceId,
-                        userMessage = if (result is Result.Error) result.message else "EPG source refreshed"
+                        userMessage = if (result is Result.Error) epgErrorText(result.message) else "EPG source refreshed"
                     )
                 }
             } catch (cancelled: CancellationException) {
@@ -310,7 +310,7 @@ class SettingsEpgActions(
                 uiState.update {
                     it.copy(
                         refreshingEpgSourceIds = it.refreshingEpgSourceIds - epgSourceId,
-                        userMessage = if (refreshResult is Result.Error) refreshResult.message else null
+                        userMessage = if (refreshResult is Result.Error) epgErrorText(refreshResult.message) else null
                     )
                 }
             } catch (cancelled: CancellationException) {

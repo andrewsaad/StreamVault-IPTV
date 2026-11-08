@@ -1100,4 +1100,5 @@
     <string name="epg_preset_error_refresh_too_soon">Updated recently. Presets update at most twice a day; try again later.</string>
     <string name="epg_preset_error_source_unavailable">Could not set up the guide source for this preset. Try again.</string>
     <string name="epg_preset_error_invalid_address">Enter a guide address.</string>
+    <string name="epg_source_error_empty_payload">The guide file had no programmes, so the last good guide was kept.</string>
 </resources>

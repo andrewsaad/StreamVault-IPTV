@@ -1024,4 +1024,5 @@
     <string name="epg_preset_error_refresh_too_soon">Yakın zamanda güncellendi. Ön ayarlar günde en fazla iki kez güncellenir; daha sonra tekrar deneyin.</string>
     <string name="epg_preset_error_source_unavailable">Bu ön ayar için rehber kaynağı kurulamadı. Tekrar deneyin.</string>
     <string name="epg_preset_error_invalid_address">Bir rehber adresi girin.</string>
+    <string name="epg_source_error_empty_payload">Rehber dosyasında hiç program yoktu, bu yüzden son geçerli rehber korundu.</string>
 </resources>

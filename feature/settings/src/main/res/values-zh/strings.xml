@@ -1020,4 +1020,5 @@
     <string name="epg_preset_error_refresh_too_soon">刚刚更新过。预设每天最多更新两次，请稍后再试。</string>
     <string name="epg_preset_error_source_unavailable">无法为此预设设置指南来源。请重试。</string>
     <string name="epg_preset_error_invalid_address">请输入指南地址。</string>
+    <string name="epg_source_error_empty_payload">节目指南文件中没有节目，因此保留了上一次正常的指南。</string>
 </resources>

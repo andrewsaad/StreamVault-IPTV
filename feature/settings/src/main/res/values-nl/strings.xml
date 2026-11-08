@@ -1024,4 +1024,5 @@
     <string name="epg_preset_error_refresh_too_soon">Onlangs bijgewerkt. Voorinstellingen worden hooguit twee keer per dag bijgewerkt; probeer het later opnieuw.</string>
     <string name="epg_preset_error_source_unavailable">De gidsbron voor deze voorinstelling kon niet worden ingesteld. Probeer het opnieuw.</string>
     <string name="epg_preset_error_invalid_address">Voer een gidsadres in.</string>
+    <string name="epg_source_error_empty_payload">Het gidsbestand bevatte geen programma\'s, dus de laatste goede gids is behouden.</string>
 </resources>

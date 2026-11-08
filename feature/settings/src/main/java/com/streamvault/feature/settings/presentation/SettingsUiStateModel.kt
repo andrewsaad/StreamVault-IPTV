@@ -30,6 +30,7 @@ import com.streamvault.domain.model.DecoderMode
 import com.streamvault.domain.model.EpgPresetCatalog
 import com.streamvault.domain.model.EpgResolutionSummary
 import com.streamvault.domain.repository.EpgPresetErrors
+import com.streamvault.domain.repository.EpgSourceErrors
 import com.streamvault.feature.settings.R
 import com.streamvault.domain.repository.EpgPresetStatus
 import com.streamvault.domain.model.GroupedChannelLabelMode
@@ -235,8 +236,8 @@ sealed interface EpgPresetStatusLine {
 }
 
 /**
- * The localized message for a [com.streamvault.domain.repository.EpgPresetErrors] key, or null for
- * any other error text (a download or address error), which is shown as it is.
+ * The localized message for an [EpgPresetErrors] or [EpgSourceErrors] key, or null for any other
+ * error text (a download or address error), which is shown as it is.
  */
 internal fun epgPresetErrorRes(message: String): Int? = when (message) {
     EpgPresetErrors.UNKNOWN_PRESET -> R.string.epg_preset_error_unknown
@@ -244,8 +245,20 @@ internal fun epgPresetErrorRes(message: String): Int? = when (message) {
     EpgPresetErrors.REFRESH_TOO_SOON -> R.string.epg_preset_error_refresh_too_soon
     EpgPresetErrors.SOURCE_UNAVAILABLE -> R.string.epg_preset_error_source_unavailable
     EpgPresetErrors.INVALID_ADDRESS -> R.string.epg_preset_error_invalid_address
+    EpgSourceErrors.EMPTY_PAYLOAD -> R.string.epg_source_error_empty_payload
     else -> null
 }
+
+/**
+ * [message] with every known error key in it replaced by its localized text. A preset refresh
+ * that failed on several files joins their errors with "; ", so each part is looked up alone.
+ */
+internal fun localizeEpgError(message: String, text: (Int) -> String): String =
+    message.split(EPG_ERROR_SEPARATOR).joinToString(EPG_ERROR_SEPARATOR) { part ->
+        epgPresetErrorRes(part)?.let(text) ?: part
+    }
+
+private const val EPG_ERROR_SEPARATOR = "; "
 
 /** One guide file of a preset, linked to the ordinary guide source row when one exists. */
 data class EpgPresetSourceUiModel(

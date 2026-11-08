@@ -1020,4 +1020,5 @@
     <string name="epg_preset_error_refresh_too_soon">Kürzlich aktualisiert. Voreinstellungen werden höchstens zweimal täglich aktualisiert; versuche es später erneut.</string>
     <string name="epg_preset_error_source_unavailable">Die Guide-Quelle für diese Voreinstellung konnte nicht eingerichtet werden. Versuche es erneut.</string>
     <string name="epg_preset_error_invalid_address">Gib eine Guide-Adresse ein.</string>
+    <string name="epg_source_error_empty_payload">Die Programmdatei enthielt keine Sendungen, daher wurde der letzte gültige Programmführer beibehalten.</string>
 </resources>

@@ -1024,4 +1024,5 @@
     <string name="epg_preset_error_refresh_too_soon">Ενημερώθηκε πρόσφατα. Οι προρυθμίσεις ενημερώνονται το πολύ δύο φορές την ημέρα· δοκιμάστε ξανά αργότερα.</string>
     <string name="epg_preset_error_source_unavailable">Δεν ήταν δυνατή η ρύθμιση της πηγής οδηγού για αυτή την προρύθμιση. Δοκιμάστε ξανά.</string>
     <string name="epg_preset_error_invalid_address">Εισαγάγετε μια διεύθυνση οδηγού.</string>
+    <string name="epg_source_error_empty_payload">Το αρχείο οδηγού δεν είχε προγράμματα, οπότε διατηρήθηκε ο τελευταίος έγκυρος οδηγός.</string>
 </resources>

@@ -1027,4 +1027,5 @@
     <string name="epg_preset_error_refresh_too_soon">עודכן לאחרונה. הגדרות מוכנות מתעדכנות לכל היותר פעמיים ביום; נסו שוב מאוחר יותר.</string>
     <string name="epg_preset_error_source_unavailable">לא ניתן היה להגדיר את מקור המדריך להגדרה המוכנה הזו. נסו שוב.</string>
     <string name="epg_preset_error_invalid_address">יש להזין כתובת מדריך.</string>
+    <string name="epg_source_error_empty_payload">קובץ המדריך לא הכיל תוכניות, ולכן נשמר המדריך התקין האחרון.</string>
 </resources>

@@ -1020,4 +1020,5 @@
     <string name="epg_preset_error_refresh_too_soon">Aggiornata di recente. Le preimpostazioni si aggiornano al massimo due volte al giorno; riprova più tardi.</string>
     <string name="epg_preset_error_source_unavailable">Impossibile configurare la fonte della guida per questa preimpostazione. Riprova.</string>
     <string name="epg_preset_error_invalid_address">Inserisci un indirizzo della guida.</string>
+    <string name="epg_source_error_empty_payload">Il file della guida non conteneva programmi, quindi è stata mantenuta l\'ultima guida valida.</string>
 </resources>

@@ -422,9 +422,13 @@ private fun epgPresetStatusText(status: EpgPresetStatusLine, appTimeFormat: AppT
             R.string.epg_preset_status_updated,
             dateTimeFormat.format(java.util.Date(status.at))
         )
-        is EpgPresetStatusLine.Failed -> stringResource(R.string.epg_preset_status_error, status.message)
+        is EpgPresetStatusLine.Failed -> stringResource(R.string.epg_preset_status_error, epgErrorText(status.message))
     }
 }
+
+/** A stored guide error in localized text when it is one of the known keys, else as it is. */
+@Composable
+internal fun epgErrorText(message: String): String = epgPresetErrorRes(message)?.let { stringResource(it) } ?: message
 
 private fun epgPresetNameRes(presetId: String): Int = when (presetId) {
     EpgPresetCatalog.BEIN -> R.string.epg_preset_bein_name

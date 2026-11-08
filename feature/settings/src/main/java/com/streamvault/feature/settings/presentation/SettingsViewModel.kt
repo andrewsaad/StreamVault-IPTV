@@ -222,7 +222,7 @@ class SettingsViewModel @Inject constructor(
         epgSourceRepository = epgSourceRepository,
         epgPresetManager = epgPresetManager,
         uiState = _uiState,
-        presetErrorText = { message -> epgPresetErrorRes(message)?.let(appContext::getString) ?: message },
+        epgErrorText = { message -> localizeEpgError(message, appContext::getString) },
     )
 
     init {

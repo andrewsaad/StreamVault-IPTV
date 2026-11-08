@@ -1022,4 +1022,5 @@
     <string name="epg_preset_error_refresh_too_soon">Неодамна ажурирано. Подготвените поставки се ажурираат најмногу двапати дневно; обидете се подоцна.</string>
     <string name="epg_preset_error_source_unavailable">Изворот на водичот за оваа подготвена поставка не можеше да се постави. Обидете се повторно.</string>
     <string name="epg_preset_error_invalid_address">Внесете адреса на водичот.</string>
+    <string name="epg_source_error_empty_payload">Датотеката со програмата немаше емисии, па е задржана последната исправна програма.</string>
 </resources>

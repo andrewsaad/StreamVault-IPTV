@@ -1019,4 +1019,5 @@
     <string name="epg_preset_error_refresh_too_soon">Baru dikemas kini. Pratetap dikemas kini paling banyak dua kali sehari; cuba lagi kemudian.</string>
     <string name="epg_preset_error_source_unavailable">Sumber panduan untuk pratetap ini tidak dapat disediakan. Cuba lagi.</string>
     <string name="epg_preset_error_invalid_address">Masukkan alamat panduan.</string>
+    <string name="epg_source_error_empty_payload">Fail panduan tidak mengandungi rancangan, jadi panduan baik yang terakhir dikekalkan.</string>
 </resources>

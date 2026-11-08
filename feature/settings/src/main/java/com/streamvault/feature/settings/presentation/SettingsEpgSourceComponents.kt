@@ -143,7 +143,7 @@ internal fun EpgSourceCard(
                     }
                     if (source.lastError != null) {
                         Text(
-                            stringResource(R.string.settings_epg_source_error, source.lastError.orEmpty()),
+                            stringResource(R.string.settings_epg_source_error, epgErrorText(source.lastError.orEmpty())),
                             style = MaterialTheme.typography.bodySmall,
                             color = ErrorColor,
                         )

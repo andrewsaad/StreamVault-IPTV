@@ -45,6 +45,7 @@ import com.streamvault.domain.model.Program
 import com.streamvault.domain.model.ProviderEpgSourceAssignment
 import com.streamvault.domain.model.Result
 import com.streamvault.domain.model.XmltvTimezonePolicy
+import com.streamvault.domain.repository.EpgSourceErrors
 import com.streamvault.domain.repository.EpgSourceRepository
 import com.streamvault.domain.util.PersistedTimestampPolicy
 import kotlinx.coroutines.Dispatchers
@@ -147,8 +148,6 @@ class EpgSourceRepositoryImpl @Inject constructor(
 
     companion object {
         private const val TAG = "EpgSourceRepo"
-        // Stored as the source's status text, like the other refresh errors here.
-        private const val EMPTY_PAYLOAD_MESSAGE = "EPG source contained no programmes"
         private const val MAX_EPG_RAW_SIZE_BYTES = NetworkTimeoutConfig.EPG_MAX_RAW_SIZE_BYTES
         private const val CHANNEL_BATCH_SIZE = 500
         private const val PROGRAMME_BATCH_SIZE = 500
@@ -511,9 +510,9 @@ class EpgSourceRepositoryImpl @Inject constructor(
                         epgChannelDao.deleteBySource(stagingId)
                         epgSourceDao.delete(stagingId)
                     }
-                    epgSourceDao.updateRefreshError(sourceId, EMPTY_PAYLOAD_MESSAGE)
+                    epgSourceDao.updateRefreshError(sourceId, EpgSourceErrors.EMPTY_PAYLOAD)
                     Log.w(TAG, "Source $sourceId parsed to 0 programmes ($channelCount channels); kept existing guide rows")
-                    return@withLock Result.error(EMPTY_PAYLOAD_MESSAGE)
+                    return@withLock Result.error(EpgSourceErrors.EMPTY_PAYLOAD)
                 }
 
                 // Reaching this point means the whole payload was read and parsed, so the

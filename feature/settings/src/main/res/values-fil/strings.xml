@@ -1022,4 +1022,5 @@
     <string name="epg_preset_error_refresh_too_soon">Kaka-update lang. Ang mga preset ay nag-a-update nang hanggang dalawang beses sa isang araw; subukang muli mamaya.</string>
     <string name="epg_preset_error_source_unavailable">Hindi ma-set up ang source ng guide para sa preset na ito. Subukang muli.</string>
     <string name="epg_preset_error_invalid_address">Maglagay ng address ng guide.</string>
+    <string name="epg_source_error_empty_payload">Walang programa ang file ng gabay, kaya pinanatili ang huling maayos na gabay.</string>
 </resources>

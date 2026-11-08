@@ -1019,4 +1019,5 @@
     <string name="epg_preset_error_refresh_too_soon">剛剛更新過。預設組合每天最多更新兩次，請稍後再試。</string>
     <string name="epg_preset_error_source_unavailable">無法為此預設組合設定指南來源。請再試一次。</string>
     <string name="epg_preset_error_invalid_address">請輸入指南位址。</string>
+    <string name="epg_source_error_empty_payload">節目指南檔案中沒有節目，因此保留了上一次正常的指南。</string>
 </resources>

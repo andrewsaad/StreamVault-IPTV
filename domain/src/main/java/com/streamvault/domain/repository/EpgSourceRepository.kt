@@ -10,6 +10,11 @@ import com.streamvault.domain.model.Result
 import com.streamvault.domain.model.XmltvTimezonePolicy
 import kotlinx.coroutines.flow.Flow
 
+/** Stable refresh errors stored as a source's last error; the UI maps them to localized text. */
+object EpgSourceErrors {
+    const val EMPTY_PAYLOAD = "epg_source_empty_payload"
+}
+
 interface EpgSourceRepository {
 
     // ── EPG Source CRUD ────────────────────────────────────────────
