@@ -12,6 +12,16 @@ internal object SportsEventAssembler {
     private const val NON_TEAM_START_TOLERANCE_MS = 30 * 60 * 1_000L
     private const val MIN_CONFIDENCE_FOR_CROSS_CHANNEL_MERGE = 0.6f
 
+    /**
+     * A later airing of the same match that starts this long after the first airing has ended is a
+     * rebroadcast. Guides often list a rebroadcast with the plain match title (no "Replay"), so
+     * without this it would be shown as LIVE while it airs. Shorter gaps are guide start-time
+     * differences between channels carrying the same live match, or the same teams meeting twice in
+     * one day (keepsSameTeamsPlayingLaterInTheDayAsSeparateEvents).
+     */
+    const val REBROADCAST_MIN_GAP_MS = 4 * 60 * 60 * 1_000L
+    private const val REBROADCAST_WINDOW_MS = 48 * 60 * 60 * 1_000L
+
     fun assemble(
         candidates: List<SportsEventCandidate>,
         startToleranceMs: Long = DEFAULT_START_TOLERANCE_MS,
@@ -51,8 +61,39 @@ internal object SportsEventAssembler {
         }
 
         SportsDiagnostics.dedupeSummary(candidates.size, groups.size, mergedCandidateCount)
-        return groups.map { group -> group.toSportsEvent() }
+        return dropRebroadcasts(groups).map { group -> group.toSportsEvent() }
             .sortedWith(compareBy<SportsEvent>({ it.startTime }, { it.title.lowercase() }))
+    }
+
+    /** Keeps the first airing of each match and drops later airings that are rebroadcasts. */
+    private fun dropRebroadcasts(groups: List<List<SportsEventCandidate>>): List<List<SportsEventCandidate>> {
+        val firstAiring = mutableMapOf<String, List<SportsEventCandidate>>()
+        val kept = mutableListOf<List<SportsEventCandidate>>()
+        groups.sortedBy { group -> group.minOf { it.program.startTime } }.forEach { group ->
+            val identity = group.first().eventIdentity
+            val leagueKey = group.first().classification.let { it.leagueInfo?.id ?: it.league?.let(SportsTextNormalizer::normalize) }
+            val key = "$identity|${leagueKey.orEmpty()}"
+            val first = firstAiring[key]
+            if (first == null) {
+                firstAiring[key] = group
+                kept += group
+                return@forEach
+            }
+            val start = group.minOf { it.program.startTime }
+            val firstStart = first.minOf { it.program.startTime }
+            val firstEnd = first.maxOf { it.program.endTime }
+            if (start - firstEnd >= REBROADCAST_MIN_GAP_MS && start - firstStart <= REBROADCAST_WINDOW_MS) {
+                SportsDiagnostics.dedupe(
+                    programId = group.first().program.id,
+                    eventFingerprint = identity,
+                    decision = "rebroadcast-dropped",
+                    groupSize = group.size,
+                )
+            } else {
+                kept += group
+            }
+        }
+        return kept
     }
 
     private fun List<SportsEventCandidate>.toSportsEvent(): SportsEvent {

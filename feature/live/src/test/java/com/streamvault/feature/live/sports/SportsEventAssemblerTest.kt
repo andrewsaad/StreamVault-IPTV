@@ -211,6 +211,50 @@ class SportsEventAssemblerTest {
         ).inOrder()
     }
 
+    @Test
+    fun dropsALaterAiringOfTheSameMatch_soARebroadcastWithAPlainTitleIsNotShownAsLive() {
+        val start = 1_800_000_000_000L
+        val events = SportsEventAssembler.assemble(
+            listOf(
+                candidate("Manchester United vs Aston Villa", channelId = 1L, startTime = start),
+                // Same match listed with no "Replay" label eight hours after the first airing ended.
+                candidate("Manchester United vs Aston Villa", channelId = 2L, startTime = start + 8 * HOUR),
+            ),
+        )
+
+        assertThat(events).hasSize(1)
+        assertThat(events.single().broadcasts.map { it.channel.id }).containsExactly(1L)
+        assertThat(events.single().startTime).isEqualTo(start)
+    }
+
+    @Test
+    fun keepsAnotherChannelsListingOfTheLiveMatch_whenItStartsRightAfterTheFirstEnds() {
+        val start = 1_800_000_000_000L
+        // The first listing ends at start + 90 min; this channel's guide starts the live match 100 min in.
+        val events = SportsEventAssembler.assemble(
+            listOf(
+                candidate("Barcelona vs Real Madrid", channelId = 1L, startTime = start),
+                candidate("Barcelona vs Real Madrid", channelId = 2L, startTime = start + 100 * MINUTE),
+            ),
+        )
+
+        assertThat(events).hasSize(2)
+    }
+
+    @Test
+    fun keepsAMatchupThatReturnsAfterTheRebroadcastWindow_andOtherMatchupsInTheGap() {
+        val start = 1_800_000_000_000L
+        val events = SportsEventAssembler.assemble(
+            listOf(
+                candidate("Arsenal vs Liverpool", channelId = 1L, startTime = start),
+                candidate("Chelsea vs Everton", channelId = 2L, startTime = start + 8 * HOUR),
+                candidate("Arsenal vs Liverpool", channelId = 3L, startTime = start + 5 * 24 * HOUR),
+            ),
+        )
+
+        assertThat(events.map { it.broadcasts.single().channel.id }).containsExactly(1L, 2L, 3L).inOrder()
+    }
+
     private fun candidate(
         title: String,
         channelId: Long,
@@ -251,5 +295,6 @@ class SportsEventAssemblerTest {
 
     private companion object {
         const val MINUTE = 60_000L
+        const val HOUR = 60 * MINUTE
     }
 }
