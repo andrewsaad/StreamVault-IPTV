@@ -215,12 +215,16 @@ class EpgSourceRepositoryImplTest {
         whenever(epgSourceDao.getById(10L)).thenReturn(
             EpgSourceEntity(id = 10L, name = "Primary", url = "https://example.com/epg.xml")
         )
+        whenever(providerEpgSourceDao.getForProviderSync(7L)).thenReturn(
+            listOf(ProviderEpgSourceEntity(providerId = 7L, epgSourceId = 10L, priority = 1))
+        )
 
         val result = repository.assignSourceToProvider(providerId = 7L, epgSourceId = 10L, priority = 1, resolve = false)
         repository.updateAssignmentPriority(providerId = 7L, epgSourceId = 10L, priority = 2, resolve = false)
 
         assertThat(result is Result.Success).isTrue()
         verify(providerEpgSourceDao).insert(any())
+        verify(providerEpgSourceDao).update(any())
         verifyNoMoreInteractions(resolutionEngine)
     }
 
