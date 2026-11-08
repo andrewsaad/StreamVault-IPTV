@@ -54,6 +54,10 @@ class EpgResolutionEngineTest {
         runTest {
             whenever(programDao.getChannelIdsWithPrograms(any(), any())).thenReturn(emptyList())
             whenever(providerSnapshotDao.getConfig(any())).thenReturn(makeProviderConfig())
+            // F14: the engine reads every assignment, enabled or not, to drop orphaned manual matches.
+            whenever(providerEpgSourceDao.getForProviderSync(any())).thenReturn(emptyList())
+            // F14: the mappings are read before the empty-channel shortcut, to keep hidden manual matches.
+            whenever(channelEpgMappingDao.getForProvider(any())).thenReturn(emptyList())
         }
         engine = EpgResolutionEngine(
             channelDao = channelDao,
