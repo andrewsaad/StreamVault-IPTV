@@ -144,7 +144,7 @@ class EpgPresetManagerImpl internal constructor(
                 val ensured = ensureSource(source, before, addressFor(source, state)) ?: return@forEach
                 val (record, moved) = followBuiltInAddress(source, ensured, state)
                 if (record.sourceId != before?.sourceId || moved) fresh += record.sourceId
-                val assigned = assignToAllProviders(record)
+                val assigned = assignToAllProviders(source.key, record)
                 newlyAssigned += assigned.assignedProviderIds - record.assignedProviderIds
                 records = records + (source.key to assigned)
             }
@@ -175,7 +175,7 @@ class EpgPresetManagerImpl internal constructor(
                 records[source.key] = record
                 // Saved before assigning, so a crash mid-way leaves a row reconcile() can still find.
                 store.update { it.copy(sources = it.sources + (source.key to record)) }
-                val assigned = assignToAllProviders(record)
+                val assigned = assignToAllProviders(source.key, record)
                 newlyAssigned += assigned.assignedProviderIds - record.assignedProviderIds
                 records[source.key] = assigned
             }
@@ -268,21 +268,30 @@ class EpgPresetManagerImpl internal constructor(
     /**
      * Assigns [record] to every provider not yet seen, below that provider's existing sources.
      * A seen provider that lacks it had it removed by the user, so it stays removed.
+     * Each assignment is saved under [key] as it is made, so one cut off by process death or an
+     * early return is still undone when the preset is turned off, even on a hand-added row.
      */
-    private suspend fun assignToAllProviders(record: EpgPresetSourceRecord): EpgPresetSourceRecord {
+    private suspend fun assignToAllProviders(key: String, record: EpgPresetSourceRecord): EpgPresetSourceRecord {
         val alreadyAssigned = sources.getProviderIdsForSource(record.sourceId).toSet()
-        val assignedNow = mutableSetOf<Long>()
         val handled = record.handledProviderIds + alreadyAssigned
+        // Keep only providers that still have the assignment, plus the ones added below.
+        var current = record.copy(
+            assignedProviderIds = record.assignedProviderIds.filterTo(HashSet()) { it in alreadyAssigned },
+            handledProviderIds = handled,
+        )
         for (providerId in providers.providerIds()) {
             if (providerId in handled) continue
             val lowest = sources.getAssignmentsForProvider(providerId).first().maxOfOrNull { it.priority } ?: -1
             if (sources.assignSourceToProvider(providerId, record.sourceId, lowest + 1) is Result.Success) {
-                assignedNow += providerId
+                current = current.copy(
+                    assignedProviderIds = current.assignedProviderIds + providerId,
+                    handledProviderIds = current.handledProviderIds + providerId,
+                )
+                val saved = current
+                store.update { it.copy(sources = it.sources + (key to saved)) }
             }
         }
-        // Keep only providers that still have the assignment, plus the ones added now.
-        val kept = record.assignedProviderIds.filterTo(HashSet()) { it in alreadyAssigned }
-        return record.copy(assignedProviderIds = kept + assignedNow, handledProviderIds = handled + assignedNow)
+        return current
     }
 
     /**

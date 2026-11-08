@@ -542,6 +542,27 @@ class EpgPresetManagerImplTest {
     }
 
     @Test
+    fun `aDeathMidEnable_onAHandAddedRow_isUndoneByTheNextReconcile`() = runTest {
+        // Review R2: the record used to be saved with no assignments until every provider was done.
+        val handAdded = repo.addSource("Mine", ae1.url).getOrNull()!!
+        repo.dieOnAssignTo = 2L
+
+        val died = runCatching { manager.setEnabled(EpgPresetCatalog.EGYPT, true) }
+
+        assertThat(died.isFailure).isTrue()
+        assertThat(repo.assignments[1L]!!.keys).containsExactly(handAdded.id)
+        assertThat(store.current().sources.getValue(ae1.key).assignedProviderIds).containsExactly(1L)
+
+        repo.dieOnAssignTo = null
+        val restarted = EpgPresetManagerImpl(repo, EpgPresetProviderDirectory { providerIds.toList() }, store)
+        restarted.reconcile()
+
+        assertThat(repo.assignments[1L].orEmpty()).isEmpty()
+        assertThat(repo.rows.value.map { it.id }).containsExactly(handAdded.id)
+        assertThat(store.current().sources).isEmpty()
+    }
+
+    @Test
     fun `stateIsDeviceLocal_aSecondStoreFileSeesEveryPresetOff`() = runTest {
         manager.setEnabled(EpgPresetCatalog.EGYPT, true)
         val otherDevice = testPresetStore { now }
@@ -602,7 +623,11 @@ private class FakeEpgSourceRepository(private val gate: EpgSourceRefreshGate) : 
             }
         }
 
+    /** Assigning to this provider throws, like the process dying mid-enable. */
+    var dieOnAssignTo: Long? = null
+
     override suspend fun assignSourceToProvider(providerId: Long, epgSourceId: Long, priority: Int): Result<Unit> {
+        if (providerId == dieOnAssignTo) throw IllegalStateException("process died")
         assignments.getOrPut(providerId) { mutableMapOf() }[epgSourceId] = priority
         return Result.success(Unit)
     }
