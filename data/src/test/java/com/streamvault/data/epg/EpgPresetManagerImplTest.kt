@@ -326,7 +326,7 @@ class EpgPresetManagerImplTest {
         // F19: the import did not run on into the deleted row, and it did not use up the attempt.
         assertThat(repo.finishedImports).isEmpty()
         assertThat(repo.rows.value).isEmpty()
-        assertThat(store.current().lastAttemptAtByKey).isEmpty()
+        assertThat(store.current().lastAttemptAtBySourceId).isEmpty()
         val status = manager.observe().first().single { it.presetId == EpgPresetCatalog.EGYPT }
         assertThat(status.refreshing).isFalse()
     }
