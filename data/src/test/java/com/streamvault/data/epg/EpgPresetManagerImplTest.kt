@@ -100,7 +100,25 @@ class EpgPresetManagerImplTest {
 
         assertThat(repo.rows.value).isEmpty()
         assertThat(repo.assignments.values.all { it.isEmpty() }).isTrue()
-        assertThat(store.current()).isEqualTo(EpgPresetState())
+        // The attempt history stays (F18); everything else is gone.
+        assertThat(store.current().copy(lastAttemptAtByKey = emptyMap())).isEqualTo(EpgPresetState())
+    }
+
+    @Test
+    fun `turningAPresetOffAndOn_doesNotResetTheRefreshCap`() = runTest {
+        manager.setEnabled(EpgPresetCatalog.EGYPT, true)
+        val firstRowId = sourceIdFor(ae1.url)
+        manager.setEnabled(EpgPresetCatalog.EGYPT, false)
+        now += 60L * 60L * 1000L
+
+        manager.setEnabled(EpgPresetCatalog.EGYPT, true)
+
+        // A new row, but the same file: its attempt from an hour ago still counts (SC-005).
+        assertThat(sourceIdFor(ae1.url)).isNotEqualTo(firstRowId)
+        assertThat(repo.refreshCalls).containsExactly(firstRowId)
+        now += EpgPresetStateStore.MIN_ATTEMPT_GAP_MILLIS
+        assertThat(manager.refreshNow(EpgPresetCatalog.EGYPT).isSuccess).isTrue()
+        assertThat(repo.refreshCalls).hasSize(2)
     }
 
     @Test
