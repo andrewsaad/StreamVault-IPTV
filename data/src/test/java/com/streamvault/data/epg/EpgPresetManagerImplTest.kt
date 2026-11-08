@@ -484,6 +484,21 @@ class EpgPresetManagerImplTest {
     }
 
     @Test
+    fun `updateAddress_thatNormalizesToTheStoredAddress_keepsTheGap`() = runTest {
+        // Review R4: the same-address check ran before the repository added the scheme back.
+        manager.setEnabled(EpgPresetCatalog.EGYPT, true)
+        repo.normalizeUrl = { if (it.contains("://")) it else "https://$it" }
+
+        val result = manager.updateAddress(EpgPresetCatalog.EGYPT, ae1.key, ae1.url.removePrefix("https://"))
+
+        assertThat(result.isSuccess).isTrue()
+        assertThat(repo.rows.value.single().url).isEqualTo(ae1.url)
+        assertThat(store.current().addresses).isEmpty()
+        assertThat(manager.refreshNow(EpgPresetCatalog.EGYPT).errorMessageOrNull())
+            .isEqualTo(EpgPresetErrors.REFRESH_TOO_SOON)
+    }
+
+    @Test
     fun `updateAddress_survivesTurningThePresetOffAndOn`() = runTest {
         manager.setEnabled(EpgPresetCatalog.EGYPT, true)
         manager.updateAddress(EpgPresetCatalog.EGYPT, ae1.key, "https://mirror.example/ae1.xml")
@@ -600,10 +615,13 @@ private class FakeEpgSourceRepository(private val gate: EpgSourceRefreshGate) : 
     }
 
     var refuseUpdatesWith: String? = null
+    /** Like the real repository adding a missing scheme. */
+    var normalizeUrl: (String) -> String = { it }
 
     override suspend fun updateSource(source: EpgSource): Result<Unit> {
         refuseUpdatesWith?.let { return Result.error(it) }
-        rows.value = rows.value.map { if (it.id == source.id) source else it }
+        val normalized = source.copy(url = normalizeUrl(source.url))
+        rows.value = rows.value.map { if (it.id == source.id) normalized else it }
         return Result.success(Unit)
     }
 

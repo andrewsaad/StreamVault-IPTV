@@ -121,6 +121,8 @@ class EpgPresetManagerImpl internal constructor(
             if (updated is Result.Error) return@withLock updated
             // The repository may normalize the address, so remember what it stored.
             val saved = sources.getSourceById(row.id)?.url ?: trimmed
+            // A retyped address can normalize back to the stored one; that is still the same file.
+            if (saved == row.url) return@withLock Result.success(Unit)
             store.update { it.copy(addresses = it.addresses.remembering(source, saved)) }
             // A new address is a new file, so the gap left by the old one no longer applies.
             store.clearRefreshAttempt(row.id)
