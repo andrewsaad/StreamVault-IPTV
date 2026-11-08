@@ -98,6 +98,18 @@ class EpgPresetManagerImplTest {
     }
 
     @Test
+    fun `enableBein_namesEachRowAfterItsHost_andRanksThemInCatalogOrder`() = runTest {
+        manager.setEnabled(EpgPresetCatalog.BEIN, true)
+
+        val rows = repo.rows.value.associateBy { it.url }
+        val bein = EpgPresetCatalog.byId(EpgPresetCatalog.BEIN)!!.sources
+        assertThat(bein.map { rows.getValue(it.url).name })
+            .containsExactly("open-epg QATAR1", "epgshare01 BEIN1", "epgshare01 AE1").inOrder()
+        val priorities = repo.assignments.getValue(1L)
+        assertThat(bein.map { priorities.getValue(rows.getValue(it.url).id) }).isInStrictOrder()
+    }
+
+    @Test
     fun `disable_neverDeletesAHandAddedSourceWithTheSameAddress`() = runTest {
         val handAdded = repo.addSource("Mine", ae1.url).getOrNull()!!
         repo.assignSourceToProvider(1L, handAdded.id, priority = 0)

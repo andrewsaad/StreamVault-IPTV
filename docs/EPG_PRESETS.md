@@ -4,13 +4,13 @@ Guide presets are ready-made program guide sources you can turn on in Settings u
 
 ## Presets
 
-| Preset | Covers | epgshare01 files |
+| Preset | Covers | Guide files, in priority order |
 |---|---|---|
-| `bein` (beIN Sports, Arabic) | beIN Sports channels and Arabic networks | `epg_ripper_BEIN1.xml.gz`, `epg_ripper_AE1.xml.gz` |
+| `bein` (beIN Sports, Arabic) | beIN Sports channels and Arabic networks | open-epg `qatar1.xml`, then `epg_ripper_BEIN1.xml.gz`, `epg_ripper_AE1.xml.gz` |
 | `egypt` (Egypt) | Al Ahly and Egyptian sports channels | `epg_ripper_AE1.xml.gz` |
 | `us` (US sports and networks) | NFL, MLS, MLB and national US channels | `epg_ripper_US2.xml.gz`, `epg_ripper_US_SPORTS1.xml.gz` |
 
-All files are fetched from `https://epgshare01.online/epgshare01/`. When two presets use the same file (AE1), the app keeps one source and shares it. Turning one preset off keeps the source while the other preset still needs it.
+The epgshare01 files come from `https://epgshare01.online/epgshare01/`, and the Qatar file from `https://www.open-epg.com/files/`. Qatar comes first for beIN because BEIN1's channel ids do not match provider beIN names and its times look about 2 hours late (`specs/001-epg-presets-matches/validation-precision.md`). When two presets use the same file (AE1), the app keeps one source and shares it. Turning one preset off keeps the source while the other preset still needs it.
 
 ## Behavior
 

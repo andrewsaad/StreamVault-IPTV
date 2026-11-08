@@ -10,6 +10,7 @@ import com.streamvault.domain.repository.EpgPresetErrors
 import com.streamvault.domain.repository.EpgPresetManager
 import com.streamvault.domain.repository.EpgPresetStatus
 import com.streamvault.domain.repository.EpgSourceRepository
+import java.net.URI
 import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -226,7 +227,12 @@ class EpgPresetManagerImpl internal constructor(
         }.await()
     }
 
-    private fun sourceName(source: EpgPresetSource): String = "epgshare01 ${source.key}"
+    /** "epgshare01 AE1", "open-epg QATAR1": the site, then the file. A source name, never translated. */
+    private fun sourceName(source: EpgPresetSource): String {
+        val site = runCatching { URI(source.url).host }.getOrNull().orEmpty()
+            .removePrefix("www.").substringBefore('.')
+        return listOf(site, source.key).filter(String::isNotBlank).joinToString(" ")
+    }
 
     private companion object {
         const val TAG = "EpgPresetManager"

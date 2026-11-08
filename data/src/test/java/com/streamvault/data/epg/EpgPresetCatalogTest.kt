@@ -50,14 +50,22 @@ class EpgPresetCatalogTest {
     }
 
     @Test
-    fun `catalog_addressesAreFixedHttpsFilesOnOneHost_notAnOnlineList`() {
+    fun `catalog_addressesAreFixedHttpsFilesOnKnownHosts_notAnOnlineList`() {
         EpgPresetCatalog.all.flatMap { it.sources }.forEach { source ->
             val uri = URI(source.url)
             assertThat(uri.scheme).isEqualTo("https")
-            assertThat(uri.host).isEqualTo("epgshare01.online")
-            assertThat(uri.path).endsWith(".xml.gz")
+            assertThat(uri.host).isIn(setOf("epgshare01.online", "www.open-epg.com"))
+            assertThat(uri.path).matches(".*\\.xml(\\.gz)?")
             assertThat(uri.query).isNull()
         }
+    }
+
+    @Test
+    fun `bein_readsTheQatarFileFirst_becauseItMatchesProviderNamesWithCorrectTimes`() {
+        // validation-precision.md: BEIN1 and AE1 alone map 20 of 188 beIN sports channels, with Qatar 165.
+        val bein = EpgPresetCatalog.byId(EpgPresetCatalog.BEIN)!!
+        assertThat(bein.sources.map { it.key }).containsExactly("QATAR1", "BEIN1", "AE1").inOrder()
+        assertThat(bein.sources.first().url).isEqualTo("https://www.open-epg.com/files/qatar1.xml")
     }
 
     @Test
