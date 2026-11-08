@@ -1015,4 +1015,9 @@
     <string name="epg_preset_refresh_now">Jetzt aktualisieren</string>
     <string name="epg_preset_edit_address">Adresse ändern</string>
     <string name="epg_preset_terms_note">Die Guide-Daten stammen aus einer öffentlichen Community-Quelle ohne angegebene Nutzungsbedingungen. Aktualisierungen sind auf zweimal täglich begrenzt.</string>
+    <string name="epg_preset_error_unknown">Diese Guide-Voreinstellung ist nicht verfügbar.</string>
+    <string name="epg_preset_error_not_enabled">Schalte diese Voreinstellung zuerst ein.</string>
+    <string name="epg_preset_error_refresh_too_soon">Kürzlich aktualisiert. Voreinstellungen werden höchstens zweimal täglich aktualisiert; versuche es später erneut.</string>
+    <string name="epg_preset_error_source_unavailable">Die Guide-Quelle für diese Voreinstellung konnte nicht eingerichtet werden. Versuche es erneut.</string>
+    <string name="epg_preset_error_invalid_address">Gib eine Guide-Adresse ein.</string>
 </resources>

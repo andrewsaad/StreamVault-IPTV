@@ -1095,4 +1095,9 @@
     <string name="epg_preset_refresh_now">Update now</string>
     <string name="epg_preset_edit_address">Change address</string>
     <string name="epg_preset_terms_note">Guide data comes from a public community source with no stated terms of use. Updates are limited to twice a day.</string>
+    <string name="epg_preset_error_unknown">This guide preset is not available.</string>
+    <string name="epg_preset_error_not_enabled">Turn this preset on first.</string>
+    <string name="epg_preset_error_refresh_too_soon">Updated recently. Presets update at most twice a day; try again later.</string>
+    <string name="epg_preset_error_source_unavailable">Could not set up the guide source for this preset. Try again.</string>
+    <string name="epg_preset_error_invalid_address">Enter a guide address.</string>
 </resources>

@@ -1017,4 +1017,9 @@
     <string name="epg_preset_refresh_now">अभी अपडेट करें</string>
     <string name="epg_preset_edit_address">पता बदलें</string>
     <string name="epg_preset_terms_note">गाइड डेटा एक सार्वजनिक सामुदायिक स्रोत से आता है जिसकी उपयोग की कोई घोषित शर्तें नहीं हैं। अपडेट दिन में दो बार तक सीमित हैं।</string>
+    <string name="epg_preset_error_unknown">यह गाइड प्रीसेट उपलब्ध नहीं है।</string>
+    <string name="epg_preset_error_not_enabled">पहले यह प्रीसेट चालू करें।</string>
+    <string name="epg_preset_error_refresh_too_soon">हाल ही में अपडेट हुआ। प्रीसेट दिन में अधिकतम दो बार अपडेट होते हैं; बाद में फिर कोशिश करें।</string>
+    <string name="epg_preset_error_source_unavailable">इस प्रीसेट के लिए गाइड स्रोत सेट नहीं हो सका। फिर से कोशिश करें।</string>
+    <string name="epg_preset_error_invalid_address">गाइड का पता दर्ज करें।</string>
 </resources>

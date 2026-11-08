@@ -1022,4 +1022,9 @@
     <string name="epg_preset_refresh_now">Actualizează acum</string>
     <string name="epg_preset_edit_address">Schimbă adresa</string>
     <string name="epg_preset_terms_note">Datele ghidului provin dintr-o sursă publică a comunității, fără condiții de utilizare declarate. Actualizările sunt limitate la două pe zi.</string>
+    <string name="epg_preset_error_unknown">Această presetare pentru ghid nu este disponibilă.</string>
+    <string name="epg_preset_error_not_enabled">Activează mai întâi această presetare.</string>
+    <string name="epg_preset_error_refresh_too_soon">Actualizat recent. Presetările se actualizează de cel mult două ori pe zi; încearcă din nou mai târziu.</string>
+    <string name="epg_preset_error_source_unavailable">Sursa ghidului pentru această presetare nu a putut fi configurată. Încearcă din nou.</string>
+    <string name="epg_preset_error_invalid_address">Introdu o adresă a ghidului.</string>
 </resources>

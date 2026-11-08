@@ -1015,4 +1015,9 @@
     <string name="epg_preset_refresh_now">Actualizar ahora</string>
     <string name="epg_preset_edit_address">Cambiar dirección</string>
     <string name="epg_preset_terms_note">Los datos de la guía provienen de una fuente comunitaria pública sin condiciones de uso declaradas. Las actualizaciones se limitan a dos al día.</string>
+    <string name="epg_preset_error_unknown">Este ajuste predefinido de la guía no está disponible.</string>
+    <string name="epg_preset_error_not_enabled">Activa primero este ajuste predefinido.</string>
+    <string name="epg_preset_error_refresh_too_soon">Actualizado hace poco. Los ajustes predefinidos se actualizan como máximo dos veces al día; inténtalo más tarde.</string>
+    <string name="epg_preset_error_source_unavailable">No se pudo configurar la fuente de la guía para este ajuste predefinido. Inténtalo de nuevo.</string>
+    <string name="epg_preset_error_invalid_address">Introduce una dirección de guía.</string>
 </resources>

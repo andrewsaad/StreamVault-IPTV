@@ -1019,4 +1019,9 @@
     <string name="epg_preset_refresh_now">Perbarui sekarang</string>
     <string name="epg_preset_edit_address">Ubah alamat</string>
     <string name="epg_preset_terms_note">Data panduan berasal dari sumber komunitas publik tanpa ketentuan penggunaan yang dinyatakan. Pembaruan dibatasi dua kali sehari.</string>
+    <string name="epg_preset_error_unknown">Preset panduan ini tidak tersedia.</string>
+    <string name="epg_preset_error_not_enabled">Aktifkan preset ini terlebih dahulu.</string>
+    <string name="epg_preset_error_refresh_too_soon">Baru saja diperbarui. Preset diperbarui paling banyak dua kali sehari; coba lagi nanti.</string>
+    <string name="epg_preset_error_source_unavailable">Sumber panduan untuk preset ini tidak dapat disiapkan. Coba lagi.</string>
+    <string name="epg_preset_error_invalid_address">Masukkan alamat panduan.</string>
 </resources>

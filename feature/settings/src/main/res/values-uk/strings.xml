@@ -1025,4 +1025,9 @@
     <string name="epg_preset_refresh_now">Оновити зараз</string>
     <string name="epg_preset_edit_address">Змінити адресу</string>
     <string name="epg_preset_terms_note">Дані гіда надходять із загальнодоступного джерела спільноти без зазначених умов використання. Оновлення обмежено двома на день.</string>
+    <string name="epg_preset_error_unknown">Цей готовий набір гіда недоступний.</string>
+    <string name="epg_preset_error_not_enabled">Спершу увімкніть цей готовий набір.</string>
+    <string name="epg_preset_error_refresh_too_soon">Нещодавно оновлено. Готові набори оновлюються не частіше ніж двічі на день; спробуйте пізніше.</string>
+    <string name="epg_preset_error_source_unavailable">Не вдалося налаштувати джерело гіда для цього готового набору. Спробуйте ще раз.</string>
+    <string name="epg_preset_error_invalid_address">Введіть адресу гіда.</string>
 </resources>

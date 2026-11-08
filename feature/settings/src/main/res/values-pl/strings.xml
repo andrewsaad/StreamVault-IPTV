@@ -1025,4 +1025,9 @@
     <string name="epg_preset_refresh_now">Aktualizuj teraz</string>
     <string name="epg_preset_edit_address">Zmień adres</string>
     <string name="epg_preset_terms_note">Dane przewodnika pochodzą z publicznego źródła społeczności bez określonych warunków korzystania. Aktualizacje są ograniczone do dwóch dziennie.</string>
+    <string name="epg_preset_error_unknown">To gotowe ustawienie przewodnika jest niedostępne.</string>
+    <string name="epg_preset_error_not_enabled">Najpierw włącz to gotowe ustawienie.</string>
+    <string name="epg_preset_error_refresh_too_soon">Niedawno zaktualizowano. Gotowe ustawienia aktualizują się najwyżej dwa razy dziennie; spróbuj ponownie później.</string>
+    <string name="epg_preset_error_source_unavailable">Nie udało się skonfigurować źródła przewodnika dla tego gotowego ustawienia. Spróbuj ponownie.</string>
+    <string name="epg_preset_error_invalid_address">Wpisz adres przewodnika.</string>
 </resources>

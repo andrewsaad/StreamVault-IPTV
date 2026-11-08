@@ -1020,4 +1020,9 @@
     <string name="epg_preset_refresh_now">Ažuriraj sada</string>
     <string name="epg_preset_edit_address">Promijeni adresu</string>
     <string name="epg_preset_terms_note">Podaci vodiča dolaze iz javnog izvora zajednice bez navedenih uvjeta korištenja. Ažuriranja su ograničena na dvaput dnevno.</string>
+    <string name="epg_preset_error_unknown">Ovaj predložak vodiča nije dostupan.</string>
+    <string name="epg_preset_error_not_enabled">Najprije uključite ovaj predložak.</string>
+    <string name="epg_preset_error_refresh_too_soon">Nedavno ažurirano. Predlošci se ažuriraju najviše dvaput dnevno; pokušajte ponovno kasnije.</string>
+    <string name="epg_preset_error_source_unavailable">Izvor vodiča za ovaj predložak nije moguće postaviti. Pokušajte ponovno.</string>
+    <string name="epg_preset_error_invalid_address">Unesite adresu vodiča.</string>
 </resources>

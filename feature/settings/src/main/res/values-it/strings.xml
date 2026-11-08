@@ -1015,4 +1015,9 @@
     <string name="epg_preset_refresh_now">Aggiorna ora</string>
     <string name="epg_preset_edit_address">Cambia indirizzo</string>
     <string name="epg_preset_terms_note">I dati della guida provengono da una fonte pubblica della community senza termini d’uso dichiarati. Gli aggiornamenti sono limitati a due al giorno.</string>
+    <string name="epg_preset_error_unknown">Questa preimpostazione della guida non è disponibile.</string>
+    <string name="epg_preset_error_not_enabled">Attiva prima questa preimpostazione.</string>
+    <string name="epg_preset_error_refresh_too_soon">Aggiornata di recente. Le preimpostazioni si aggiornano al massimo due volte al giorno; riprova più tardi.</string>
+    <string name="epg_preset_error_source_unavailable">Impossibile configurare la fonte della guida per questa preimpostazione. Riprova.</string>
+    <string name="epg_preset_error_invalid_address">Inserisci un indirizzo della guida.</string>
 </resources>

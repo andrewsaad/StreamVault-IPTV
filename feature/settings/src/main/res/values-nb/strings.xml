@@ -1019,4 +1019,9 @@
     <string name="epg_preset_refresh_now">Oppdater nå</string>
     <string name="epg_preset_edit_address">Endre adresse</string>
     <string name="epg_preset_terms_note">Guidedata kommer fra en offentlig fellesskapskilde uten oppgitte bruksvilkår. Oppdateringer er begrenset til to ganger om dagen.</string>
+    <string name="epg_preset_error_unknown">Denne forhåndsinnstillingen for guide er ikke tilgjengelig.</string>
+    <string name="epg_preset_error_not_enabled">Slå på denne forhåndsinnstillingen først.</string>
+    <string name="epg_preset_error_refresh_too_soon">Nylig oppdatert. Forhåndsinnstillinger oppdateres høyst to ganger om dagen; prøv igjen senere.</string>
+    <string name="epg_preset_error_source_unavailable">Kunne ikke sette opp guidekilden for denne forhåndsinnstillingen. Prøv igjen.</string>
+    <string name="epg_preset_error_invalid_address">Skriv inn en guideadresse.</string>
 </resources>

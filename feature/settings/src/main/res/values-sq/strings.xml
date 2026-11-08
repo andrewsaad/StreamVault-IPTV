@@ -1017,4 +1017,9 @@
     <string name="epg_preset_refresh_now">Përditëso tani</string>
     <string name="epg_preset_edit_address">Ndrysho adresën</string>
     <string name="epg_preset_terms_note">Të dhënat e guidës vijnë nga një burim publik i komunitetit pa kushte të deklaruara përdorimi. Përditësimet kufizohen në dy herë në ditë.</string>
+    <string name="epg_preset_error_unknown">Ky paracaktim i guidës nuk është i disponueshëm.</string>
+    <string name="epg_preset_error_not_enabled">Aktivizoni fillimisht këtë paracaktim.</string>
+    <string name="epg_preset_error_refresh_too_soon">U përditësua së fundi. Paracaktimet përditësohen më së shumti dy herë në ditë; provoni përsëri më vonë.</string>
+    <string name="epg_preset_error_source_unavailable">Burimi i guidës për këtë paracaktim nuk mund të konfigurohej. Provoni përsëri.</string>
+    <string name="epg_preset_error_invalid_address">Vendosni një adresë të guidës.</string>
 </resources>

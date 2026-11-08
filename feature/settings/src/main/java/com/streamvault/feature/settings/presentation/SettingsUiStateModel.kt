@@ -29,6 +29,8 @@ import com.streamvault.domain.model.ContentType
 import com.streamvault.domain.model.DecoderMode
 import com.streamvault.domain.model.EpgPresetCatalog
 import com.streamvault.domain.model.EpgResolutionSummary
+import com.streamvault.domain.repository.EpgPresetErrors
+import com.streamvault.feature.settings.R
 import com.streamvault.domain.repository.EpgPresetStatus
 import com.streamvault.domain.model.GroupedChannelLabelMode
 import com.streamvault.domain.model.LiveChannelGroupingMode
@@ -230,6 +232,19 @@ sealed interface EpgPresetStatusLine {
     data object Refreshing : EpgPresetStatusLine
     data class Updated(val at: Long) : EpgPresetStatusLine
     data class Failed(val message: String) : EpgPresetStatusLine
+}
+
+/**
+ * The localized message for a [com.streamvault.domain.repository.EpgPresetErrors] key, or null for
+ * any other error text (a download or address error), which is shown as it is.
+ */
+internal fun epgPresetErrorRes(message: String): Int? = when (message) {
+    EpgPresetErrors.UNKNOWN_PRESET -> R.string.epg_preset_error_unknown
+    EpgPresetErrors.NOT_ENABLED -> R.string.epg_preset_error_not_enabled
+    EpgPresetErrors.REFRESH_TOO_SOON -> R.string.epg_preset_error_refresh_too_soon
+    EpgPresetErrors.SOURCE_UNAVAILABLE -> R.string.epg_preset_error_source_unavailable
+    EpgPresetErrors.INVALID_ADDRESS -> R.string.epg_preset_error_invalid_address
+    else -> null
 }
 
 /** One guide file of a preset, linked to the ordinary guide source row when one exists. */

@@ -1022,4 +1022,9 @@
     <string name="epg_preset_refresh_now">לעדכן עכשיו</string>
     <string name="epg_preset_edit_address">שינוי כתובת</string>
     <string name="epg_preset_terms_note">נתוני המדריך מגיעים ממקור קהילתי ציבורי ללא תנאי שימוש מוצהרים. העדכונים מוגבלים לפעמיים ביום.</string>
+    <string name="epg_preset_error_unknown">ההגדרה המוכנה הזו למדריך אינה זמינה.</string>
+    <string name="epg_preset_error_not_enabled">יש להפעיל קודם את ההגדרה המוכנה הזו.</string>
+    <string name="epg_preset_error_refresh_too_soon">עודכן לאחרונה. הגדרות מוכנות מתעדכנות לכל היותר פעמיים ביום; נסו שוב מאוחר יותר.</string>
+    <string name="epg_preset_error_source_unavailable">לא ניתן היה להגדיר את מקור המדריך להגדרה המוכנה הזו. נסו שוב.</string>
+    <string name="epg_preset_error_invalid_address">יש להזין כתובת מדריך.</string>
 </resources>

@@ -1031,4 +1031,9 @@
     <string name="epg_preset_refresh_now">تحديث الآن</string>
     <string name="epg_preset_edit_address">تغيير العنوان</string>
     <string name="epg_preset_terms_note">تأتي بيانات الدليل من مصدر مجتمعي عام دون شروط استخدام معلنة. التحديثات محدودة بمرتين يوميًا.</string>
+    <string name="epg_preset_error_unknown">هذا الإعداد المسبق للدليل غير متاح.</string>
+    <string name="epg_preset_error_not_enabled">شغّل هذا الإعداد المسبق أولاً.</string>
+    <string name="epg_preset_error_refresh_too_soon">تم التحديث مؤخراً. تُحدَّث الإعدادات المسبقة مرتين يومياً على الأكثر؛ حاول لاحقاً.</string>
+    <string name="epg_preset_error_source_unavailable">تعذّر إعداد مصدر الدليل لهذا الإعداد المسبق. حاول مرة أخرى.</string>
+    <string name="epg_preset_error_invalid_address">أدخل عنوان الدليل.</string>
 </resources>

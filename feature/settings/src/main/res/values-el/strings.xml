@@ -1019,4 +1019,9 @@
     <string name="epg_preset_refresh_now">Ενημέρωση τώρα</string>
     <string name="epg_preset_edit_address">Αλλαγή διεύθυνσης</string>
     <string name="epg_preset_terms_note">Τα δεδομένα του οδηγού προέρχονται από δημόσια κοινοτική πηγή χωρίς δηλωμένους όρους χρήσης. Οι ενημερώσεις περιορίζονται σε δύο φορές την ημέρα.</string>
+    <string name="epg_preset_error_unknown">Αυτή η προρύθμιση οδηγού δεν είναι διαθέσιμη.</string>
+    <string name="epg_preset_error_not_enabled">Ενεργοποιήστε πρώτα αυτή την προρύθμιση.</string>
+    <string name="epg_preset_error_refresh_too_soon">Ενημερώθηκε πρόσφατα. Οι προρυθμίσεις ενημερώνονται το πολύ δύο φορές την ημέρα· δοκιμάστε ξανά αργότερα.</string>
+    <string name="epg_preset_error_source_unavailable">Δεν ήταν δυνατή η ρύθμιση της πηγής οδηγού για αυτή την προρύθμιση. Δοκιμάστε ξανά.</string>
+    <string name="epg_preset_error_invalid_address">Εισαγάγετε μια διεύθυνση οδηγού.</string>
 </resources>

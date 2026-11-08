@@ -1014,4 +1014,9 @@
     <string name="epg_preset_refresh_now">立即更新</string>
     <string name="epg_preset_edit_address">變更地址</string>
     <string name="epg_preset_terms_note">指南資料來自未聲明使用條款的公開社群來源。更新次數限制為每天兩次。</string>
+    <string name="epg_preset_error_unknown">此指南預設組合無法使用。</string>
+    <string name="epg_preset_error_not_enabled">請先開啟此預設組合。</string>
+    <string name="epg_preset_error_refresh_too_soon">剛剛更新過。預設組合每天最多更新兩次，請稍後再試。</string>
+    <string name="epg_preset_error_source_unavailable">無法為此預設組合設定指南來源。請再試一次。</string>
+    <string name="epg_preset_error_invalid_address">請輸入指南位址。</string>
 </resources>

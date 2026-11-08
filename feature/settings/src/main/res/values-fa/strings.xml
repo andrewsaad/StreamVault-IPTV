@@ -1017,4 +1017,9 @@
     <string name="epg_preset_refresh_now">به‌روزرسانی اکنون</string>
     <string name="epg_preset_edit_address">تغییر نشانی</string>
     <string name="epg_preset_terms_note">داده‌های راهنما از یک منبع عمومی جامعه‌محور بدون شرایط استفادهٔ اعلام‌شده می‌آید. به‌روزرسانی‌ها به دو بار در روز محدود است.</string>
+    <string name="epg_preset_error_unknown">این پیش‌تنظیم راهنما در دسترس نیست.</string>
+    <string name="epg_preset_error_not_enabled">ابتدا این پیش‌تنظیم را روشن کنید.</string>
+    <string name="epg_preset_error_refresh_too_soon">به‌تازگی به‌روزرسانی شد. پیش‌تنظیم‌ها حداکثر دو بار در روز به‌روزرسانی می‌شوند؛ بعداً دوباره امتحان کنید.</string>
+    <string name="epg_preset_error_source_unavailable">منبع راهنمای این پیش‌تنظیم راه‌اندازی نشد. دوباره امتحان کنید.</string>
+    <string name="epg_preset_error_invalid_address">یک نشانی راهنما وارد کنید.</string>
 </resources>

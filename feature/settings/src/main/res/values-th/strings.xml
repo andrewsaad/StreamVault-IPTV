@@ -1014,4 +1014,9 @@
     <string name="epg_preset_refresh_now">อัปเดตตอนนี้</string>
     <string name="epg_preset_edit_address">เปลี่ยนที่อยู่</string>
     <string name="epg_preset_terms_note">ข้อมูลผังรายการมาจากแหล่งชุมชนสาธารณะที่ไม่ได้ระบุข้อกำหนดการใช้งาน การอัปเดตจำกัดไว้ที่วันละสองครั้ง</string>
+    <string name="epg_preset_error_unknown">ค่าที่ตั้งไว้ของผังรายการนี้ไม่พร้อมใช้งาน</string>
+    <string name="epg_preset_error_not_enabled">เปิดค่าที่ตั้งไว้นี้ก่อน</string>
+    <string name="epg_preset_error_refresh_too_soon">เพิ่งอัปเดตไป ค่าที่ตั้งไว้จะอัปเดตได้ไม่เกินวันละสองครั้ง โปรดลองอีกครั้งในภายหลัง</string>
+    <string name="epg_preset_error_source_unavailable">ไม่สามารถตั้งค่าแหล่งผังรายการสำหรับค่าที่ตั้งไว้นี้ได้ โปรดลองอีกครั้ง</string>
+    <string name="epg_preset_error_invalid_address">ป้อนที่อยู่ของผังรายการ</string>
 </resources>

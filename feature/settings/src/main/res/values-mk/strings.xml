@@ -1017,4 +1017,9 @@
     <string name="epg_preset_refresh_now">Ажурирај сега</string>
     <string name="epg_preset_edit_address">Промени адреса</string>
     <string name="epg_preset_terms_note">Податоците за водичот доаѓаат од јавен извор на заедницата без наведени услови за користење. Ажурирањата се ограничени на двапати дневно.</string>
+    <string name="epg_preset_error_unknown">Оваа подготвена поставка за водичот не е достапна.</string>
+    <string name="epg_preset_error_not_enabled">Прво вклучете ја оваа подготвена поставка.</string>
+    <string name="epg_preset_error_refresh_too_soon">Неодамна ажурирано. Подготвените поставки се ажурираат најмногу двапати дневно; обидете се подоцна.</string>
+    <string name="epg_preset_error_source_unavailable">Изворот на водичот за оваа подготвена поставка не можеше да се постави. Обидете се повторно.</string>
+    <string name="epg_preset_error_invalid_address">Внесете адреса на водичот.</string>
 </resources>

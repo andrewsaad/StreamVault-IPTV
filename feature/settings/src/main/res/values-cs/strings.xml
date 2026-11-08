@@ -1025,4 +1025,9 @@
     <string name="epg_preset_refresh_now">Aktualizovat nyní</string>
     <string name="epg_preset_edit_address">Změnit adresu</string>
     <string name="epg_preset_terms_note">Data průvodce pocházejí z veřejného komunitního zdroje bez uvedených podmínek použití. Aktualizace jsou omezeny na dvakrát denně.</string>
+    <string name="epg_preset_error_unknown">Tato předvolba průvodce není k dispozici.</string>
+    <string name="epg_preset_error_not_enabled">Nejprve tuto předvolbu zapněte.</string>
+    <string name="epg_preset_error_refresh_too_soon">Nedávno aktualizováno. Předvolby se aktualizují nejvýše dvakrát denně; zkuste to později.</string>
+    <string name="epg_preset_error_source_unavailable">Zdroj průvodce pro tuto předvolbu se nepodařilo nastavit. Zkuste to znovu.</string>
+    <string name="epg_preset_error_invalid_address">Zadejte adresu průvodce.</string>
 </resources>

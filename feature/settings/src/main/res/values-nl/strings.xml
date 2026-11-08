@@ -1019,4 +1019,9 @@
     <string name="epg_preset_refresh_now">Nu bijwerken</string>
     <string name="epg_preset_edit_address">Adres wijzigen</string>
     <string name="epg_preset_terms_note">Gidsgegevens komen van een openbare communitybron zonder vermelde gebruiksvoorwaarden. Updates zijn beperkt tot twee keer per dag.</string>
+    <string name="epg_preset_error_unknown">Deze gidsvoorinstelling is niet beschikbaar.</string>
+    <string name="epg_preset_error_not_enabled">Zet deze voorinstelling eerst aan.</string>
+    <string name="epg_preset_error_refresh_too_soon">Onlangs bijgewerkt. Voorinstellingen worden hooguit twee keer per dag bijgewerkt; probeer het later opnieuw.</string>
+    <string name="epg_preset_error_source_unavailable">De gidsbron voor deze voorinstelling kon niet worden ingesteld. Probeer het opnieuw.</string>
+    <string name="epg_preset_error_invalid_address">Voer een gidsadres in.</string>
 </resources>

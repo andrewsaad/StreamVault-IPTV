@@ -1015,4 +1015,9 @@
     <string name="epg_preset_refresh_now">Atualizar agora</string>
     <string name="epg_preset_edit_address">Alterar endereço</string>
     <string name="epg_preset_terms_note">Os dados do guia vêm de uma fonte pública da comunidade sem termos de uso declarados. As atualizações são limitadas a duas por dia.</string>
+    <string name="epg_preset_error_unknown">Esta predefinição do guia não está disponível.</string>
+    <string name="epg_preset_error_not_enabled">Ative primeiro esta predefinição.</string>
+    <string name="epg_preset_error_refresh_too_soon">Atualizado há pouco. As predefinições são atualizadas no máximo duas vezes por dia; tente novamente mais tarde.</string>
+    <string name="epg_preset_error_source_unavailable">Não foi possível configurar a fonte do guia para esta predefinição. Tente novamente.</string>
+    <string name="epg_preset_error_invalid_address">Introduza um endereço do guia.</string>
 </resources>

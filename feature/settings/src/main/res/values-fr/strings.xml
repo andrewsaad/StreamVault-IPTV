@@ -1019,4 +1019,9 @@
     <string name="epg_preset_refresh_now">Mettre à jour</string>
     <string name="epg_preset_edit_address">Modifier l’adresse</string>
     <string name="epg_preset_terms_note">Les données du guide proviennent d’une source communautaire publique sans conditions d’utilisation déclarées. Les mises à jour sont limitées à deux par jour.</string>
+    <string name="epg_preset_error_unknown">Ce préréglage du guide n\'est pas disponible.</string>
+    <string name="epg_preset_error_not_enabled">Activez d\'abord ce préréglage.</string>
+    <string name="epg_preset_error_refresh_too_soon">Mis à jour récemment. Les préréglages se mettent à jour au plus deux fois par jour ; réessayez plus tard.</string>
+    <string name="epg_preset_error_source_unavailable">Impossible de configurer la source du guide pour ce préréglage. Réessayez.</string>
+    <string name="epg_preset_error_invalid_address">Saisissez une adresse de guide.</string>
 </resources>

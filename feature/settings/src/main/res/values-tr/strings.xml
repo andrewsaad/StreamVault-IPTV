@@ -1019,4 +1019,9 @@
     <string name="epg_preset_refresh_now">Şimdi güncelle</string>
     <string name="epg_preset_edit_address">Adresi değiştir</string>
     <string name="epg_preset_terms_note">Rehber verileri, belirtilmiş kullanım koşulları olmayan herkese açık bir topluluk kaynağından gelir. Güncellemeler günde iki kezle sınırlıdır.</string>
+    <string name="epg_preset_error_unknown">Bu rehber ön ayarı kullanılamıyor.</string>
+    <string name="epg_preset_error_not_enabled">Önce bu ön ayarı açın.</string>
+    <string name="epg_preset_error_refresh_too_soon">Yakın zamanda güncellendi. Ön ayarlar günde en fazla iki kez güncellenir; daha sonra tekrar deneyin.</string>
+    <string name="epg_preset_error_source_unavailable">Bu ön ayar için rehber kaynağı kurulamadı. Tekrar deneyin.</string>
+    <string name="epg_preset_error_invalid_address">Bir rehber adresi girin.</string>
 </resources>

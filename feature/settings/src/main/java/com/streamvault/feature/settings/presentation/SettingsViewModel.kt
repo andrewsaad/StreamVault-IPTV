@@ -221,7 +221,8 @@ class SettingsViewModel @Inject constructor(
     private val epgActions = SettingsEpgActions(
         epgSourceRepository = epgSourceRepository,
         epgPresetManager = epgPresetManager,
-        uiState = _uiState
+        uiState = _uiState,
+        presetErrorText = { message -> epgPresetErrorRes(message)?.let(appContext::getString) ?: message },
     )
 
     init {

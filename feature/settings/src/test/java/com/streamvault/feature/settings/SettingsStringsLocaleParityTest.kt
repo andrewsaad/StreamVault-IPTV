@@ -31,7 +31,12 @@ class SettingsStringsLocaleParityTest {
         "epg_preset_status_error",
         "epg_preset_refresh_now",
         "epg_preset_edit_address",
-        "epg_preset_terms_note"
+        "epg_preset_terms_note",
+        "epg_preset_error_unknown",
+        "epg_preset_error_not_enabled",
+        "epg_preset_error_refresh_too_soon",
+        "epg_preset_error_source_unavailable",
+        "epg_preset_error_invalid_address"
     )
 
     @Test

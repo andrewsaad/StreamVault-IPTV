@@ -1019,4 +1019,9 @@
     <string name="epg_preset_refresh_now">Frissítés most</string>
     <string name="epg_preset_edit_address">Cím módosítása</string>
     <string name="epg_preset_terms_note">A műsorújság adatai egy nyilvános közösségi forrásból származnak, amelynek nincsenek megadott felhasználási feltételei. A frissítések napi két alkalomra korlátozódnak.</string>
+    <string name="epg_preset_error_unknown">Ez a műsorújság-előbeállítás nem érhető el.</string>
+    <string name="epg_preset_error_not_enabled">Először kapcsolja be ezt az előbeállítást.</string>
+    <string name="epg_preset_error_refresh_too_soon">Nemrég frissült. Az előbeállítások naponta legfeljebb kétszer frissülnek; próbálja újra később.</string>
+    <string name="epg_preset_error_source_unavailable">Nem sikerült beállítani az előbeállítás műsorújság-forrását. Próbálja újra.</string>
+    <string name="epg_preset_error_invalid_address">Adjon meg egy műsorújság-címet.</string>
 </resources>

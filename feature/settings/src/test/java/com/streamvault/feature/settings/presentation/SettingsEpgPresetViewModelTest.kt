@@ -3,6 +3,7 @@ package com.streamvault.feature.settings.presentation
 import com.google.common.truth.Truth.assertThat
 import com.streamvault.domain.model.EpgPresetCatalog
 import com.streamvault.domain.model.Result
+import com.streamvault.domain.repository.EpgPresetErrors
 import com.streamvault.domain.repository.EpgPresetManager
 import com.streamvault.domain.repository.EpgPresetSourceStatus
 import com.streamvault.domain.repository.EpgPresetStatus
@@ -146,6 +147,30 @@ class SettingsEpgPresetViewModelTest {
 
         assertThat(manager.setEnabledCalls).containsExactly(EpgPresetCatalog.BEIN to true)
         assertThat(uiState.value.userMessage).isEqualTo("offline")
+    }
+
+    @Test
+    fun `every manager error key has a localized message`() {
+        val keys = EpgPresetErrors::class.java.declaredFields
+            .filter { it.type == String::class.java }
+            .map { it.get(null) as String }
+
+        assertThat(keys).isNotEmpty()
+        assertThat(keys.filter { epgPresetErrorRes(it) == null }).isEmpty()
+        assertThat(keys.mapNotNull(::epgPresetErrorRes).distinct()).hasSize(keys.size)
+        assertThat(epgPresetErrorRes("HTTP 503")).isNull()
+    }
+
+    @Test
+    fun `a refusal is shown through the error text resolver`() = runTest {
+        val manager = FakeEpgPresetManager().apply { nextResult = Result.Error(EpgPresetErrors.REFRESH_TOO_SOON) }
+        val uiState = MutableStateFlow(SettingsUiState())
+        val actions = SettingsEpgActions(mock(), manager, uiState, presetErrorText = { "localized:$it" })
+
+        actions.refreshEpgPresetNow(this, EpgPresetCatalog.US)
+        advanceUntilIdle()
+
+        assertThat(uiState.value.userMessage).isEqualTo("localized:${EpgPresetErrors.REFRESH_TOO_SOON}")
     }
 
     @Test

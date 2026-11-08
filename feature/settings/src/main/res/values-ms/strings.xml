@@ -1014,4 +1014,9 @@
     <string name="epg_preset_refresh_now">Kemas kini sekarang</string>
     <string name="epg_preset_edit_address">Tukar alamat</string>
     <string name="epg_preset_terms_note">Data panduan datang daripada sumber komuniti awam tanpa terma penggunaan yang dinyatakan. Kemas kini dihadkan kepada dua kali sehari.</string>
+    <string name="epg_preset_error_unknown">Pratetap panduan ini tidak tersedia.</string>
+    <string name="epg_preset_error_not_enabled">Hidupkan pratetap ini dahulu.</string>
+    <string name="epg_preset_error_refresh_too_soon">Baru dikemas kini. Pratetap dikemas kini paling banyak dua kali sehari; cuba lagi kemudian.</string>
+    <string name="epg_preset_error_source_unavailable">Sumber panduan untuk pratetap ini tidak dapat disediakan. Cuba lagi.</string>
+    <string name="epg_preset_error_invalid_address">Masukkan alamat panduan.</string>
 </resources>

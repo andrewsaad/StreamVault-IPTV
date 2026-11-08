@@ -1017,4 +1017,9 @@
     <string name="epg_preset_refresh_now">I-update ngayon</string>
     <string name="epg_preset_edit_address">Palitan ang address</string>
     <string name="epg_preset_terms_note">Ang data ng guide ay mula sa isang pampublikong source ng komunidad na walang nakasaad na tuntunin ng paggamit. Limitado ang mga update sa dalawang beses bawat araw.</string>
+    <string name="epg_preset_error_unknown">Hindi available ang preset na ito ng guide.</string>
+    <string name="epg_preset_error_not_enabled">I-on muna ang preset na ito.</string>
+    <string name="epg_preset_error_refresh_too_soon">Kaka-update lang. Ang mga preset ay nag-a-update nang hanggang dalawang beses sa isang araw; subukang muli mamaya.</string>
+    <string name="epg_preset_error_source_unavailable">Hindi ma-set up ang source ng guide para sa preset na ito. Subukang muli.</string>
+    <string name="epg_preset_error_invalid_address">Maglagay ng address ng guide.</string>
 </resources>

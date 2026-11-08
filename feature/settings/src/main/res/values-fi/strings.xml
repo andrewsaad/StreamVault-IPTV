@@ -1019,4 +1019,9 @@
     <string name="epg_preset_refresh_now">Päivitä nyt</string>
     <string name="epg_preset_edit_address">Vaihda osoite</string>
     <string name="epg_preset_terms_note">Oppaan tiedot tulevat julkisesta yhteisölähteestä, jolla ei ole ilmoitettuja käyttöehtoja. Päivitykset on rajoitettu kahteen kertaan päivässä.</string>
+    <string name="epg_preset_error_unknown">Tämä oppaan esiasetus ei ole käytettävissä.</string>
+    <string name="epg_preset_error_not_enabled">Ota tämä esiasetus ensin käyttöön.</string>
+    <string name="epg_preset_error_refresh_too_soon">Päivitetty äskettäin. Esiasetukset päivittyvät enintään kahdesti päivässä; yritä myöhemmin uudelleen.</string>
+    <string name="epg_preset_error_source_unavailable">Tämän esiasetuksen opaslähdettä ei voitu määrittää. Yritä uudelleen.</string>
+    <string name="epg_preset_error_invalid_address">Anna oppaan osoite.</string>
 </resources>

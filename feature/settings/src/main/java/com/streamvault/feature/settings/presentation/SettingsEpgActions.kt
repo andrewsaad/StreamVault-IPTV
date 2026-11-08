@@ -16,7 +16,9 @@ import java.util.concurrent.ConcurrentHashMap
 class SettingsEpgActions(
     private val epgSourceRepository: EpgSourceRepository,
     private val epgPresetManager: EpgPresetManager,
-    private val uiState: MutableStateFlow<SettingsUiState>
+    private val uiState: MutableStateFlow<SettingsUiState>,
+    /** Turns a preset refusal into the text shown; the view model maps manager keys to localized strings. */
+    private val presetErrorText: (String) -> String = { it },
 ) {
     // Tracks the active assignment-collector job per provider so recompositions
     // cancel the old coroutine rather than leaking it in viewModelScope.
@@ -56,7 +58,7 @@ class SettingsEpgActions(
             try {
                 val result = epgPresetManager.setEnabled(presetId, enabled)
                 if (result is Result.Error) {
-                    uiState.update { it.copy(userMessage = result.message) }
+                    uiState.update { it.copy(userMessage = presetErrorText(result.message)) }
                 }
             } catch (cancelled: CancellationException) {
                 throw cancelled
@@ -72,7 +74,7 @@ class SettingsEpgActions(
                 // Progress and the outcome show in the preset's own status line.
                 val result = epgPresetManager.refreshNow(presetId)
                 if (result is Result.Error) {
-                    uiState.update { it.copy(userMessage = result.message) }
+                    uiState.update { it.copy(userMessage = presetErrorText(result.message)) }
                 }
             } catch (cancelled: CancellationException) {
                 throw cancelled
@@ -102,7 +104,7 @@ class SettingsEpgActions(
             try {
                 val result = epgPresetManager.updateAddress(presetId, sourceKey, url)
                 if (result is Result.Error) {
-                    uiState.update { it.copy(userMessage = result.message) }
+                    uiState.update { it.copy(userMessage = presetErrorText(result.message)) }
                     onError()
                 } else {
                     onSuccess()

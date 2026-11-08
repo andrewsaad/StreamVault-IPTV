@@ -1020,4 +1020,9 @@
     <string name="epg_preset_refresh_now">Ажурирај сада</string>
     <string name="epg_preset_edit_address">Промени адресу</string>
     <string name="epg_preset_terms_note">Подаци водича долазе из јавног извора заједнице без наведених услова коришћења. Ажурирања су ограничена на два пута дневно.</string>
+    <string name="epg_preset_error_unknown">Ово готово подешавање водича није доступно.</string>
+    <string name="epg_preset_error_not_enabled">Прво укључите ово готово подешавање.</string>
+    <string name="epg_preset_error_refresh_too_soon">Недавно ажурирано. Готова подешавања се ажурирају највише двапут дневно; покушајте поново касније.</string>
+    <string name="epg_preset_error_source_unavailable">Извор водича за ово готово подешавање није могуће подесити. Покушајте поново.</string>
+    <string name="epg_preset_error_invalid_address">Унесите адресу водича.</string>
 </resources>

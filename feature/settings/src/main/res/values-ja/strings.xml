@@ -1017,4 +1017,9 @@
     <string name="epg_preset_refresh_now">今すぐ更新</string>
     <string name="epg_preset_edit_address">アドレスを変更</string>
     <string name="epg_preset_terms_note">ガイドデータは、利用規約が明示されていない公開コミュニティソースから取得されます。更新は 1 日 2 回までに制限されています。</string>
+    <string name="epg_preset_error_unknown">このガイドのプリセットは利用できません。</string>
+    <string name="epg_preset_error_not_enabled">先にこのプリセットをオンにしてください。</string>
+    <string name="epg_preset_error_refresh_too_soon">最近更新されました。プリセットの更新は1日2回までです。しばらくしてからもう一度お試しください。</string>
+    <string name="epg_preset_error_source_unavailable">このプリセットのガイドソースを設定できませんでした。もう一度お試しください。</string>
+    <string name="epg_preset_error_invalid_address">ガイドのアドレスを入力してください。</string>
 </resources>

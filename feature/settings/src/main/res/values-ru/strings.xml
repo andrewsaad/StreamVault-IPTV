@@ -1025,4 +1025,9 @@
     <string name="epg_preset_refresh_now">Обновить сейчас</string>
     <string name="epg_preset_edit_address">Изменить адрес</string>
     <string name="epg_preset_terms_note">Данные гида поступают из общедоступного источника сообщества без указанных условий использования. Обновления ограничены двумя в день.</string>
+    <string name="epg_preset_error_unknown">Этот готовый набор гида недоступен.</string>
+    <string name="epg_preset_error_not_enabled">Сначала включите этот готовый набор.</string>
+    <string name="epg_preset_error_refresh_too_soon">Недавно обновлено. Готовые наборы обновляются не чаще двух раз в день; попробуйте позже.</string>
+    <string name="epg_preset_error_source_unavailable">Не удалось настроить источник гида для этого готового набора. Попробуйте ещё раз.</string>
+    <string name="epg_preset_error_invalid_address">Введите адрес гида.</string>
 </resources>

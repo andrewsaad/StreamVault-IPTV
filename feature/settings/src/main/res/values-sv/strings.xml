@@ -1019,4 +1019,9 @@
     <string name="epg_preset_refresh_now">Uppdatera nu</string>
     <string name="epg_preset_edit_address">Ändra adress</string>
     <string name="epg_preset_terms_note">Guidedata kommer från en offentlig community-källa utan angivna användarvillkor. Uppdateringar är begränsade till två gånger per dag.</string>
+    <string name="epg_preset_error_unknown">Det här guideförvalet är inte tillgängligt.</string>
+    <string name="epg_preset_error_not_enabled">Aktivera det här förvalet först.</string>
+    <string name="epg_preset_error_refresh_too_soon">Nyligen uppdaterat. Förval uppdateras högst två gånger om dagen; försök igen senare.</string>
+    <string name="epg_preset_error_source_unavailable">Det gick inte att konfigurera guidekällan för det här förvalet. Försök igen.</string>
+    <string name="epg_preset_error_invalid_address">Ange en guideadress.</string>
 </resources>

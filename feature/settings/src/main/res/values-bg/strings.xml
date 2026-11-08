@@ -1017,4 +1017,9 @@
     <string name="epg_preset_refresh_now">Обнови сега</string>
     <string name="epg_preset_edit_address">Промяна на адреса</string>
     <string name="epg_preset_terms_note">Данните за програмата идват от публичен обществен източник без посочени условия за ползване. Обновяванията са ограничени до два пъти дневно.</string>
+    <string name="epg_preset_error_unknown">Тази готова настройка за програмата не е налична.</string>
+    <string name="epg_preset_error_not_enabled">Първо включете тази готова настройка.</string>
+    <string name="epg_preset_error_refresh_too_soon">Обновено наскоро. Готовите настройки се обновяват най-много два пъти на ден; опитайте по-късно.</string>
+    <string name="epg_preset_error_source_unavailable">Източникът на програмата за тази готова настройка не можа да бъде настроен. Опитайте отново.</string>
+    <string name="epg_preset_error_invalid_address">Въведете адрес на програмата.</string>
 </resources>
