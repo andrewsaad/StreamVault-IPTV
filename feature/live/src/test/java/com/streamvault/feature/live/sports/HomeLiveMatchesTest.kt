@@ -158,6 +158,34 @@ class HomeLiveMatchesTest {
         assertThat(source.load(listOf(1L), now)).isEmpty()
     }
 
+    @Test
+    fun `a failing reload keeps the last row and the next load tries again`() = runTest {
+        // F22: one failed read used to blank the row for a whole reload interval.
+        val bein = channel(1L, "beIN Sport 1 FHD Q")
+        var fail = false
+        var loads = 0
+        val source = HomeLiveMatchesSource(
+            loader = { _, _, _ ->
+                loads++
+                if (fail) error("database busy")
+                listOf(candidate(bein, "Liverpool vs Arsenal", start = now + 10 * minute, end = now + 120 * minute))
+            },
+            commentators = { emptyList() },
+            refreshCommentators = {},
+        )
+        val shown = source.load(listOf(7L), now)
+
+        fail = true
+        val duringFailure = source.load(listOf(7L), now + HomeLiveMatchesSource.RELOAD_INTERVAL_MS)
+        fail = false
+        val recovered = source.load(listOf(7L), now + HomeLiveMatchesSource.RELOAD_INTERVAL_MS + minute)
+
+        assertThat(shown).hasSize(1)
+        assertThat(duringFailure).isEqualTo(shown)
+        assertThat(recovered).isEqualTo(shown)
+        assertThat(loads).isEqualTo(3)
+    }
+
     private fun candidate(channel: Channel, title: String, start: Long, end: Long) = HomeMatchCandidate(
         channel = channel,
         title = title,

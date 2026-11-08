@@ -186,7 +186,7 @@ class HomeLiveMatchesSource internal constructor(
     private var lastCommentators: List<SportsCommentatorEntry>? = null
     private var lastResult: List<HomeLiveMatch> = emptyList()
 
-    /** Never throws (except cancellation); a failed guide read yields an empty row. */
+    /** Never throws (except cancellation); a failed guide read keeps the last row, or yields an empty one. */
     suspend fun load(providerIds: List<Long>, nowMs: Long): List<HomeLiveMatch> = mutex.withLock {
         if (providerIds.isEmpty()) return@withLock emptyList<HomeLiveMatch>().also { lastResult = it }
         val current = cache
@@ -200,19 +200,25 @@ class HomeLiveMatchesSource internal constructor(
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (_: Exception) {
-                emptyList()
+                null
             }
-            cache = Cache(providerIds, nowMs, windowEnd, loaded)
-            if (loaded.any { it.beinNumber != null }) {
-                try {
-                    refreshCommentators()
-                } catch (cancelled: CancellationException) {
-                    throw cancelled
-                } catch (_: Exception) {
-                    // Commentators are decoration.
+            if (loaded == null) {
+                // F22: a failed read keeps the last good row instead of blanking it, and caches
+                // nothing, so the next load tries again.
+                current?.takeIf { it.providerIds == providerIds }?.candidates.orEmpty()
+            } else {
+                cache = Cache(providerIds, nowMs, windowEnd, loaded)
+                if (loaded.any { it.beinNumber != null }) {
+                    try {
+                        refreshCommentators()
+                    } catch (cancelled: CancellationException) {
+                        throw cancelled
+                    } catch (_: Exception) {
+                        // Commentators are decoration.
+                    }
                 }
+                loaded
             }
-            loaded
         } else {
             current.candidates
         }
