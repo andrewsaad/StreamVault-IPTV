@@ -240,7 +240,8 @@ class ProviderExecutionArchitectureTest {
                 // lifecycle, and durable backup-restore hooks. Keep this explicit rather
                 // than letting the budget drift silently as those responsibilities evolve.
                 // +1: the content-hash store that lets unchanged Live payloads skip apply.
-                maxConstructorDependencies = 45
+                // +1: the guide preset manager, reconciled before external guide sources refresh (F5).
+                maxConstructorDependencies = 46
             ),
             DependencyBudget(
                 path = "data/src/main/java/com/streamvault/data/sync/SyncCoordinator.kt",
