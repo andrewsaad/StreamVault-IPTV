@@ -1474,6 +1474,7 @@ class Media3PlayerEngine @Inject constructor(
             Log.w(TAG, "resetForReuse ignored after terminal release")
             return
         }
+        com.streamvault.domain.sync.AutomaticSyncActivity.stopped(this)
         resetEngineState(restartCollectors = true)
     }
 
