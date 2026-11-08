@@ -756,6 +756,29 @@ class EpgSourceRepositoryImplTest {
         assertThat(captor.secondValue.contentSha256).isEqualTo("abc")
     }
 
+    @Test
+    fun `updateSource drops the old file's validators only when the address changes`() = runTest {
+        // Review R1: a new host sent the old If-Modified-Since could answer 304 and keep the old file.
+        val existing = EpgSourceEntity(
+            id = 10L,
+            name = "Primary",
+            url = "https://example.com/epg.xml",
+            etag = "\"v1\"",
+            lastModifiedHeader = "Sat, 07 Nov 2026 10:00:00 GMT"
+        )
+        whenever(epgSourceDao.getById(10L)).thenReturn(existing)
+
+        repository.updateSource(existing.toDomain().copy(url = "https://mirror.example.com/epg.xml"))
+        repository.updateSource(existing.toDomain().copy(name = "Renamed"))
+
+        val captor = argumentCaptor<EpgSourceEntity>()
+        verify(epgSourceDao, times(2)).update(captor.capture())
+        assertThat(captor.firstValue.etag).isNull()
+        assertThat(captor.firstValue.lastModifiedHeader).isNull()
+        assertThat(captor.secondValue.etag).isEqualTo("\"v1\"")
+        assertThat(captor.secondValue.lastModifiedHeader).isEqualTo("Sat, 07 Nov 2026 10:00:00 GMT")
+    }
+
     private fun okResponse(url: String, body: String, etag: String? = null): Response =
         Response.Builder()
             .request(Request.Builder().url(url).build())

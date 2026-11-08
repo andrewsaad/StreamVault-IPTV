@@ -221,11 +221,16 @@ class EpgSourceRepositoryImpl @Inject constructor(
         val normalizedTimezoneId = (normalizedTimezone as Result.Success).data
         // A different URL or timezone policy changes what the stored rows mean, so the next
         // refresh must import even if the payload bytes are identical.
-        val parsingChanged = trimmedUrl != existing.url ||
+        val urlChanged = trimmedUrl != existing.url
+        val parsingChanged = urlChanged ||
             source.timezonePolicy != existing.timezonePolicy ||
             normalizedTimezoneId != existing.timezoneId
         epgSourceDao.update(
             existing.copy(
+                // The old file's validators mean nothing to a new address; sent there, a 304
+                // would keep the old file's programmes and count as a success.
+                etag = if (urlChanged) null else existing.etag,
+                lastModifiedHeader = if (urlChanged) null else existing.lastModifiedHeader,
                 name = source.name.trim().takeIf { it.isNotEmpty() } ?: existing.name,
                 url = trimmedUrl,
                 enabled = source.enabled,
