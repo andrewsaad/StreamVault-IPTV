@@ -84,7 +84,7 @@ Acceptance scenarios:
 - SC-005: An enabled preset refreshes at most 2 times in any 24 hours.
 - SC-006: Turning on all first-release presets on a Fire TV Stick with about 1.5 GB of memory finishes without the app closing and without the guide becoming unusable.
 - SC-007: Scrolling the guide with all first-release presets on is no worse than the pre-feature guide scrolling (no more than 6% janky frames over a 66-key scroll test on the Google TV debug build, baseline 4.2% to 5.9%).
-- SC-008: For each of Inter Miami, San Diego FC, the NFL and the Padres, at least one upcoming match in the schedule data appears in the Sports tab with at least one candidate channel or a clear "no channel available" label.
+- SC-008 (descoped 2026-11-08, see Clarifications): For each of Inter Miami, San Diego FC, the NFL and the Padres, at least one upcoming match in the schedule data appears in the Sports tab with at least one candidate channel or a clear "no channel available" label.
 - SC-009: 100% of new user-facing strings exist and are translated in all supported languages (38 listed today: English as the default plus 37 translations).
 - SC-010: A source that cannot be reached leaves the previous guide data visible in 100% of tests.
 
@@ -117,6 +117,7 @@ Acceptance scenarios:
 - Updating the user's installed official app in place; that needs the maintainer's signing key and is only possible through an upstream release.
 - Sharing the official app's data (providers, favorites, history) with the side-by-side copy.
 - Adding a new schedule data source for leagues the Sports tab's current source does not offer.
+- SC-008 (an upcoming Inter Miami, San Diego FC, NFL and Padres match in the Sports tab): moved to a follow-up spec, because the current schedule data does not offer these leagues.
 
 ## 7. Assumptions
 
@@ -143,3 +144,4 @@ Acceptance scenarios:
 - Q (2026-11-07, architecture review, F6): what should the loose name match keep? → A: A bracketed time shift such as "(+1)", a bracketed separate feed (Alternate, West, Pacific, Mountain) and a word followed by "+". A regional beIN tag (FR, EN, TR, US, CA and similar) stays in the key, so a regional feed never takes the Arabic guide. A name of only digits matches nothing. A named region that differs from the guide's country suffix is rejected, except on multi-region guides (".ae", ".qa"), whose suffix says nothing about the channel.
 - Q (2026-11-07, after the F7 precision run): the catalog's beIN preset (BEIN1, AE1) maps only 20 of 188 beIN sports channels, and BEIN1's times look about 2 hours late; the earlier SC-001 pass used Andrew's hand-added open-epg Qatar source. What should the beIN preset use? → A: Andrew chose to add open-epg `qatar1.xml` first, then BEIN1 and AE1 (165 of 188 in the offline run).
 - Q (design review): should a "+1" time-shift label be ignored or kept when matching names? → A: kept, because a "+1" channel matched to the base channel would show times an hour off. Reflected in FR-010 and FR-010a; plan.md section 5 already assumed this.
+- Q (2026-11-08, F15 success-criteria audit): SC-008 is not met. MLS, NFL and MLB are not in the Sports tab's league picker and Upcoming never loaded (validation-us3.md). Keep it, fix Upcoming first, or descope? → A: Andrew chose to descope it to a follow-up spec. Reflected in SC-008 and Out of scope.
