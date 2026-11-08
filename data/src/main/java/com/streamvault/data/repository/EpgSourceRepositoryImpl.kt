@@ -27,6 +27,7 @@ import com.streamvault.data.parser.XmltvIngestionLimits
 import com.streamvault.data.parser.XmltvLimitExceeded
 import com.streamvault.data.parser.XmltvLimitKind
 import com.streamvault.domain.util.ProviderInputSanitizer
+import com.streamvault.data.util.CoalescingRunner
 import com.streamvault.data.util.ContentDigest
 import com.streamvault.data.util.DigestingInputStream
 import com.streamvault.data.util.ProviderUrlProtocolResolver
@@ -155,6 +156,10 @@ class EpgSourceRepositoryImpl @Inject constructor(
     }
 
     private val sourceRefreshMutexes = KeyedMutexRegistry<Long>()
+
+    // F13: one resolve pass per provider at a time, so an older pass can never finish last and
+    // overwrite a newer one's mappings; requests that arrive during a pass share the next one.
+    private val resolveRunner = CoalescingRunner<Long, Set<Long>, EpgResolutionSummary>()
 
     // Dedicated client for EPG downloads: longer read timeout for large/slow feeds,
     // and no automatic Accept-Encoding: gzip (we handle gzip manually via maybeDecompressGzip).
@@ -591,7 +596,9 @@ class EpgSourceRepositoryImpl @Inject constructor(
         providerId: Long,
         hiddenLiveCategoryIds: Set<Long>
     ): EpgResolutionSummary =
-        resolutionEngine.resolveForProvider(providerId, hiddenLiveCategoryIds)
+        resolveRunner.run(providerId, hiddenLiveCategoryIds) { hidden ->
+            resolutionEngine.resolveForProvider(providerId, hidden)
+        }
 
     override suspend fun getResolutionSummary(providerId: Long): EpgResolutionSummary =
         resolutionEngine.getResolutionSummary(providerId)

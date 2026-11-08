@@ -26,6 +26,7 @@ import com.streamvault.data.preferences.PreferencesRepository
 import com.streamvault.data.util.ContentDigest
 import com.streamvault.domain.model.ContentType
 import com.streamvault.domain.model.EpgMatchType
+import com.streamvault.domain.model.EpgResolutionSummary
 import com.streamvault.domain.model.EpgSourceType
 import com.streamvault.domain.model.Result
 import com.streamvault.domain.model.XmltvTimezonePolicy
@@ -34,8 +35,12 @@ import java.io.ByteArrayOutputStream
 import java.io.IOException
 import java.io.FilterInputStream
 import java.io.InputStream
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.Call
@@ -52,6 +57,7 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argThat
 import org.mockito.kotlin.doAnswer
+import org.mockito.kotlin.doSuspendableAnswer
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.inOrder
@@ -622,6 +628,33 @@ class EpgSourceRepositoryImplTest {
         verify(epgChannelDao).moveToSource(-10L, 10L)
         verify(epgSourceDao).updateContentSha256(10L, expectedSourceHash(payload))
         verify(resolutionEngine).resolveForProvider(7L, emptySet())
+    }
+
+    @Test
+    fun `resolve requests made during a pass share one later pass and never overlap`() = runTest {
+        // F13: an older pass finishing last would overwrite the newer pass's mappings.
+        val release = CompletableDeferred<Unit>()
+        var running = 0
+        var maxRunning = 0
+        var passes = 0
+        whenever(resolutionEngine.resolveForProvider(eq(7L), any())).doSuspendableAnswer {
+            running++
+            maxRunning = maxOf(maxRunning, running)
+            passes++
+            if (passes == 1) release.await()
+            running--
+            EpgResolutionSummary()
+        }
+
+        val first = async { repository.resolveForProvider(7L, emptySet()) }
+        runCurrent()
+        val later = (1..3).map { async { repository.resolveForProvider(7L, emptySet()) } }
+        runCurrent()
+        release.complete(Unit)
+        (later + first).awaitAll()
+
+        assertThat(passes).isEqualTo(2)
+        assertThat(maxRunning).isEqualTo(1)
     }
 
     @Test
