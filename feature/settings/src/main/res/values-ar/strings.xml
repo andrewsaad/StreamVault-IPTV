@@ -1037,4 +1037,5 @@
     <string name="epg_preset_error_source_unavailable">تعذّر إعداد مصدر الدليل لهذا الإعداد المسبق. حاول مرة أخرى.</string>
     <string name="epg_preset_error_invalid_address">أدخل عنوان الدليل.</string>
     <string name="epg_source_error_empty_payload">لم يحتوِ ملف الدليل على أي برامج، لذا تم الاحتفاظ بآخر دليل سليم.</string>
+    <string name="epg_source_refresh_skipped">تم تحديث مصدر الدليل هذا مؤخراً، لذلك لم يُحدَّث مرة أخرى. حاول لاحقاً.</string>
 </resources>

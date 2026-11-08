@@ -1031,4 +1031,5 @@
     <string name="epg_preset_error_source_unavailable">Nie udało się skonfigurować źródła przewodnika dla tego gotowego ustawienia. Spróbuj ponownie.</string>
     <string name="epg_preset_error_invalid_address">Wpisz adres przewodnika.</string>
     <string name="epg_source_error_empty_payload">Plik przewodnika nie zawierał żadnych programów, więc zachowano ostatni poprawny przewodnik.</string>
+    <string name="epg_source_refresh_skipped">To źródło przewodnika zostało niedawno zaktualizowane, więc nie odświeżono go ponownie. Spróbuj ponownie później.</string>
 </resources>

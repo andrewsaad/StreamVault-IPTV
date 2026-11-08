@@ -1025,4 +1025,5 @@
     <string name="epg_preset_error_source_unavailable">Guidekilden til denne forudindstilling kunne ikke oprettes. Prøv igen.</string>
     <string name="epg_preset_error_invalid_address">Indtast en guideadresse.</string>
     <string name="epg_source_error_empty_payload">Guidefilen indeholdt ingen programmer, så den seneste gode guide blev beholdt.</string>
+    <string name="epg_source_refresh_skipped">Denne guidekilde blev opdateret for nylig, så den blev ikke opdateret igen. Prøv igen senere.</string>
 </resources>

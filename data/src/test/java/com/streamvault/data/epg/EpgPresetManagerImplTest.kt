@@ -11,6 +11,7 @@ import com.streamvault.domain.model.ProviderEpgSourceAssignment
 import com.streamvault.domain.model.Result
 import com.streamvault.domain.model.XmltvTimezonePolicy
 import com.streamvault.domain.repository.EpgPresetErrors
+import com.streamvault.domain.repository.EpgRefreshOutcome
 import com.streamvault.domain.repository.EpgSourceRepository
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -733,7 +734,7 @@ private class FakeEpgSourceRepository(private val gate: EpgSourceRefreshGate) : 
         if (resolve) resolves += providerId
     }
 
-    override suspend fun refreshSources(sourceIds: List<Long>, alsoResolve: Set<Long>): Map<Long, Result<Unit>> {
+    override suspend fun refreshSources(sourceIds: List<Long>, alsoResolve: Set<Long>): Map<Long, Result<EpgRefreshOutcome>> {
         val results = sourceIds.distinct().associateWith { importWithoutResolving(it) }
         val changed = results.filterValues { it !is Result.Error }.keys.flatMap { getProviderIdsForSource(it) }
         resolves += (alsoResolve + changed).distinct()
@@ -747,16 +748,16 @@ private class FakeEpgSourceRepository(private val gate: EpgSourceRefreshGate) : 
         newPriority2: Int,
     ) = Unit
 
-    override suspend fun refreshSource(sourceId: Long): Result<Unit> =
+    override suspend fun refreshSource(sourceId: Long): Result<EpgRefreshOutcome> =
         importWithoutResolving(sourceId).also { result ->
             if (result !is Result.Error) resolves += getProviderIdsForSource(sourceId)
         }
 
-    private suspend fun importWithoutResolving(sourceId: Long): Result<Unit> {
-        if (!gate.tryBeginRefreshAttempt(sourceId)) return Result.success(Unit)
+    private suspend fun importWithoutResolving(sourceId: Long): Result<EpgRefreshOutcome> {
+        if (!gate.tryBeginRefreshAttempt(sourceId)) return Result.success(EpgRefreshOutcome.SKIPPED)
         refreshCalls += sourceId
         refreshBlocker?.await()
-        if (loseRefreshOutcome) return Result.success(Unit)
+        if (loseRefreshOutcome) return Result.success(EpgRefreshOutcome.REFRESHED)
         val error = failRefreshWith
         rows.value = rows.value.map {
             when {
@@ -765,7 +766,7 @@ private class FakeEpgSourceRepository(private val gate: EpgSourceRefreshGate) : 
                 else -> it.copy(lastSuccessAt = currentTime(), lastRefreshAt = currentTime(), lastError = null)
             }
         }
-        return if (error == null) Result.success(Unit) else Result.error(error)
+        return if (error == null) Result.success(EpgRefreshOutcome.REFRESHED) else Result.error(error)
     }
 
     var currentTime: () -> Long = { 0L }

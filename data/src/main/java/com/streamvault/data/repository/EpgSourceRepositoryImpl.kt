@@ -45,6 +45,7 @@ import com.streamvault.domain.model.Program
 import com.streamvault.domain.model.ProviderEpgSourceAssignment
 import com.streamvault.domain.model.Result
 import com.streamvault.domain.model.XmltvTimezonePolicy
+import com.streamvault.domain.repository.EpgRefreshOutcome
 import com.streamvault.domain.repository.EpgSourceErrors
 import com.streamvault.domain.repository.EpgSourceRepository
 import com.streamvault.domain.util.PersistedTimestampPolicy
@@ -319,13 +320,13 @@ class EpgSourceRepositoryImpl @Inject constructor(
 
     // ── Refresh / Ingestion ────────────────────────────────────────
 
-    override suspend fun refreshSource(sourceId: Long): Result<Unit> =
+    override suspend fun refreshSource(sourceId: Long): Result<EpgRefreshOutcome> =
         refreshSourceInternal(sourceId, resolveAffectedProviders = true)
 
     private suspend fun refreshSourceInternal(
         sourceId: Long,
         resolveAffectedProviders: Boolean
-    ): Result<Unit> = withContext(Dispatchers.IO) {
+    ): Result<EpgRefreshOutcome> = withContext(Dispatchers.IO) {
         sourceRefreshMutexes.withLock(sourceId) {
             val source = epgSourceDao.getById(sourceId)
                 ?: return@withLock Result.error("Source not found")
@@ -335,13 +336,13 @@ class EpgSourceRepositoryImpl @Inject constructor(
             // Rate-limit: skip if last successful refresh was less than 5 minutes ago
             if (shouldRateLimitEpgRefresh(source.lastRefreshAt, now, MIN_REFRESH_INTERVAL_MS)) {
                 Log.d(TAG, "Skipping refresh for source $sourceId: last refresh was ${(now - source.lastRefreshAt) / 1000}s ago")
-                return@withLock Result.success(Unit)
+                return@withLock Result.success(EpgRefreshOutcome.SKIPPED)
             }
 
             // Counts failures too: a preset source is attempted at most twice in 24 hours (FR-007).
             if (!refreshGate.tryBeginRefreshAttempt(sourceId)) {
                 Log.d(TAG, "Skipping refresh for preset source $sourceId: inside the minimum gap between attempts")
-                return@withLock Result.success(Unit)
+                return@withLock Result.success(EpgRefreshOutcome.SKIPPED)
             }
 
             try {
@@ -382,7 +383,7 @@ class EpgSourceRepositoryImpl @Inject constructor(
                         if (resolveAffectedProviders) {
                             resolveAffectedProviders(providerEpgSourceDao.getProviderIdsForSourceSync(sourceId))
                         }
-                        return@withLock Result.success(Unit)
+                        return@withLock Result.success(EpgRefreshOutcome.REFRESHED)
                     }
 
                     if (!response.isSuccessful) {
@@ -531,7 +532,7 @@ class EpgSourceRepositoryImpl @Inject constructor(
                         resolveAffectedProviders(providerEpgSourceDao.getProviderIdsForSourceSync(sourceId))
                     }
                     Log.d(TAG, "Source $sourceId payload unchanged; kept existing guide rows")
-                    return@withLock Result.success(Unit)
+                    return@withLock Result.success(EpgRefreshOutcome.REFRESHED)
                 }
 
                 // Atomically swap staging data into the real source ID
@@ -550,7 +551,7 @@ class EpgSourceRepositoryImpl @Inject constructor(
                     resolveAffectedProviders(providerEpgSourceDao.getProviderIdsForSourceSync(sourceId))
                 }
                 Log.d(TAG, "Refreshed source $sourceId: $channelCount channels, $programmeCount programmes")
-                Result.success(Unit)
+                Result.success(EpgRefreshOutcome.REFRESHED)
             } catch (e: Exception) {
                 if (e is CancellationException) {
                     // No outcome was reached, so the attempt does not count against the preset gap.
@@ -603,7 +604,7 @@ class EpgSourceRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun refreshSources(sourceIds: List<Long>, alsoResolve: Set<Long>): Map<Long, Result<Unit>> {
+    override suspend fun refreshSources(sourceIds: List<Long>, alsoResolve: Set<Long>): Map<Long, Result<EpgRefreshOutcome>> {
         val toResolve = LinkedHashSet(alsoResolve)
         try {
             return sourceIds.distinct().associateWith { sourceId ->

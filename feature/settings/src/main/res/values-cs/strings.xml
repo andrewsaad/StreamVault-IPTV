@@ -1031,4 +1031,5 @@
     <string name="epg_preset_error_source_unavailable">Zdroj průvodce pro tuto předvolbu se nepodařilo nastavit. Zkuste to znovu.</string>
     <string name="epg_preset_error_invalid_address">Zadejte adresu průvodce.</string>
     <string name="epg_source_error_empty_payload">Soubor průvodce neobsahoval žádné pořady, proto byl ponechán poslední funkční průvodce.</string>
+    <string name="epg_source_refresh_skipped">Tento zdroj průvodce byl nedávno aktualizován, proto se znovu neaktualizoval. Zkuste to později.</string>
 </resources>

@@ -1029,4 +1029,5 @@
     <string name="epg_preset_error_source_unavailable">Zdroj sprievodcu pre túto predvoľbu sa nepodarilo nastaviť. Skúste to znova.</string>
     <string name="epg_preset_error_invalid_address">Zadajte adresu sprievodcu.</string>
     <string name="epg_source_error_empty_payload">Súbor sprievodcu neobsahoval žiadne relácie, preto bol ponechaný posledný funkčný sprievodca.</string>
+    <string name="epg_source_refresh_skipped">Tento zdroj sprievodcu bol nedávno aktualizovaný, preto sa znova neaktualizoval. Skúste to neskôr.</string>
 </resources>

@@ -1026,4 +1026,5 @@
     <string name="epg_preset_error_source_unavailable">Извор водича за ово готово подешавање није могуће подесити. Покушајте поново.</string>
     <string name="epg_preset_error_invalid_address">Унесите адресу водича.</string>
     <string name="epg_source_error_empty_payload">Датотека водича није имала емисије, па је задржан последњи исправан водич.</string>
+    <string name="epg_source_refresh_skipped">Овај извор водича је недавно ажуриран, па није поново освежен. Покушајте касније.</string>
 </resources>

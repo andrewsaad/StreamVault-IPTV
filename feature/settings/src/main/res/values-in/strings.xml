@@ -1025,4 +1025,5 @@
     <string name="epg_preset_error_source_unavailable">Sumber panduan untuk preset ini tidak dapat disiapkan. Coba lagi.</string>
     <string name="epg_preset_error_invalid_address">Masukkan alamat panduan.</string>
     <string name="epg_source_error_empty_payload">File panduan tidak berisi acara, jadi panduan terakhir yang baik tetap disimpan.</string>
+    <string name="epg_source_refresh_skipped">Sumber panduan ini baru saja diperbarui, jadi tidak disegarkan lagi. Coba lagi nanti.</string>
 </resources>

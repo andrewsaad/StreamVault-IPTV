@@ -15,6 +15,9 @@ object EpgSourceErrors {
     const val EMPTY_PAYLOAD = "epg_source_empty_payload"
 }
 
+/** What a refresh that did not fail did: [SKIPPED] means nothing was downloaded (rate limit or preset gap). */
+enum class EpgRefreshOutcome { REFRESHED, SKIPPED }
+
 interface EpgSourceRepository {
 
     // ── EPG Source CRUD ────────────────────────────────────────────
@@ -68,7 +71,7 @@ interface EpgSourceRepository {
 
     // ── Refresh / Ingestion ────────────────────────────────────────
 
-    suspend fun refreshSource(sourceId: Long): Result<Unit>
+    suspend fun refreshSource(sourceId: Long): Result<EpgRefreshOutcome>
 
     suspend fun refreshAllForProvider(providerId: Long): Result<Unit>
 
@@ -77,7 +80,7 @@ interface EpgSourceRepository {
      * for every provider using a source that did not fail, plus every provider in [alsoResolve]
      * even when every import failed or was cancelled. Returns each source's outcome.
      */
-    suspend fun refreshSources(sourceIds: List<Long>, alsoResolve: Set<Long> = emptySet()): Map<Long, Result<Unit>>
+    suspend fun refreshSources(sourceIds: List<Long>, alsoResolve: Set<Long> = emptySet()): Map<Long, Result<EpgRefreshOutcome>>
 
     // ── Resolution ─────────────────────────────────────────────────
 

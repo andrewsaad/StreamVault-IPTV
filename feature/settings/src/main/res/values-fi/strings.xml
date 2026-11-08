@@ -1025,4 +1025,5 @@
     <string name="epg_preset_error_source_unavailable">Tämän esiasetuksen opaslähdettä ei voitu määrittää. Yritä uudelleen.</string>
     <string name="epg_preset_error_invalid_address">Anna oppaan osoite.</string>
     <string name="epg_source_error_empty_payload">Oppaan tiedostossa ei ollut ohjelmia, joten viimeisin toimiva opas säilytettiin.</string>
+    <string name="epg_source_refresh_skipped">Tämä oppaan lähde päivitettiin äskettäin, joten sitä ei päivitetty uudelleen. Yritä myöhemmin uudelleen.</string>
 </resources>

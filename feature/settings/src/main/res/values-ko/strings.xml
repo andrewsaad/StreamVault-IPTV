@@ -1021,4 +1021,5 @@
     <string name="epg_preset_error_source_unavailable">이 프리셋의 가이드 소스를 설정할 수 없습니다. 다시 시도해 주세요.</string>
     <string name="epg_preset_error_invalid_address">가이드 주소를 입력해 주세요.</string>
     <string name="epg_source_error_empty_payload">편성표 파일에 프로그램이 없어 마지막으로 정상인 편성표를 유지했습니다.</string>
+    <string name="epg_source_refresh_skipped">이 가이드 소스는 최근에 업데이트되어 다시 새로고침하지 않았습니다. 나중에 다시 시도하세요.</string>
 </resources>

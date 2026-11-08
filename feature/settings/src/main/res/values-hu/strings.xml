@@ -1025,4 +1025,5 @@
     <string name="epg_preset_error_source_unavailable">Nem sikerült beállítani az előbeállítás műsorújság-forrását. Próbálja újra.</string>
     <string name="epg_preset_error_invalid_address">Adjon meg egy műsorújság-címet.</string>
     <string name="epg_source_error_empty_payload">A műsorújság-fájl nem tartalmazott műsorokat, ezért az utolsó jó műsorújság megmaradt.</string>
+    <string name="epg_source_refresh_skipped">Ennek az útmutatóforrásnak a frissítése nemrég megtörtént, ezért nem frissítettük újra. Próbálja újra később.</string>
 </resources>

@@ -1021,4 +1021,5 @@
     <string name="epg_preset_error_source_unavailable">No se pudo configurar la fuente de la guía para este ajuste predefinido. Inténtalo de nuevo.</string>
     <string name="epg_preset_error_invalid_address">Introduce una dirección de guía.</string>
     <string name="epg_source_error_empty_payload">El archivo de la guía no tenía programas, así que se conservó la última guía válida.</string>
+    <string name="epg_source_refresh_skipped">Esta fuente de la guía se actualizó hace poco, así que no se volvió a actualizar. Inténtalo más tarde.</string>
 </resources>

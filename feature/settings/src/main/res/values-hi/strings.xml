@@ -1023,4 +1023,5 @@
     <string name="epg_preset_error_source_unavailable">इस प्रीसेट के लिए गाइड स्रोत सेट नहीं हो सका। फिर से कोशिश करें।</string>
     <string name="epg_preset_error_invalid_address">गाइड का पता दर्ज करें।</string>
     <string name="epg_source_error_empty_payload">गाइड फ़ाइल में कोई कार्यक्रम नहीं था, इसलिए पिछली सही गाइड रखी गई।</string>
+    <string name="epg_source_refresh_skipped">यह गाइड स्रोत हाल ही में अपडेट हुआ था, इसलिए इसे दोबारा रीफ़्रेश नहीं किया गया। बाद में फिर कोशिश करें।</string>
 </resources>

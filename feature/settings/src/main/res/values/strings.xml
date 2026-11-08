@@ -1101,4 +1101,5 @@
     <string name="epg_preset_error_source_unavailable">Could not set up the guide source for this preset. Try again.</string>
     <string name="epg_preset_error_invalid_address">Enter a guide address.</string>
     <string name="epg_source_error_empty_payload">The guide file had no programmes, so the last good guide was kept.</string>
+    <string name="epg_source_refresh_skipped">This guide source was updated recently, so it was not refreshed again. Try again later.</string>
 </resources>

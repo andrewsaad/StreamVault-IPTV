@@ -1031,4 +1031,5 @@
     <string name="epg_preset_error_source_unavailable">Не удалось настроить источник гида для этого готового набора. Попробуйте ещё раз.</string>
     <string name="epg_preset_error_invalid_address">Введите адрес гида.</string>
     <string name="epg_source_error_empty_payload">В файле телепрограммы не было передач, поэтому сохранена последняя рабочая телепрограмма.</string>
+    <string name="epg_source_refresh_skipped">Этот источник программы передач был недавно обновлён, поэтому повторное обновление не выполнялось. Повторите попытку позже.</string>
 </resources>

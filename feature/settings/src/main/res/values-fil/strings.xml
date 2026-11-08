@@ -1023,4 +1023,5 @@
     <string name="epg_preset_error_source_unavailable">Hindi ma-set up ang source ng guide para sa preset na ito. Subukang muli.</string>
     <string name="epg_preset_error_invalid_address">Maglagay ng address ng guide.</string>
     <string name="epg_source_error_empty_payload">Walang programa ang file ng gabay, kaya pinanatili ang huling maayos na gabay.</string>
+    <string name="epg_source_refresh_skipped">Kamakailan lang na-update ang source ng guide na ito, kaya hindi ito ni-refresh muli. Subukang muli mamaya.</string>
 </resources>

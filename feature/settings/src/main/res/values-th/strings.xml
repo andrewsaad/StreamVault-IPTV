@@ -1020,4 +1020,5 @@
     <string name="epg_preset_error_source_unavailable">ไม่สามารถตั้งค่าแหล่งผังรายการสำหรับค่าที่ตั้งไว้นี้ได้ โปรดลองอีกครั้ง</string>
     <string name="epg_preset_error_invalid_address">ป้อนที่อยู่ของผังรายการ</string>
     <string name="epg_source_error_empty_payload">ไฟล์ผังรายการไม่มีรายการใดเลย จึงเก็บผังรายการล่าสุดที่ใช้ได้ไว้</string>
+    <string name="epg_source_refresh_skipped">แหล่งข้อมูลคู่มือรายการนี้เพิ่งอัปเดตไปเมื่อไม่นานมานี้ จึงไม่ได้รีเฟรชซ้ำ ลองอีกครั้งในภายหลัง</string>
 </resources>

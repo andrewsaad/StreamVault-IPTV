@@ -1025,4 +1025,5 @@
     <string name="epg_preset_error_source_unavailable">Impossible de configurer la source du guide pour ce préréglage. Réessayez.</string>
     <string name="epg_preset_error_invalid_address">Saisissez une adresse de guide.</string>
     <string name="epg_source_error_empty_payload">Le fichier du guide ne contenait aucun programme ; le dernier guide valide a été conservé.</string>
+    <string name="epg_source_refresh_skipped">Cette source du guide a été mise à jour récemment ; elle n\'a donc pas été actualisée de nouveau. Réessayez plus tard.</string>
 </resources>

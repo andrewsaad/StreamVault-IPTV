@@ -3,7 +3,9 @@ package com.streamvault.feature.settings.presentation
 import com.streamvault.domain.model.Result
 import com.streamvault.domain.model.XmltvTimezonePolicy
 import com.streamvault.domain.repository.EpgPresetManager
+import com.streamvault.domain.repository.EpgRefreshOutcome
 import com.streamvault.domain.repository.EpgSourceRepository
+import com.streamvault.feature.settings.R
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -19,6 +21,8 @@ class SettingsEpgActions(
     private val uiState: MutableStateFlow<SettingsUiState>,
     /** Turns a preset refusal or guide refresh error into the text shown; the view model maps known keys to localized strings. */
     private val epgErrorText: (String) -> String = { it },
+    /** Localized text for a string resource and its format arguments; the view model reads it from the app resources. */
+    private val epgNotice: (Int, List<Any>) -> String = { resId, _ -> resId.toString() },
 ) {
     // Tracks the active assignment-collector job per provider so recompositions
     // cancel the old coroutine rather than leaking it in viewModelScope.
@@ -278,7 +282,13 @@ class SettingsEpgActions(
                 uiState.update {
                     it.copy(
                         refreshingEpgSourceIds = it.refreshingEpgSourceIds - sourceId,
-                        userMessage = if (result is Result.Error) epgErrorText(result.message) else "EPG source refreshed"
+                        userMessage = when {
+                            result is Result.Error -> epgErrorText(result.message)
+                            // Nothing was downloaded (rate limit or preset gap), so do not claim a refresh.
+                            result.getOrNull() == EpgRefreshOutcome.SKIPPED ->
+                                epgNotice(R.string.epg_source_refresh_skipped, emptyList())
+                            else -> "EPG source refreshed"
+                        }
                     )
                 }
             } catch (cancelled: CancellationException) {

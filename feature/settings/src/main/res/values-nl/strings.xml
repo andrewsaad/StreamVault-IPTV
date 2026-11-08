@@ -1025,4 +1025,5 @@
     <string name="epg_preset_error_source_unavailable">De gidsbron voor deze voorinstelling kon niet worden ingesteld. Probeer het opnieuw.</string>
     <string name="epg_preset_error_invalid_address">Voer een gidsadres in.</string>
     <string name="epg_source_error_empty_payload">Het gidsbestand bevatte geen programma\'s, dus de laatste goede gids is behouden.</string>
+    <string name="epg_source_refresh_skipped">Deze gidsbron is onlangs bijgewerkt en is daarom niet opnieuw vernieuwd. Probeer het later opnieuw.</string>
 </resources>

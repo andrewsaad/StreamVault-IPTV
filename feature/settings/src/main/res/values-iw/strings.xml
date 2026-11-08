@@ -1028,4 +1028,5 @@
     <string name="epg_preset_error_source_unavailable">לא ניתן היה להגדיר את מקור המדריך להגדרה המוכנה הזו. נסו שוב.</string>
     <string name="epg_preset_error_invalid_address">יש להזין כתובת מדריך.</string>
     <string name="epg_source_error_empty_payload">קובץ המדריך לא הכיל תוכניות, ולכן נשמר המדריך התקין האחרון.</string>
+    <string name="epg_source_refresh_skipped">מקור המדריך הזה עודכן לאחרונה, ולכן לא רוענן שוב. נסו שוב מאוחר יותר.</string>
 </resources>

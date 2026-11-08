@@ -1026,4 +1026,5 @@
     <string name="epg_preset_error_source_unavailable">Izvor vodiča za ovaj predložak nije moguće postaviti. Pokušajte ponovno.</string>
     <string name="epg_preset_error_invalid_address">Unesite adresu vodiča.</string>
     <string name="epg_source_error_empty_payload">Datoteka vodiča nije sadržavala emisije pa je zadržan posljednji ispravan vodič.</string>
+    <string name="epg_source_refresh_skipped">Ovaj izvor vodiča nedavno je ažuriran pa nije ponovno osvježen. Pokušajte kasnije.</string>
 </resources>

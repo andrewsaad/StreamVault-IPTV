@@ -7,6 +7,8 @@ import com.streamvault.domain.repository.EpgPresetErrors
 import com.streamvault.domain.repository.EpgPresetManager
 import com.streamvault.domain.repository.EpgPresetSourceStatus
 import com.streamvault.domain.repository.EpgPresetStatus
+import com.streamvault.domain.repository.EpgRefreshOutcome
+import com.streamvault.domain.repository.EpgSourceRepository
 import com.streamvault.domain.repository.EpgSourceErrors
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -15,6 +17,7 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.whenever
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class SettingsEpgPresetViewModelTest {
@@ -254,5 +257,22 @@ class SettingsEpgPresetViewModelTest {
         assertThat(uiState.value.userMessage).isEqualTo("Address not allowed")
         assertThat(manager.refreshCalls).isEmpty()
         assertThat(failed).isTrue()
+    }
+
+    @Test
+    fun `a skipped source refresh does not claim the source was refreshed`() = runTest {
+        val repository: EpgSourceRepository = mock()
+        whenever(repository.getProviderIdsForSource(7L)).thenReturn(emptyList())
+        whenever(repository.refreshSource(7L)).thenReturn(Result.success(EpgRefreshOutcome.SKIPPED))
+        val uiState = MutableStateFlow(SettingsUiState())
+        val actions = SettingsEpgActions(
+            repository, FakeEpgPresetManager(), uiState, epgNotice = { resId, _ -> "notice:$resId" },
+        )
+
+        actions.refreshEpgSource(this, 7L)
+        advanceUntilIdle()
+
+        assertThat(uiState.value.userMessage)
+            .isEqualTo("notice:${com.streamvault.feature.settings.R.string.epg_source_refresh_skipped}")
     }
 }
