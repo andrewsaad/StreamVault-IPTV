@@ -13,8 +13,10 @@ import com.streamvault.domain.model.XmltvTimezonePolicy
 import com.streamvault.domain.repository.EpgPresetErrors
 import com.streamvault.domain.repository.EpgRefreshOutcome
 import com.streamvault.domain.repository.EpgSourceRepository
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -24,6 +26,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withContext
 import org.junit.Before
 import org.junit.Test
 
@@ -321,6 +324,51 @@ class EpgPresetManagerImplTest {
         manager.reconcile()
 
         assertThat(repo.refreshCalls).hasSize(1)
+    }
+
+    @Test
+    fun `turningAPresetOff_stopsItsRunningImport_andTheCancelledAttemptIsNotBurned`() = runTest {
+        val manager = EpgPresetManagerImpl(repo, { providerIds.toList() }, store, backgroundScope)
+        val release = CompletableDeferred<Unit>()
+        repo.refreshBlocker = release
+        val enabling = launch { manager.setEnabled(EpgPresetCatalog.EGYPT, true) }
+        runCurrent()
+        val ae1Id = sourceIdFor(ae1.url)
+        assertThat(repo.refreshCalls).containsExactly(ae1Id)
+
+        manager.setEnabled(EpgPresetCatalog.EGYPT, false)
+        release.complete(Unit)
+        enabling.join()
+        runCurrent()
+
+        // F19: the import did not run on into the deleted row, and it did not use up the attempt.
+        assertThat(repo.finishedImports).isEmpty()
+        assertThat(repo.rows.value).isEmpty()
+        assertThat(store.current().lastAttemptAtByKey).isEmpty()
+        val status = manager.observe().first().single { it.presetId == EpgPresetCatalog.EGYPT }
+        assertThat(status.refreshing).isFalse()
+    }
+
+    @Test
+    fun `turningAPresetOff_importsAgainTheSharedFileItsStoppedBatchCarried`() = runTest {
+        val manager = EpgPresetManagerImpl(repo, { providerIds.toList() }, store, backgroundScope)
+        manager.setEnabled(EpgPresetCatalog.EGYPT, true)
+        val ae1Id = sourceIdFor(ae1.url)
+        now += EpgPresetStateStore.MIN_ATTEMPT_GAP_MILLIS
+        val release = CompletableDeferred<Unit>()
+        repo.refreshBlocker = release
+        val enabling = launch { manager.setEnabled(EpgPresetCatalog.BEIN, true) }
+        runCurrent()
+
+        // BEIN's batch is stuck on its first file; turning BEIN off must not strand the file EGYPT still uses.
+        manager.setEnabled(EpgPresetCatalog.BEIN, false)
+        release.complete(Unit)
+        enabling.join()
+        runCurrent()
+
+        assertThat(repo.rows.value.map { it.id }).containsExactly(ae1Id)
+        assertThat(repo.finishedImports.last()).isEqualTo(ae1Id)
+        assertThat(repo.rows.value.single().lastSuccessAt).isEqualTo(now)
     }
 
     @Test
@@ -676,6 +724,8 @@ private class FakeEpgSourceRepository(private val gate: EpgSourceRefreshGate) : 
     /** providerId -> (sourceId -> priority) */
     val assignments = mutableMapOf<Long, MutableMap<Long, Int>>()
     val refreshCalls = mutableListOf<Long>()
+    /** The imports that ran to the end, not cancelled on the way. */
+    val finishedImports = mutableListOf<Long>()
     var failRefreshWith: String? = null
     /** Holds a refresh open, like a slow download. */
     var refreshBlocker: CompletableDeferred<Unit>? = null
@@ -774,7 +824,14 @@ private class FakeEpgSourceRepository(private val gate: EpgSourceRefreshGate) : 
     private suspend fun importWithoutResolving(sourceId: Long): Result<EpgRefreshOutcome> {
         if (!gate.tryBeginRefreshAttempt(sourceId)) return Result.success(EpgRefreshOutcome.SKIPPED)
         refreshCalls += sourceId
-        refreshBlocker?.await()
+        try {
+            refreshBlocker?.await()
+        } catch (cancelled: CancellationException) {
+            // Like the real repository: no outcome was reached, so the attempt does not count.
+            withContext(NonCancellable) { gate.clearRefreshAttempt(sourceId) }
+            throw cancelled
+        }
+        finishedImports += sourceId
         if (loseRefreshOutcome) return Result.success(EpgRefreshOutcome.REFRESHED)
         val error = failRefreshWith
         rows.value = rows.value.map {
