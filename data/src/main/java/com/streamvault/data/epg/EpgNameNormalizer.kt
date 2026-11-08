@@ -59,8 +59,9 @@ object EpgNameNormalizer {
      * fallback, so exact id / exact name matches are never affected. Distinct channels
      * (espn2, espnu, espndeportes, foxsoccerplus, onsportmax) are deliberately absent.
      * No Bally Sports entries: no public guide exists to verify them.
+     * EpgAliasGuardTest caps the count, so each new entry is a deliberate, reviewed edit (F21).
      */
-    private val canonicalAliases = mapOf(
+    internal val canonicalAliases = mapOf(
         "espn1" to "espn",
         "espnnews" to "espnews",
         "foxsport1" to "fs1",
