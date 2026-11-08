@@ -21,7 +21,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
-import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Before
@@ -445,7 +444,7 @@ class EpgPresetManagerImplTest {
         manager.setEnabled(EpgPresetCatalog.EGYPT, true)
         val ae1Id = sourceIdFor(ae1.url)
         manager.updateAddress(EpgPresetCatalog.EGYPT, ae1.key, "https://mirror.example/ae1.xml")
-        advanceUntilIdle()
+        runCurrent()
 
         // A new manager over the same store, like the app after a restart.
         val restarted = EpgPresetManagerImpl(repo, EpgPresetProviderDirectory { providerIds.toList() }, store)
@@ -472,7 +471,7 @@ class EpgPresetManagerImplTest {
         now += 60_000L
 
         val result = manager.updateAddress(EpgPresetCatalog.EGYPT, ae1.key, "  https://mirror.example/ae1.xml ")
-        advanceUntilIdle()
+        runCurrent()
 
         assertThat(result.isSuccess).isTrue()
         assertThat(repo.rows.value.single().id).isEqualTo(ae1Id)
@@ -492,11 +491,11 @@ class EpgPresetManagerImplTest {
         now += 25 * 60 * 60_000L // every file is past its gap, so a whole-preset refresh would take them all
 
         manager.updateAddress(EpgPresetCatalog.BEIN, edited.key, edited.url)
-        advanceUntilIdle()
+        runCurrent()
         assertThat(repo.refreshCalls).isEmpty()
 
         manager.updateAddress(EpgPresetCatalog.BEIN, edited.key, "https://mirror.example/bein1.xml")
-        advanceUntilIdle()
+        runCurrent()
         assertThat(repo.refreshCalls).containsExactly(sourceIdFor("https://mirror.example/bein1.xml"))
     }
 
@@ -531,7 +530,7 @@ class EpgPresetManagerImplTest {
         val manager = managerOnTestScheduler()
         manager.setEnabled(EpgPresetCatalog.EGYPT, true)
         manager.updateAddress(EpgPresetCatalog.EGYPT, ae1.key, "https://mirror.example/ae1.xml")
-        advanceUntilIdle()
+        runCurrent()
 
         manager.setEnabled(EpgPresetCatalog.EGYPT, false)
         assertThat(repo.rows.value).isEmpty()
@@ -557,9 +556,9 @@ class EpgPresetManagerImplTest {
         val manager = managerOnTestScheduler()
         manager.setEnabled(EpgPresetCatalog.EGYPT, true)
         manager.updateAddress(EpgPresetCatalog.EGYPT, ae1.key, "https://mirror.example/ae1.xml")
-        advanceUntilIdle()
+        runCurrent()
         manager.updateAddress(EpgPresetCatalog.EGYPT, ae1.key, ae1.url)
-        advanceUntilIdle()
+        runCurrent()
 
         assertThat(store.current().addresses).isEmpty()
     }
