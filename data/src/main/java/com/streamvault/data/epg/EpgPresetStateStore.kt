@@ -26,12 +26,16 @@ import kotlinx.coroutines.flow.map
  * [assignedProviderIds] are the providers the preset assigned the source to, so turning the
  * preset off only undoes its own assignments. [handledProviderIds] are the providers already
  * seen, so one that lacks the source later had it removed by the user and is left alone.
+ * [defaultUrl] is the built-in address when the row was linked, so a later build that corrects
+ * it can tell an unedited row (still at [defaultUrl]) from one the user changed; null on lines
+ * saved before it was remembered.
  */
 data class EpgPresetSourceRecord(
     val sourceId: Long,
     val owned: Boolean,
     val assignedProviderIds: Set<Long>,
     val handledProviderIds: Set<Long> = assignedProviderIds,
+    val defaultUrl: String? = null,
 )
 
 /**
@@ -186,6 +190,7 @@ internal fun decodePresetSources(encoded: String?): Map<String, EpgPresetSourceR
                 assignedProviderIds = providers,
                 // Lines written before this column existed have no list of their own.
                 handledProviderIds = if (parts.size > 4) decodeProviderIds(parts[4]) else providers,
+                defaultUrl = parts.getOrNull(5)?.trim()?.takeIf(String::isNotEmpty),
             )
         }
         .toMap()
@@ -204,7 +209,8 @@ internal fun encodePresetSources(sources: Map<String, EpgPresetSourceRecord>): S
             val owned = if (record.owned) "1" else "0"
             val assigned = record.assignedProviderIds.sorted().joinToString(",")
             val handled = record.handledProviderIds.sorted().joinToString(",")
-            "$key\t${record.sourceId}\t$owned\t$assigned\t$handled"
+            val defaultUrl = record.defaultUrl?.takeIf { url -> '\t' !in url && '\n' !in url }.orEmpty()
+            "$key\t${record.sourceId}\t$owned\t$assigned\t$handled\t$defaultUrl"
         }
 
 internal fun decodePresetAttempts(encoded: String?): Map<Long, Long> =

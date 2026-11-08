@@ -315,6 +315,74 @@ class EpgPresetManagerImplTest {
         assertThat(repo.refreshCalls).hasSize(1)
     }
 
+    // ── F10: a corrected built-in address ────────────────────────────
+
+    /** The row as an earlier build left it: created at [oldUrl], which was then the built-in address. */
+    private suspend fun leaveRowAtAnOlderBuiltInAddress(oldUrl: String, rowUrl: String = oldUrl): Long {
+        manager.setEnabled(EpgPresetCatalog.EGYPT, true)
+        val row = repo.rows.value.single()
+        repo.updateSource(row.copy(url = rowUrl))
+        store.update { state ->
+            state.copy(sources = state.sources.mapValues { (_, record) -> record.copy(defaultUrl = oldUrl) })
+        }
+        return row.id
+    }
+
+    @Test
+    fun `enable_remembersTheBuiltInAddressOfEachRow`() = runTest {
+        manager.setEnabled(EpgPresetCatalog.EGYPT, true)
+
+        assertThat(store.current().sources.getValue(ae1.key).defaultUrl).isEqualTo(ae1.url)
+    }
+
+    @Test
+    fun `reconcile_movesAnUneditedRowToTheCorrectedBuiltInAddress_andImportsIt`() = runTest {
+        val rowId = leaveRowAtAnOlderBuiltInAddress("https://old.example/ae1.xml.gz")
+        val refreshesBefore = repo.refreshCalls.size
+        now += 60_000L
+
+        manager.reconcile()
+
+        assertThat(repo.rows.value.map { it.id to it.url }).containsExactly(rowId to ae1.url)
+        assertThat(store.current().sources.getValue(ae1.key).defaultUrl).isEqualTo(ae1.url)
+        // A new file, so it is imported now rather than after the gap left by the old one.
+        assertThat(repo.refreshCalls.drop(refreshesBefore)).containsExactly(rowId)
+    }
+
+    @Test
+    fun `reconcile_keepsAnAddressTheUserEdited_whenTheBuiltInOneChanges`() = runTest {
+        val rowId = leaveRowAtAnOlderBuiltInAddress("https://old.example/ae1.xml.gz", rowUrl = "https://mirror.example/ae1.xml")
+
+        manager.reconcile()
+
+        assertThat(repo.rows.value.map { it.id to it.url }).containsExactly(rowId to "https://mirror.example/ae1.xml")
+    }
+
+    @Test
+    fun `reconcile_neverChangesTheAddressOfAHandAddedRow`() = runTest {
+        val handAdded = repo.addSource("Mine", ae1.url).getOrNull()!!
+        manager.setEnabled(EpgPresetCatalog.EGYPT, true)
+        repo.updateSource(handAdded.copy(url = "https://old.example/ae1.xml.gz"))
+        store.update { state ->
+            state.copy(sources = state.sources.mapValues { (_, r) -> r.copy(defaultUrl = "https://old.example/ae1.xml.gz") })
+        }
+
+        manager.reconcile()
+
+        assertThat(repo.rows.value.map { it.url }).containsExactly("https://old.example/ae1.xml.gz")
+    }
+
+    @Test
+    fun `reconcile_adoptsTheBuiltInAddressForRowsSavedBeforeItWasRemembered`() = runTest {
+        manager.setEnabled(EpgPresetCatalog.EGYPT, true)
+        store.update { state -> state.copy(sources = state.sources.mapValues { (_, r) -> r.copy(defaultUrl = null) }) }
+
+        manager.reconcile()
+
+        assertThat(store.current().sources.getValue(ae1.key).defaultUrl).isEqualTo(ae1.url)
+        assertThat(repo.rows.value.map { it.url }).containsExactly(ae1.url)
+    }
+
     // ── F9: editing a preset's address ───────────────────────────────
 
     @Test

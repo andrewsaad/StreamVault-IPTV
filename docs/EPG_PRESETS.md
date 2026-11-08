@@ -30,7 +30,7 @@ A preset source waits at least 12 hours between attempts, failed attempts includ
 
 ## Editing a preset's address
 
-If a source moves or is renamed, the update fails and the preset shows the error. Open Settings, Guide presets, choose the preset and select Change address, then enter the corrected address. The new address is tried at once, even inside the 12-hour gap; saving the same address again does not count as a change. The edit stays when the preset is turned off and on again, and applies to this device only. A corrected default address for everyone arrives only through a new app build.
+If a source moves or is renamed, the update fails and the preset shows the error. Open Settings, Guide presets, choose the preset and select Change address, then enter the corrected address. The new address is tried at once, even inside the 12-hour gap; saving the same address again does not count as a change. The edit stays when the preset is turned off and on again, and applies to this device only. A corrected default address for everyone arrives only through a new app build. That build moves preset files you never edited to the corrected address and imports them at once; an address you changed, and a guide source you added by hand, keep theirs.
 
 ## How channels are matched
 

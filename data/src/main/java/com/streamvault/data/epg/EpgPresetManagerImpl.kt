@@ -140,8 +140,9 @@ class EpgPresetManagerImpl internal constructor(
             var records = state.sources.filterKeys { it in usedKeys }
             enabled.flatMap { it.sources }.distinctBy { it.key }.forEach { source ->
                 val before = records[source.key]
-                val record = ensureSource(source, before, addressFor(source, state)) ?: return@forEach
-                if (record.sourceId != before?.sourceId) fresh += record.sourceId
+                val ensured = ensureSource(source, before, addressFor(source, state)) ?: return@forEach
+                val (record, moved) = followBuiltInAddress(source, ensured, state)
+                if (record.sourceId != before?.sourceId || moved) fresh += record.sourceId
                 records = records + (source.key to assignToAllProviders(record))
             }
             store.update { it.copy(sources = records) }
@@ -221,15 +222,39 @@ class EpgPresetManagerImpl internal constructor(
         if (existing != null) {
             // Our own row survives under the same id; anything else was added by hand and is never deleted.
             val owned = remembered?.owned == true && remembered.sourceId == existing.id
-            return EpgPresetSourceRecord(existing.id, owned = owned, assignedProviderIds = emptySet())
+            return EpgPresetSourceRecord(existing.id, owned = owned, assignedProviderIds = emptySet(), defaultUrl = source.url)
         }
         return when (val added = sources.addSource(name = sourceName(source), url = url)) {
-            is Result.Success -> EpgPresetSourceRecord(added.data.id, owned = true, assignedProviderIds = emptySet())
+            is Result.Success ->
+                EpgPresetSourceRecord(added.data.id, owned = true, assignedProviderIds = emptySet(), defaultUrl = source.url)
             else -> {
                 Log.w(TAG, "Could not add preset source ${source.key}: ${added.errorMessageOrNull()}")
                 null
             }
         }
+    }
+
+    /**
+     * FR-023: a build that corrects a built-in address moves the rows the preset created and the
+     * user never edited onto it, and lifts the gap so the new file is imported now. Returns the
+     * record to keep and whether the row moved. A hand-added or edited row keeps its address.
+     */
+    private suspend fun followBuiltInAddress(
+        source: EpgPresetSource,
+        record: EpgPresetSourceRecord,
+        state: EpgPresetState,
+    ): Pair<EpgPresetSourceRecord, Boolean> {
+        if (record.defaultUrl == source.url) return record to false
+        val row = sources.getSourceById(record.sourceId) ?: return record to false
+        if (record.defaultUrl == null) {
+            // Saved before the built-in address was remembered: adopt it only when the row already uses it.
+            return (if (row.url == source.url) record.copy(defaultUrl = source.url) else record) to false
+        }
+        val unedited = record.owned && source.key !in state.addresses && row.url == record.defaultUrl
+        if (!unedited) return record to false
+        if (sources.updateSource(row.copy(url = source.url)) is Result.Error) return record to false
+        store.clearRefreshAttempt(record.sourceId)
+        return record.copy(defaultUrl = source.url) to true
     }
 
     /**

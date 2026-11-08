@@ -47,6 +47,14 @@ class EpgPresetStateStoreTest {
     }
 
     @Test
+    fun `codec_keepsTheBuiltInAddress_andOlderLinesHaveNone`() {
+        val record = EpgPresetSourceRecord(7L, owned = true, assignedProviderIds = setOf(1L), defaultUrl = "https://x.example/ae1.xml.gz")
+
+        assertThat(decodePresetSources(encodePresetSources(mapOf("AE1" to record))).getValue("AE1")).isEqualTo(record)
+        assertThat(decodePresetSources("AE1\t7\t1\t1\t1").getValue("AE1").defaultUrl).isNull()
+    }
+
+    @Test
     fun `codec_keepsEditedAddresses_andDropsLinesWithoutOne`() {
         val addresses = mapOf("AE1" to "https://mirror.example/ae1.xml", "US2" to "https://x.example/us2.xml?a=1&b=2")
 
