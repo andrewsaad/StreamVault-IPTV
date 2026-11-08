@@ -1021,4 +1021,8 @@
     <string name="epg_preset_error_source_unavailable">Não foi possível configurar a fonte do guia para esta predefinição. Tente novamente.</string>
     <string name="epg_preset_error_invalid_address">Introduza um endereço do guia.</string>
     <string name="epg_source_error_empty_payload">O arquivo do guia não tinha programas, então o último guia válido foi mantido.</string>
+    <string name="epg_source_refresh_skipped">Esta fonte do guia foi atualizada recentemente, por isso não foi atualizada de novo. Tente novamente mais tarde.</string>
+    <string name="epg_source_refreshed">Fonte do guia atualizada</string>
+    <string name="epg_error_http_status">O servidor do guia devolveu um erro (HTTP %1$d).</string>
+    <string name="settings_epg_timezone_refresh_failed">Fuso horário guardado, mas a atualização falhou: %1$s</string>
 </resources>

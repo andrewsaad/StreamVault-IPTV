@@ -15,10 +15,16 @@ import java.net.URI
 import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
+import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
@@ -63,7 +69,14 @@ class EpgPresetManagerImpl internal constructor(
 
     private val mutex = Mutex()
     private val refreshing = MutableStateFlow<Set<String>>(emptySet())
-    private val inFlightSourceIds = ConcurrentHashMap.newKeySet<Long>()
+
+    /** One run of imports; [ids] are the source rows it covers and [job] ends when all of them have. */
+    private class ImportBatch(val ids: List<Long>) {
+        lateinit var job: Deferred<Result<Unit>>
+    }
+
+    /** The import batch running for each source row, so turning a preset off can stop it (F19). */
+    private val importBatches = ConcurrentHashMap<Long, ImportBatch>()
 
     override fun observe(): Flow<List<EpgPresetStatus>> =
         combine(store.state, sources.getAllSources(), refreshing) { state, rows, busy ->
@@ -157,7 +170,7 @@ class EpgPresetManagerImpl internal constructor(
             rankInCatalogOrder(records, newlyAssigned)
             store.update { it.copy(sources = records) }
             val unfinished = records.values.map { it.sourceId }.distinct()
-                .filter { it !in fresh && it !in inFlightSourceIds && neverFinished(it) }
+                .filter { it !in fresh && it !in importBatches && neverFinished(it) }
             unfinished.forEach { store.clearRefreshAttempt(it) }
             fresh + unfinished
         }
@@ -211,6 +224,9 @@ class EpgPresetManagerImpl internal constructor(
             .filter { it.id in remaining }
             .flatMapTo(HashSet()) { other -> other.sources.map { it.key } }
         val released = preset.sources.filterNot { it.key in stillUsed }
+        // F19: an import still running for a row this deletes is stopped first, so it cannot write into
+        // the deleted row, and its cancelled attempt is cleared while the row's file key is still known.
+        cancelImports(released.mapNotNull { state.sources[it.key]?.takeIf { record -> record.owned }?.sourceId })
         var addresses = state.addresses
         released.forEach { source ->
             val record = state.sources[source.key] ?: return@forEach
@@ -223,6 +239,17 @@ class EpgPresetManagerImpl internal constructor(
             it.copy(enabledPresetIds = remaining, sources = it.sources - releasedKeys, addresses = addresses)
         }
         Result.success(Unit)
+    }
+
+    /**
+     * Cancels the import batches running for [sourceIds] and waits for them to end. A batch also covers
+     * other sources (a file shared with another preset); those are imported again, in a new batch.
+     */
+    private suspend fun cancelImports(sourceIds: List<Long>) {
+        val batches = sourceIds.mapNotNull { importBatches[it] }.distinct()
+        batches.forEach { it.job.cancelAndJoin() }
+        val survivors = batches.flatMap { it.ids }.distinct().filter { it !in sourceIds }
+        if (survivors.isNotEmpty()) importScope.launch { refresh(presetId = null, sourceIds = survivors) }
     }
 
     /** Deletes a row the preset created; a hand-added row keeps everything except the preset's own assignments. */
@@ -341,17 +368,26 @@ class EpgPresetManagerImpl internal constructor(
         val ids = sourceIds.distinct()
         val providersToResolve = alsoResolve.toSet()
         if (presetId != null) refreshing.update { it + presetId }
-        inFlightSourceIds += ids
-        return importScope.async {
-            try {
-                val errors = sources.refreshSources(ids, providersToResolve).values
-                    .mapNotNull { (it as? Result.Error)?.message }
-                if (errors.isEmpty()) Result.success(Unit) else Result.error(errors.joinToString("; "))
-            } finally {
-                inFlightSourceIds -= ids.toSet()
-                if (presetId != null) refreshing.update { it - presetId }
-            }
-        }.await()
+        val batch = ImportBatch(ids)
+        batch.job = importScope.async(start = CoroutineStart.LAZY) {
+            val errors = sources.refreshSources(ids, providersToResolve).values
+                .mapNotNull { (it as? Result.Error)?.message }
+            if (errors.isEmpty()) Result.success(Unit) else Result.error(errors.joinToString("; "))
+        }
+        // Registered before it starts and cleaned up on completion, which also covers a cancel before the first step.
+        ids.forEach { importBatches.putIfAbsent(it, batch) }
+        batch.job.invokeOnCompletion {
+            ids.forEach { importBatches.remove(it, batch) }
+            if (presetId != null) refreshing.update { it - presetId }
+        }
+        batch.job.start()
+        return try {
+            batch.job.await()
+        } catch (cancelled: CancellationException) {
+            // Our own cancellation ends the wait; the import was stopped by the preset being turned off.
+            currentCoroutineContext().ensureActive()
+            Result.error(EpgPresetErrors.NOT_ENABLED)
+        }
     }
 
     /** The user's edited address for [source], else the built-in one. */

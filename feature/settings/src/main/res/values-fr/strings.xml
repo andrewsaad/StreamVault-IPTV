@@ -1025,4 +1025,8 @@
     <string name="epg_preset_error_source_unavailable">Impossible de configurer la source du guide pour ce préréglage. Réessayez.</string>
     <string name="epg_preset_error_invalid_address">Saisissez une adresse de guide.</string>
     <string name="epg_source_error_empty_payload">Le fichier du guide ne contenait aucun programme ; le dernier guide valide a été conservé.</string>
+    <string name="epg_source_refresh_skipped">Cette source du guide a été mise à jour récemment ; elle n\'a donc pas été actualisée de nouveau. Réessayez plus tard.</string>
+    <string name="epg_source_refreshed">Source du guide actualisée</string>
+    <string name="epg_error_http_status">Le serveur du guide a renvoyé une erreur (HTTP %1$d).</string>
+    <string name="settings_epg_timezone_refresh_failed">Fuseau horaire enregistré, mais l\'actualisation a échoué : %1$s</string>
 </resources>

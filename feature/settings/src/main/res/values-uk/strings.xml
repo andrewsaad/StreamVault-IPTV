@@ -1031,4 +1031,8 @@
     <string name="epg_preset_error_source_unavailable">Не вдалося налаштувати джерело гіда для цього готового набору. Спробуйте ще раз.</string>
     <string name="epg_preset_error_invalid_address">Введіть адресу гіда.</string>
     <string name="epg_source_error_empty_payload">У файлі телепрограми не було передач, тому збережено останню справну телепрограму.</string>
+    <string name="epg_source_refresh_skipped">Це джерело програми передач було нещодавно оновлено, тому повторне оновлення не виконувалося. Спробуйте пізніше.</string>
+    <string name="epg_source_refreshed">Джерело програми передач оновлено</string>
+    <string name="epg_error_http_status">Сервер програми передач повернув помилку (HTTP %1$d).</string>
+    <string name="settings_epg_timezone_refresh_failed">Часовий пояс збережено, але оновлення не вдалося: %1$s</string>
 </resources>

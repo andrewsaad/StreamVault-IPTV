@@ -1101,4 +1101,8 @@
     <string name="epg_preset_error_source_unavailable">Could not set up the guide source for this preset. Try again.</string>
     <string name="epg_preset_error_invalid_address">Enter a guide address.</string>
     <string name="epg_source_error_empty_payload">The guide file had no programmes, so the last good guide was kept.</string>
+    <string name="epg_source_refresh_skipped">This guide source was updated recently, so it was not refreshed again. Try again later.</string>
+    <string name="epg_source_refreshed">Guide source refreshed</string>
+    <string name="epg_error_http_status">The guide server returned an error (HTTP %1$d).</string>
+    <string name="settings_epg_timezone_refresh_failed">Timezone saved, but refresh failed: %1$s</string>
 </resources>

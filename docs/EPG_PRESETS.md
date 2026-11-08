@@ -26,7 +26,7 @@ epgshare01 is a public community site run by a volunteer. Its terms of use are u
 
 ## Update limit
 
-A preset source waits at least 12 hours between attempts, failed attempts included. That means at most 2 refreshes in any 24 hours per device. "Update now" is refused inside the 12-hour gap. Guide sources you add by hand keep their existing 5-minute rule.
+A preset source waits at least 12 hours between attempts, failed attempts included. That means at most 2 refreshes in any 24 hours per device. The gap follows the preset file, so turning a preset off and on again does not reset it. Turning a preset off stops its running update. "Update now" is refused inside the 12-hour gap. Guide sources you add by hand keep their existing 5-minute rule.
 
 ## Editing a preset's address
 

@@ -1020,4 +1020,8 @@
     <string name="epg_preset_error_source_unavailable">ไม่สามารถตั้งค่าแหล่งผังรายการสำหรับค่าที่ตั้งไว้นี้ได้ โปรดลองอีกครั้ง</string>
     <string name="epg_preset_error_invalid_address">ป้อนที่อยู่ของผังรายการ</string>
     <string name="epg_source_error_empty_payload">ไฟล์ผังรายการไม่มีรายการใดเลย จึงเก็บผังรายการล่าสุดที่ใช้ได้ไว้</string>
+    <string name="epg_source_refresh_skipped">แหล่งข้อมูลคู่มือรายการนี้เพิ่งอัปเดตไปเมื่อไม่นานมานี้ จึงไม่ได้รีเฟรชซ้ำ ลองอีกครั้งในภายหลัง</string>
+    <string name="epg_source_refreshed">รีเฟรชแหล่งข้อมูลคู่มือรายการแล้ว</string>
+    <string name="epg_error_http_status">เซิร์ฟเวอร์คู่มือรายการส่งข้อผิดพลาดกลับมา (HTTP %1$d)</string>
+    <string name="settings_epg_timezone_refresh_failed">บันทึกเขตเวลาแล้ว แต่รีเฟรชไม่สำเร็จ: %1$s</string>
 </resources>

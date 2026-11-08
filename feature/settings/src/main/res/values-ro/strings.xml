@@ -1028,4 +1028,8 @@
     <string name="epg_preset_error_source_unavailable">Sursa ghidului pentru această presetare nu a putut fi configurată. Încearcă din nou.</string>
     <string name="epg_preset_error_invalid_address">Introdu o adresă a ghidului.</string>
     <string name="epg_source_error_empty_payload">Fișierul ghidului nu conținea programe, așa că a fost păstrat ultimul ghid valid.</string>
+    <string name="epg_source_refresh_skipped">Această sursă a ghidului a fost actualizată recent, deci nu a fost reîmprospătată din nou. Încearcă din nou mai târziu.</string>
+    <string name="epg_source_refreshed">Sursa ghidului a fost reîmprospătată</string>
+    <string name="epg_error_http_status">Serverul ghidului a returnat o eroare (HTTP %1$d).</string>
+    <string name="settings_epg_timezone_refresh_failed">Fusul orar a fost salvat, dar reîmprospătarea a eșuat: %1$s</string>
 </resources>

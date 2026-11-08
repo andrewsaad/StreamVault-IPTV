@@ -37,7 +37,11 @@ class SettingsStringsLocaleParityTest {
         "epg_preset_error_refresh_too_soon",
         "epg_preset_error_source_unavailable",
         "epg_preset_error_invalid_address",
-        "epg_source_error_empty_payload"
+        "epg_source_error_empty_payload",
+        "epg_source_refresh_skipped",
+        "epg_source_refreshed",
+        "epg_error_http_status",
+        "settings_epg_timezone_refresh_failed"
     )
 
     @Test

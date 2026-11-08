@@ -2,11 +2,14 @@ package com.streamvault.feature.settings.presentation
 
 import com.google.common.truth.Truth.assertThat
 import com.streamvault.domain.model.EpgPresetCatalog
+import com.streamvault.domain.model.EpgSource
 import com.streamvault.domain.model.Result
 import com.streamvault.domain.repository.EpgPresetErrors
 import com.streamvault.domain.repository.EpgPresetManager
 import com.streamvault.domain.repository.EpgPresetSourceStatus
 import com.streamvault.domain.repository.EpgPresetStatus
+import com.streamvault.domain.repository.EpgRefreshOutcome
+import com.streamvault.domain.repository.EpgSourceRepository
 import com.streamvault.domain.repository.EpgSourceErrors
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -14,7 +17,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
+import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.whenever
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class SettingsEpgPresetViewModelTest {
@@ -173,11 +178,24 @@ class SettingsEpgPresetViewModelTest {
         assertThat(keys).isNotEmpty()
         assertThat(keys.filter { epgPresetErrorRes(it) == null }).isEmpty()
         val empty = EpgSourceErrors.EMPTY_PAYLOAD
-        assertThat(localizeEpgError(empty, text))
+        val http = { code: Int -> "http:$code" }
+        assertThat(localizeEpgError(empty, text, http))
             .isEqualTo("res:${com.streamvault.feature.settings.R.string.epg_source_error_empty_payload}")
-        assertThat(localizeEpgError("HTTP 404; $empty", text))
-            .isEqualTo("HTTP 404; res:${com.streamvault.feature.settings.R.string.epg_source_error_empty_payload}")
-        assertThat(localizeEpgError("Failed to download EPG: HTTP 503", text)).isEqualTo("Failed to download EPG: HTTP 503")
+        assertThat(localizeEpgError("HTTP 404; $empty", text, http))
+            .isEqualTo("http:404; res:${com.streamvault.feature.settings.R.string.epg_source_error_empty_payload}")
+        assertThat(localizeEpgError("Connection reset", text, http)).isEqualTo("Connection reset")
+    }
+
+    @Test
+    fun `a download error with an http status is localized with its code`() {
+        val text = { res: Int -> "res:$res" }
+        val http = { code: Int -> "http:$code" }
+
+        assertThat(localizeEpgError("HTTP 404", text, http)).isEqualTo("http:404")
+        assertThat(localizeEpgError("Failed to download EPG: HTTP 503", text, http)).isEqualTo("http:503")
+        assertThat(epgHttpStatus("HTTP 404")).isEqualTo(404)
+        assertThat(epgHttpStatus("HTTP 4040")).isNull()
+        assertThat(epgHttpStatus("Failed to refresh EPG source: HTTP 404 while reading")).isNull()
     }
 
     @Test
@@ -254,5 +272,61 @@ class SettingsEpgPresetViewModelTest {
         assertThat(uiState.value.userMessage).isEqualTo("Address not allowed")
         assertThat(manager.refreshCalls).isEmpty()
         assertThat(failed).isTrue()
+    }
+
+    @Test
+    fun `a refreshed source says so through the localized notice`() = runTest {
+        val repository: EpgSourceRepository = mock()
+        whenever(repository.getProviderIdsForSource(7L)).thenReturn(emptyList())
+        whenever(repository.refreshSource(7L)).thenReturn(Result.success(EpgRefreshOutcome.REFRESHED))
+        val uiState = MutableStateFlow(SettingsUiState())
+        val actions = SettingsEpgActions(
+            repository, FakeEpgPresetManager(), uiState, epgNotice = { resId, _ -> "notice:$resId" },
+        )
+
+        actions.refreshEpgSource(this, 7L)
+        advanceUntilIdle()
+
+        assertThat(uiState.value.userMessage)
+            .isEqualTo("notice:${com.streamvault.feature.settings.R.string.epg_source_refreshed}")
+    }
+
+    @Test
+    fun `a timezone saved but not refreshed reports the localized failure with the localized error`() = runTest {
+        val repository: EpgSourceRepository = mock()
+        val source = EpgSource(id = 7L, name = "Mine", url = "https://example.com/mine.xml")
+        whenever(repository.updateSource(any())).thenReturn(Result.success(Unit))
+        whenever(repository.getProviderIdsForSource(7L)).thenReturn(emptyList())
+        whenever(repository.refreshSource(7L)).thenReturn(Result.error("HTTP 404"))
+        val uiState = MutableStateFlow(SettingsUiState())
+        val actions = SettingsEpgActions(
+            repository, FakeEpgPresetManager(), uiState,
+            epgErrorText = { "localized:$it" },
+            epgNotice = { resId, args -> "notice:$resId:${args.joinToString("|")}" },
+        )
+
+        actions.updateEpgSourceTimezone(this, source, "Europe/Amsterdam")
+        advanceUntilIdle()
+
+        assertThat(uiState.value.userMessage).isEqualTo(
+            "notice:${com.streamvault.feature.settings.R.string.settings_epg_timezone_refresh_failed}:localized:HTTP 404"
+        )
+    }
+
+    @Test
+    fun `a skipped source refresh does not claim the source was refreshed`() = runTest {
+        val repository: EpgSourceRepository = mock()
+        whenever(repository.getProviderIdsForSource(7L)).thenReturn(emptyList())
+        whenever(repository.refreshSource(7L)).thenReturn(Result.success(EpgRefreshOutcome.SKIPPED))
+        val uiState = MutableStateFlow(SettingsUiState())
+        val actions = SettingsEpgActions(
+            repository, FakeEpgPresetManager(), uiState, epgNotice = { resId, _ -> "notice:$resId" },
+        )
+
+        actions.refreshEpgSource(this, 7L)
+        advanceUntilIdle()
+
+        assertThat(uiState.value.userMessage)
+            .isEqualTo("notice:${com.streamvault.feature.settings.R.string.epg_source_refresh_skipped}")
     }
 }

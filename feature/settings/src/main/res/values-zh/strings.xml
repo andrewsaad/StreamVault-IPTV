@@ -1021,4 +1021,8 @@
     <string name="epg_preset_error_source_unavailable">无法为此预设设置指南来源。请重试。</string>
     <string name="epg_preset_error_invalid_address">请输入指南地址。</string>
     <string name="epg_source_error_empty_payload">节目指南文件中没有节目，因此保留了上一次正常的指南。</string>
+    <string name="epg_source_refresh_skipped">此指南来源最近刚更新过，因此没有再次刷新。请稍后再试。</string>
+    <string name="epg_source_refreshed">指南来源已刷新</string>
+    <string name="epg_error_http_status">指南服务器返回了错误（HTTP %1$d）。</string>
+    <string name="settings_epg_timezone_refresh_failed">时区已保存，但刷新失败：%1$s</string>
 </resources>

@@ -1025,4 +1025,8 @@
     <string name="epg_preset_error_source_unavailable">Kunne ikke sette opp guidekilden for denne forhåndsinnstillingen. Prøv igjen.</string>
     <string name="epg_preset_error_invalid_address">Skriv inn en guideadresse.</string>
     <string name="epg_source_error_empty_payload">Guidefilen inneholdt ingen programmer, så den siste fungerende guiden ble beholdt.</string>
+    <string name="epg_source_refresh_skipped">Denne guidekilden ble nylig oppdatert, så den ble ikke oppdatert på nytt. Prøv igjen senere.</string>
+    <string name="epg_source_refreshed">Guidekilden er oppdatert</string>
+    <string name="epg_error_http_status">Guideserveren returnerte en feil (HTTP %1$d).</string>
+    <string name="settings_epg_timezone_refresh_failed">Tidssonen ble lagret, men oppdateringen mislyktes: %1$s</string>
 </resources>

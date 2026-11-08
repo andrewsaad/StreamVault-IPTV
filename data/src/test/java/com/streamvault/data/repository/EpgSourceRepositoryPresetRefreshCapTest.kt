@@ -17,6 +17,8 @@ import com.streamvault.data.local.entity.ProviderEpgSourceEntity
 import com.streamvault.data.parser.XmltvParser
 import com.streamvault.data.preferences.PreferencesRepository
 import com.streamvault.domain.model.ContentType
+import com.streamvault.domain.model.Result
+import com.streamvault.domain.repository.EpgRefreshOutcome
 import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
@@ -148,6 +150,18 @@ class EpgSourceRepositoryPresetRefreshCapTest {
     }
 
     @Test
+    fun `presetSource_refreshInsideTheGap_reportsSkippedNotRefreshed`() = runTest {
+        givenSources()
+
+        repository.refreshSource(PRESET_SOURCE)
+        now += 11 * HOUR
+        val skipped = repository.refreshSource(PRESET_SOURCE)
+
+        // F17: a skipped attempt used to report plain success, so the UI said "refreshed".
+        assertThat(skipped).isEqualTo(Result.success(EpgRefreshOutcome.SKIPPED))
+    }
+
+    @Test
     fun `presetSource_cancelledImport_doesNotBurnTheAttempt`() = runTest {
         givenSources()
         whenever(okHttpClient.newCall(any())).thenThrow(CancellationException("left the screen"))
@@ -178,5 +192,14 @@ class EpgSourceRepositoryPresetRefreshCapTest {
         repository.refreshSource(HAND_SOURCE)
 
         verify(okHttpClient, never()).newCall(requestsFor("/mine.xml"))
+    }
+
+    @Test
+    fun `handAddedSource_insideTheFiveMinuteRule_reportsSkippedNotRefreshed`() = runTest {
+        givenSources(handLastRefreshAt = System.currentTimeMillis() - 60_000L)
+
+        val result = repository.refreshSource(HAND_SOURCE)
+
+        assertThat(result).isEqualTo(Result.success(EpgRefreshOutcome.SKIPPED))
     }
 }
