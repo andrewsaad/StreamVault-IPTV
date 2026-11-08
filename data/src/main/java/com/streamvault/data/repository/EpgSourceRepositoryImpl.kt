@@ -146,6 +146,8 @@ class EpgSourceRepositoryImpl @Inject constructor(
 
     companion object {
         private const val TAG = "EpgSourceRepo"
+        // Stored as the source's status text, like the other refresh errors here.
+        private const val EMPTY_PAYLOAD_MESSAGE = "EPG source contained no programmes"
         private const val MAX_EPG_RAW_SIZE_BYTES = NetworkTimeoutConfig.EPG_MAX_RAW_SIZE_BYTES
         private const val CHANNEL_BATCH_SIZE = 500
         private const val PROGRAMME_BATCH_SIZE = 500
@@ -486,6 +488,19 @@ class EpgSourceRepositoryImpl @Inject constructor(
                 }
                 if (programmeBatch.isNotEmpty()) {
                     epgProgrammeDao.insertAll(programmeBatch.toList())
+                }
+
+                // FR-019: a file that parses to nothing never replaces the guide already shown.
+                // The etag and hash stay unset, so the next attempt downloads it again.
+                if (programmeCount == 0) {
+                    transactionRunner.inTransaction {
+                        epgProgrammeDao.deleteBySource(stagingId)
+                        epgChannelDao.deleteBySource(stagingId)
+                        epgSourceDao.delete(stagingId)
+                    }
+                    epgSourceDao.updateRefreshError(sourceId, EMPTY_PAYLOAD_MESSAGE)
+                    Log.w(TAG, "Source $sourceId parsed to 0 programmes ($channelCount channels); kept existing guide rows")
+                    return@withLock Result.error(EMPTY_PAYLOAD_MESSAGE)
                 }
 
                 // Reaching this point means the whole payload was read and parsed, so the

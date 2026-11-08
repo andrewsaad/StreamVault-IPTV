@@ -17,6 +17,7 @@ import com.streamvault.data.local.entity.EpgProgrammeEntity
 import com.streamvault.data.local.entity.EpgSourceEntity
 import com.streamvault.data.local.entity.ProviderEpgSourceEntity
 import com.streamvault.data.parser.XmltvParser
+import com.streamvault.data.parser.XmltvProgramme
 import com.streamvault.data.parser.XmltvIngestionLimits
 import com.streamvault.data.parser.XmltvLimitExceeded
 import com.streamvault.data.parser.XmltvLimitKind
@@ -167,6 +168,12 @@ class EpgSourceRepositoryImplTest {
         whenever(epgHttpClientBuilder.readTimeout(any<Long>(), any())).thenReturn(epgHttpClientBuilder)
         whenever(epgHttpClientBuilder.build()).thenReturn(okHttpClient)
         runBlocking {
+            // A parsed payload holds one programme unless a test says otherwise; an empty one is refused (F8).
+            doAnswer { invocation ->
+                @Suppress("UNCHECKED_CAST")
+                val onProgramme = invocation.arguments[3] as suspend (XmltvProgramme) -> Unit
+                runBlocking { onProgramme(XmltvProgramme(channelId = "ch1", title = "News")) }
+            }.whenever(xmltvParser).parseStreamingWithChannels(any(), anyOrNull(), any(), any(), any())
         }
         repository = EpgSourceRepositoryImpl(
             context = context,
@@ -615,6 +622,40 @@ class EpgSourceRepositoryImplTest {
         verify(epgChannelDao).moveToSource(-10L, 10L)
         verify(epgSourceDao).updateContentSha256(10L, expectedSourceHash(payload))
         verify(resolutionEngine).resolveForProvider(7L, emptySet())
+    }
+
+    @Test
+    fun `refreshSource refuses a payload with no programmes and keeps the last good guide`() = runTest {
+        // F8 / FR-019: a file that parses to nothing must never replace the rows already shown.
+        val source = EpgSourceEntity(
+            id = 10L,
+            name = "Primary",
+            url = "https://example.com/epg.xml",
+            contentSha256 = "older-payload"
+        )
+        val call: Call = mock()
+        whenever(epgSourceDao.getById(10L)).thenReturn(source)
+        whenever(okHttpClient.newCall(any())).thenReturn(call)
+        enqueueResponse(call, okResponse(source.url, "<tv></tv>", etag = "etag-2"))
+        whenever(xmltvParser.maybeDecompressGzip(eq(source.url), any())).thenAnswer { it.arguments[1] }
+        whenever(epgProgrammeDao.countBySource(10L)).thenReturn(40)
+        doAnswer { Unit }.whenever(xmltvParser).parseStreamingWithChannels(any(), anyOrNull(), any(), any(), any())
+
+        val result = repository.refreshSource(10L)
+
+        assertThat(result is Result.Error).isTrue()
+        assertThat((result as Result.Error).message).isEqualTo("EPG source contained no programmes")
+        verify(epgProgrammeDao, never()).deleteBySource(10L)
+        verify(epgChannelDao, never()).deleteBySource(10L)
+        verify(epgProgrammeDao, never()).moveToSource(any(), any())
+        verify(epgChannelDao, never()).moveToSource(any(), any())
+        verify(epgProgrammeDao, times(2)).deleteBySource(-10L)
+        verify(epgSourceDao, times(2)).delete(-10L)
+        verify(epgSourceDao, never()).updateContentSha256(any(), any())
+        verify(epgSourceDao, never()).updateRefreshSuccess(any(), any())
+        // The etag is not stored, so the next attempt downloads the file again instead of a 304.
+        verify(epgSourceDao, never()).updateConditionalHeaders(any(), anyOrNull(), anyOrNull())
+        verify(epgSourceDao).updateRefreshError(eq(10L), eq("EPG source contained no programmes"), any())
     }
 
     @Test
