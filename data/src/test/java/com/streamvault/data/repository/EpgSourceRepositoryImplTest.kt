@@ -234,6 +234,10 @@ class EpgSourceRepositoryImplTest {
         verify(epgProgrammeDao).deleteBySource(10L)
         verify(epgChannelDao).deleteBySource(10L)
         verify(epgSourceDao).delete(10L)
+        // F20: a staged copy left by an import cut off by process death goes with the source.
+        verify(epgProgrammeDao).deleteBySource(-10L)
+        verify(epgChannelDao).deleteBySource(-10L)
+        verify(epgSourceDao).delete(-10L)
         verify(resolutionEngine).resolveForProvider(4L, setOf(401L))
         verify(resolutionEngine).resolveForProvider(5L, setOf(501L))
     }
@@ -689,6 +693,30 @@ class EpgSourceRepositoryImplTest {
         // The etag is not stored, so the next attempt downloads the file again instead of a 304.
         verify(epgSourceDao, never()).updateConditionalHeaders(any(), anyOrNull(), anyOrNull())
         verify(epgSourceDao).updateRefreshError(eq(10L), eq("EPG source contained no programmes"), any())
+    }
+
+    @Test
+    fun `a cancelled refresh clears its staged rows and keeps the shown guide`() = runTest {
+        // F20: a cancelled import used to leave its staged copy behind until the next refresh.
+        val source = EpgSourceEntity(id = 10L, name = "Primary", url = "https://example.com/epg.xml")
+        val call: Call = mock()
+        whenever(epgSourceDao.getById(10L)).thenReturn(source)
+        whenever(okHttpClient.newCall(any())).thenReturn(call)
+        enqueueResponse(call, okResponse(source.url, "<tv>"))
+        whenever(xmltvParser.maybeDecompressGzip(eq(source.url), any())).thenAnswer { it.arguments[1] }
+        doAnswer { throw kotlinx.coroutines.CancellationException("left the screen") }
+            .whenever(xmltvParser)
+            .parseStreamingWithChannels(any(), anyOrNull(), any(), any(), any())
+
+        val outcome = runCatching { repository.refreshSource(10L) }
+
+        assertThat(outcome.exceptionOrNull()).isInstanceOf(kotlinx.coroutines.CancellationException::class.java)
+        // Once before staging, once after the cancel.
+        verify(epgProgrammeDao, times(2)).deleteBySource(-10L)
+        verify(epgChannelDao, times(2)).deleteBySource(-10L)
+        verify(epgSourceDao, times(2)).delete(-10L)
+        verify(epgProgrammeDao, never()).deleteBySource(10L)
+        verify(epgSourceDao, never()).updateRefreshError(any(), any(), any())
     }
 
     @Test

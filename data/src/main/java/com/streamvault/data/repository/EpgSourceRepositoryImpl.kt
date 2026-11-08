@@ -245,6 +245,9 @@ class EpgSourceRepositoryImpl @Inject constructor(
         epgProgrammeDao.deleteBySource(id)
         epgChannelDao.deleteBySource(id)
         epgSourceDao.delete(id)
+        // F20: an import cut off by process death leaves its staged copy under -id; nothing else
+        // would ever clear it once the source is gone.
+        deleteStagedRows(-id)
         sourceRefreshMutexes.forget(id)
         resolveAffectedProviders(affectedProviderIds)
     }
@@ -546,7 +549,12 @@ class EpgSourceRepositoryImpl @Inject constructor(
             } catch (e: Exception) {
                 if (e is CancellationException) {
                     // No outcome was reached, so the attempt does not count against the preset gap.
-                    withContext(NonCancellable) { refreshGate.clearRefreshAttempt(sourceId) }
+                    // F20: the staged copy (up to the whole file) is cleared too, not left until
+                    // the next refresh of this source.
+                    withContext(NonCancellable) {
+                        refreshGate.clearRefreshAttempt(sourceId)
+                        runSuspendCatching { deleteStagedRows(-sourceId) }
+                    }
                     throw e
                 }
                 Log.e(TAG, "Failed to refresh source $sourceId", e)
@@ -722,6 +730,14 @@ class EpgSourceRepositoryImpl @Inject constructor(
             .getHiddenCategoryIds(providerId, ContentType.LIVE)
             .first()
         resolveForProvider(providerId, hiddenLiveCategoryIds)
+    }
+
+    private suspend fun deleteStagedRows(stagingId: Long) {
+        transactionRunner.inTransaction {
+            epgProgrammeDao.deleteBySource(stagingId)
+            epgChannelDao.deleteBySource(stagingId)
+            epgSourceDao.delete(stagingId)
+        }
     }
 
     private suspend fun prepareStagingSource(source: EpgSourceEntity, stagingId: Long) {
