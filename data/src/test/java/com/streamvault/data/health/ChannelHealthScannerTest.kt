@@ -67,8 +67,13 @@ class ChannelHealthScannerTest {
         whenever(xtreamApi.authenticate(any(), any())).thenReturn(answers.first(), *answers.drop(1).toTypedArray())
     }
 
+    private val ok = ChannelProbeResult(ChannelHealthStatus.OK)
+    private val empty = ChannelProbeResult(ChannelHealthStatus.EMPTY)
+    private val unclear = ChannelProbeResult(ChannelHealthStatus.UNCLEAR)
+    private val serverError = ChannelProbeResult(ChannelHealthStatus.UNCLEAR, serverError = true)
+
     private suspend fun givenProbe(status: ChannelHealthStatus) {
-        whenever(probe.probe(any(), any())).thenReturn(status)
+        whenever(probe.probe(any(), any())).thenReturn(ChannelProbeResult(status))
     }
 
     private fun TestScope.collectStates(into: MutableList<ChannelHealthScanState>) {
@@ -82,7 +87,7 @@ class ChannelHealthScannerTest {
         givenChannels(channelEntity(1L), channelEntity(2L))
         givenAccount("1", "0")
         whenever(probe.probe(any(), any())).doAnswer {
-            if (it.getArgument<String>(0).endsWith("/11.m3u8")) ChannelHealthStatus.EMPTY else ChannelHealthStatus.OK
+            ChannelProbeResult(if (it.getArgument<String>(0).endsWith("/11.m3u8")) ChannelHealthStatus.EMPTY else ChannelHealthStatus.OK)
         }
 
         val finished = scanner.run(TEST_PROVIDER_ID, categoryIds = null, startedAt = 0L)
@@ -214,7 +219,7 @@ class ChannelHealthScannerTest {
         givenChannels(*(1L..10L).map { channelEntity(it) }.toTypedArray())
         givenAccount("1", "0")
         whenever(probe.probe(any(), any())).doAnswer {
-            if (it.getArgument<String>(0).endsWith("/20.m3u8")) ChannelHealthStatus.OK else ChannelHealthStatus.EMPTY
+            ChannelProbeResult(if (it.getArgument<String>(0).endsWith("/20.m3u8")) ChannelHealthStatus.OK else ChannelHealthStatus.EMPTY)
         }
 
         assertThat(scanner.run(TEST_PROVIDER_ID, null, 0L)).isTrue()
@@ -227,7 +232,7 @@ class ChannelHealthScannerTest {
         givenChannels(channelEntity(1L), channelEntity(2L), channelEntity(3L))
         givenAccount("1", "0")
         whenever(probe.probe(any(), any())).doAnswer {
-            if (it.getArgument<String>(0).endsWith("/12.m3u8")) ChannelHealthStatus.EMPTY else ChannelHealthStatus.OK
+            ChannelProbeResult(if (it.getArgument<String>(0).endsWith("/12.m3u8")) ChannelHealthStatus.EMPTY else ChannelHealthStatus.OK)
         }
 
         assertThat(scanner.run(TEST_PROVIDER_ID, null, 0L)).isTrue()
@@ -312,7 +317,7 @@ class ChannelHealthScannerTest {
         var calls = 0
         whenever(probe.probe(any(), any())).doAnswer {
             // Two unclear, one good, repeating: never three unclear in a row.
-            if (++calls % 3 == 0) ChannelHealthStatus.OK else ChannelHealthStatus.UNCLEAR
+            ChannelProbeResult(if (++calls % 3 == 0) ChannelHealthStatus.OK else ChannelHealthStatus.UNCLEAR)
         }
 
         val finished = scanner.run(TEST_PROVIDER_ID, null, 0L)
@@ -325,7 +330,7 @@ class ChannelHealthScannerTest {
      * Answers per channel id, one entry per attempt; the last one repeats. Returns the ids in the order
      * they were probed.
      */
-    private suspend fun givenProbeAnswers(answers: Map<Long, List<ChannelHealthStatus>>): MutableList<Long> {
+    private suspend fun givenProbeAnswers(answers: Map<Long, List<ChannelProbeResult>>): MutableList<Long> {
         val probed = mutableListOf<Long>()
         val attempts = mutableMapOf<Long, Int>()
         whenever(probe.probe(any(), any())).doAnswer {
@@ -346,10 +351,10 @@ class ChannelHealthScannerTest {
         givenAccount("1", "0")
         val probed = givenProbeAnswers(
             mapOf(
-                1L to listOf(ChannelHealthStatus.OK),
-                2L to listOf(ChannelHealthStatus.UNCLEAR, ChannelHealthStatus.OK),
-                3L to listOf(ChannelHealthStatus.UNCLEAR, ChannelHealthStatus.OK),
-                4L to listOf(ChannelHealthStatus.OK),
+                1L to listOf(ok),
+                2L to listOf(unclear, ok),
+                3L to listOf(unclear, ok),
+                4L to listOf(ok),
             ),
         )
 
@@ -372,8 +377,8 @@ class ChannelHealthScannerTest {
         givenAccount("1", "0")
         givenProbeAnswers(
             mapOf(
-                1L to listOf(ChannelHealthStatus.UNCLEAR, ChannelHealthStatus.EMPTY),
-                2L to listOf(ChannelHealthStatus.OK),
+                1L to listOf(unclear, empty),
+                2L to listOf(ok),
             ),
         )
 
@@ -394,7 +399,7 @@ class ChannelHealthScannerTest {
             listOf(ChannelProbeOutcome(1L, ChannelHealthStatus.EMPTY, clock.nowMillis - DAY_MS)),
         )
         assertThat(results.read(TEST_PROVIDER_ID).records.keys).containsExactly(1L)
-        givenProbeAnswers(mapOf(1L to listOf(ChannelHealthStatus.UNCLEAR, ChannelHealthStatus.OK)))
+        givenProbeAnswers(mapOf(1L to listOf(unclear, ok)))
 
         assertThat(scanner.run(TEST_PROVIDER_ID, null, 0L)).isTrue()
 
@@ -407,8 +412,8 @@ class ChannelHealthScannerTest {
         givenAccount("1", "0")
         val probed = givenProbeAnswers(
             mapOf(
-                1L to listOf(ChannelHealthStatus.UNCLEAR),
-                2L to listOf(ChannelHealthStatus.OK),
+                1L to listOf(unclear),
+                2L to listOf(ok),
             ),
         )
 
@@ -425,11 +430,11 @@ class ChannelHealthScannerTest {
         givenAccount("1", "0")
         val probed = givenProbeAnswers(
             mapOf(
-                1L to listOf(ChannelHealthStatus.UNCLEAR, ChannelHealthStatus.EMPTY),
-                2L to listOf(ChannelHealthStatus.OK),
-                3L to listOf(ChannelHealthStatus.UNCLEAR, ChannelHealthStatus.OK),
-                4L to listOf(ChannelHealthStatus.OK),
-                5L to listOf(ChannelHealthStatus.UNCLEAR, ChannelHealthStatus.EMPTY),
+                1L to listOf(unclear, empty),
+                2L to listOf(ok),
+                3L to listOf(unclear, ok),
+                4L to listOf(ok),
+                5L to listOf(unclear, empty),
             ),
         )
         val job = backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { scanner.run(TEST_PROVIDER_ID, null, 500L) }
@@ -462,8 +467,8 @@ class ChannelHealthScannerTest {
         givenAccount("1", "0")
         val probed = givenProbeAnswers(
             mapOf(
-                1L to listOf(ChannelHealthStatus.OK),
-                2L to listOf(ChannelHealthStatus.EMPTY),
+                1L to listOf(ok),
+                2L to listOf(empty),
             ),
         )
 
@@ -471,6 +476,111 @@ class ChannelHealthScannerTest {
 
         assertThat(probed).containsExactly(1L, 2L).inOrder()
         assertThat(testScheduler.currentTime).isLessThan(60_000L)
+    }
+
+    @Test
+    fun `a channel the provider refuses with a server error on both passes is stored as empty`() = runTest {
+        givenChannels(channelEntity(1L), channelEntity(2L))
+        givenAccount("1", "0")
+        val probed = givenProbeAnswers(mapOf(1L to listOf(serverError), 2L to listOf(ok)))
+
+        assertThat(scanner.run(TEST_PROVIDER_ID, null, 0L)).isTrue()
+
+        assertThat(probed).containsExactly(1L, 2L, 1L).inOrder()
+        val records = results.read(TEST_PROVIDER_ID).records
+        assertThat(records.keys).containsExactly(1L)
+        assertThat(records.getValue(1L).status).isEqualTo(ChannelHealthStatus.EMPTY)
+        assertThat(records.getValue(1L).failedDays).isEqualTo(1)
+    }
+
+    @Test
+    fun `a server error that turns into a good answer on the retry clears the record`() = runTest {
+        givenChannels(channelEntity(1L))
+        givenAccount("1", "0")
+        results.record(
+            TEST_PROVIDER_ID,
+            listOf(ChannelProbeOutcome(1L, ChannelHealthStatus.EMPTY, clock.nowMillis - DAY_MS)),
+        )
+        givenProbeAnswers(mapOf(1L to listOf(serverError, ok)))
+
+        assertThat(scanner.run(TEST_PROVIDER_ID, null, 0L)).isTrue()
+
+        assertThat(results.read(TEST_PROVIDER_ID).records).isEmpty()
+    }
+
+    @Test
+    fun `a server error followed by a timeout on the retry is not stored`() = runTest {
+        givenChannels(channelEntity(1L), channelEntity(2L))
+        givenAccount("1", "0")
+        givenProbeAnswers(mapOf(1L to listOf(serverError, unclear), 2L to listOf(ok)))
+
+        assertThat(scanner.run(TEST_PROVIDER_ID, null, 0L)).isTrue()
+
+        assertThat(results.read(TEST_PROVIDER_ID).records).isEmpty()
+    }
+
+    @Test
+    fun `a timeout on the main pass followed by a server error on the retry is not stored`() = runTest {
+        givenChannels(channelEntity(1L), channelEntity(2L))
+        givenAccount("1", "0")
+        givenProbeAnswers(mapOf(1L to listOf(unclear, serverError), 2L to listOf(ok)))
+
+        assertThat(scanner.run(TEST_PROVIDER_ID, null, 0L)).isTrue()
+
+        assertThat(results.read(TEST_PROVIDER_ID).records).isEmpty()
+    }
+
+    @Test
+    fun `a storm of server errors in the retry pass stores nothing and backs the scan off`() = runTest {
+        val stormScanner = ChannelHealthScanner(
+            snapshots = snapshots,
+            channelDao = channelDao,
+            xtreamApi = xtreamApi,
+            probe = probe,
+            results = results,
+            // Out of the way, so the ten-in-a-row mass failure guard is the one that acts.
+            timings = ChannelHealthTimings(unclearInARowBeforeBackoff = 100),
+        )
+        givenChannels(*(1L..40L).map { channelEntity(it) }.toTypedArray())
+        givenAccount("1", "0")
+        // Odd channels answer 503 every time, even ones are fine: 20 retries, all refused.
+        givenProbeAnswers((1L..40L).associateWith { if (it % 2L == 1L) listOf(serverError) else listOf(ok) })
+
+        assertThat(stormScanner.run(TEST_PROVIDER_ID, null, 0L)).isTrue()
+
+        assertThat(results.read(TEST_PROVIDER_ID).records).isEmpty()
+    }
+
+    @Test
+    fun `a scan that gives up in a retry pass full of server errors stores nothing`() = runTest {
+        givenChannels(*(1L..40L).map { channelEntity(it) }.toTypedArray())
+        givenAccount("1", "0")
+        givenProbeAnswers((1L..40L).associateWith { if (it % 2L == 1L) listOf(serverError) else listOf(ok) })
+
+        assertThat(scanner.run(TEST_PROVIDER_ID, null, 0L)).isFalse()
+
+        assertThat(results.read(TEST_PROVIDER_ID).records).isEmpty()
+        assertThat(scanner.observeState(TEST_PROVIDER_ID).first().gaveUp).isTrue()
+    }
+
+    @Test
+    fun `server errors remembered for the retry pass survive a restart`() = runTest {
+        givenChannels(channelEntity(1L), channelEntity(2L), channelEntity(3L))
+        givenAccount("1", "0")
+        givenProbeAnswers(mapOf(1L to listOf(serverError), 2L to listOf(ok), 3L to listOf(serverError)))
+        val job = backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { scanner.run(TEST_PROVIDER_ID, null, 500L) }
+        // Main pass at 0 to 12 s, the backoff ends at 312 s, then the first retry.
+        advanceTimeBy(312_000L)
+        runCurrent()
+        job.cancel()
+        advanceUntilIdle()
+        assertThat(results.read(TEST_PROVIDER_ID).resume)
+            .isEqualTo(ChannelHealthResume(500L, 3L, listOf(1L, 3L), 1L, listOf(1L, 3L)))
+        assertThat(results.read(TEST_PROVIDER_ID).records.keys).containsExactly(1L)
+
+        assertThat(scanner.run(TEST_PROVIDER_ID, null, 500L)).isTrue()
+
+        assertThat(results.read(TEST_PROVIDER_ID).records.keys).containsExactly(1L, 3L)
     }
 
     @Test
@@ -599,7 +709,7 @@ class ChannelHealthScannerTest {
         whenever(xtreamApi.authenticate(any(), any())).thenAnswer {
             throw IOException("failed: ${it.getArgument<String>(0)}")
         }
-        whenever(probe.probe(any(), any())).doReturn(ChannelHealthStatus.DEAD)
+        whenever(probe.probe(any(), any())).doReturn(ChannelProbeResult(ChannelHealthStatus.DEAD))
         val states = mutableListOf<ChannelHealthScanState>()
         collectStates(states)
 
