@@ -46,7 +46,7 @@ internal class SettingsAppUpdateActions(
                     preferencesRepository.setLastAppUpdateFailureTimestamp(checkedAt)
                     preferencesRepository.setLastAppUpdateOutcome("FAILURE: ${result.message}")
                     // The port message is raw English from the network layer; the user sees the localized sentence.
-                    Log.w(TAG, "Update check failed: ${result.message}", result.exception)
+                    Log.w(TAG, "Update check failed: ${SettingsLogSanitizer.describe(result.message, result.exception)}")
                     val failureText = appContext.getString(R.string.settings_update_check_failed)
                     uiState.update {
                         it.copy(
@@ -134,7 +134,7 @@ internal class SettingsAppUpdateActions(
         scope.launch {
             when (val result = appUpdatePort.startDownload(latestRelease)) {
                 is Result.Error -> {
-                    Log.w(TAG, "Update download failed: ${result.message}", result.exception)
+                    Log.w(TAG, "Update download failed: ${SettingsLogSanitizer.describe(result.message, result.exception)}")
                     uiState.update {
                         it.copy(userMessage = appContext.getString(R.string.settings_update_download_failed))
                     }
@@ -151,7 +151,7 @@ internal class SettingsAppUpdateActions(
         scope.launch {
             when (val result = appUpdatePort.installDownloadedUpdate(uiState.value.appUpdate.downloadSha256)) {
                 is Result.Error -> {
-                    Log.w(TAG, "Update install failed: ${result.message}", result.exception)
+                    Log.w(TAG, "Update install failed: ${SettingsLogSanitizer.describe(result.message, result.exception)}")
                     uiState.update {
                         it.copy(userMessage = appContext.getString(R.string.settings_update_install_failed))
                     }

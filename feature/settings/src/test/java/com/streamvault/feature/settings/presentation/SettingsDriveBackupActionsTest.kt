@@ -39,7 +39,7 @@ class SettingsDriveBackupActionsTest {
         val ui = MutableStateFlow(SettingsUiState(driveAuthState = DriveAuthState.SignedIn(DriveAccount("id", "user@example.com"))))
         whenever(driveManager.pushBackup(any(), any())).thenReturn(Result.Success(com.streamvault.domain.manager.DriveSyncStatus()))
         SettingsDriveBackupActions(driveManager = driveManager, providerRepository = providerRepository,
-            importBackup = importBackup, uiState = ui).pushBackup(this, plan)
+            importBackup = importBackup, uiState = ui, text = fakeText).pushBackup(this, plan)
         advanceUntilIdle()
         verify(providerRepository, never()).getAllProviderCredentials()
         verify(driveManager).pushBackup(eq(emptyList()), eq(plan))

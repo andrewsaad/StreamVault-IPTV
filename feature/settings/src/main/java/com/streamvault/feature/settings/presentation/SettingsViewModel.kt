@@ -1403,7 +1403,7 @@ class SettingsViewModel @Inject constructor(
                     }
                 }
                 is Result.Error -> {
-                    Log.w("SettingsViewModel", "Failed to clear history: ${result.message}", result.exception)
+                    Log.w("SettingsViewModel", "Failed to clear history: ${SettingsLogSanitizer.describe(result.message, result.exception)}")
                     _uiState.update {
                         it.copy(
                             isSyncing = false,

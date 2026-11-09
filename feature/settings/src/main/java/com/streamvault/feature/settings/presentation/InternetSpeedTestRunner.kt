@@ -71,7 +71,7 @@ class InternetSpeedTestRunner @Inject constructor(
                 )
             )
         }.getOrElse {
-            Log.w(TAG, "Speed test failed: ${it.message}", it)
+            Log.w(TAG, "Speed test failed: ${SettingsLogSanitizer.describe(it.message, it)}")
             InternetSpeedTestResult.Error(R.string.settings_speed_test_error_generic, it.message)
         }
     }

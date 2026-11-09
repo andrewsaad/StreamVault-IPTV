@@ -54,7 +54,7 @@ class SettingsBackupActionsTest {
                 BackupImportResult(outcome = BackupRestoreOutcome.WAITING_FOR_SYNC,
                     restoreJobId = "pending-job", affectedProviders = listOf(reference), unresolvedCount = 1)
             ))
-            SettingsBackupActions(exportBackup, importBackup, ui, loadRestoreProviders = { emptyList() })
+            SettingsBackupActions(exportBackup, importBackup, ui, text = fakeText, loadRestoreProviders = { emptyList() })
                 .confirmBackupImport(this)
             advanceUntilIdle()
             assertThat(ui.value.pendingRestoreProviders).isEmpty()
@@ -70,7 +70,7 @@ class SettingsBackupActionsTest {
         whenever(importBackup.confirm(org.mockito.kotlin.any())).thenReturn(ImportBackupResult.Success(
             BackupImportResult(outcome = BackupRestoreOutcome.COMPLETE)
         ))
-        SettingsBackupActions(exportBackup, importBackup, ui, loadRestoreProviders = { error("Unnecessary lookup") })
+        SettingsBackupActions(exportBackup, importBackup, ui, text = fakeText, loadRestoreProviders = { error("Unnecessary lookup") })
             .confirmBackupImport(this)
         advanceUntilIdle()
         assertThat(ui.value.pendingRestoreProviders).isEmpty()
@@ -82,7 +82,7 @@ class SettingsBackupActionsTest {
         whenever(importBackup.confirm(org.mockito.kotlin.any())).thenReturn(ImportBackupResult.Success(
             BackupImportResult(outcome = BackupRestoreOutcome.WAITING_FOR_SYNC, affectedProviders = listOf(reference))
         ))
-        SettingsBackupActions(exportBackup, importBackup, ui, loadRestoreProviders = { listOf(provider) })
+        SettingsBackupActions(exportBackup, importBackup, ui, text = fakeText, loadRestoreProviders = { listOf(provider) })
             .confirmBackupImport(this)
         advanceUntilIdle()
         assertThat(ui.value.providers).isEmpty()
@@ -99,7 +99,7 @@ class SettingsBackupActionsTest {
             BackupImportResult(outcome = BackupRestoreOutcome.WAITING_FOR_SYNC,
                 affectedProviders = listOf(reference, missing, ambiguous, reference))
         ))
-        SettingsBackupActions(exportBackup, importBackup, ui, loadRestoreProviders = {
+        SettingsBackupActions(exportBackup, importBackup, ui, text = fakeText, loadRestoreProviders = {
             listOf(provider, provider.copy(id = 19, username = "duplicate"), provider.copy(id = 20, username = "duplicate"))
         }).confirmBackupImport(this)
         advanceUntilIdle()
@@ -117,7 +117,7 @@ class SettingsBackupActionsTest {
                 BackupImportResult(outcome = BackupRestoreOutcome.WAITING_FOR_SYNC,
                     restoreJobId = "pending-job", affectedProviders = listOf(reference))
             ))
-            SettingsBackupActions(exportBackup, importBackup, ui,
+            SettingsBackupActions(exportBackup, importBackup, ui, text = fakeText,
                 loadRestoreProviders = { error("Excluded or empty Providers must not trigger sync lookup") })
                 .confirmBackupImport(this)
             advanceUntilIdle()
@@ -170,7 +170,7 @@ class SettingsBackupActionsTest {
     @Test
     fun noSource_doesNotStartAnImport() = runTest(StandardTestDispatcher()) {
         val ui = MutableStateFlow(SettingsUiState())
-        SettingsBackupActions(exportBackup, importBackup, ui).confirmBackupImport(this)
+        SettingsBackupActions(exportBackup, importBackup, ui, text = fakeText).confirmBackupImport(this)
         advanceUntilIdle()
         org.mockito.kotlin.verifyNoInteractions(importBackup)
         assertThat(ui.value.isImportingBackup).isFalse()
@@ -239,7 +239,7 @@ class SettingsBackupActionsTest {
             pendingBackupUri = "content://backup", backupImportPlan = BackupImportPlan(importProviders = false),
             pendingDriveCredentials = listOf(com.streamvault.domain.manager.ProviderCredentials("https://example.com", "user", "secret"))
         ))
-        SettingsBackupActions(exportBackup, importBackup, ui).dismissBackupPreview()
+        SettingsBackupActions(exportBackup, importBackup, ui, text = fakeText).dismissBackupPreview()
         assertThat(ui.value.pendingBackupUri).isNull()
         assertThat(ui.value.backupPreview).isNull()
         assertThat(ui.value.pendingDriveCredentials).isNull()
@@ -255,7 +255,7 @@ class SettingsBackupActionsTest {
                 backupImportPlan = plan
             )
         )
-        val actions = SettingsBackupActions(exportBackup, importBackup, uiState)
+        val actions = SettingsBackupActions(exportBackup, importBackup, uiState, text = fakeText)
         whenever(importBackup.confirm(org.mockito.kotlin.any())).thenReturn(
             ImportBackupResult.Success(
                 BackupImportResult(
@@ -281,7 +281,7 @@ class SettingsBackupActionsTest {
         val uiState = MutableStateFlow(
             SettingsUiState(pendingBackupUri = "content://backup")
         )
-        val actions = SettingsBackupActions(exportBackup, importBackup, uiState)
+        val actions = SettingsBackupActions(exportBackup, importBackup, uiState, text = fakeText)
         whenever(importBackup.confirm(org.mockito.kotlin.any())).thenReturn(
             ImportBackupResult.Success(BackupImportResult(outcome = BackupRestoreOutcome.COMPLETE))
         )
@@ -308,7 +308,7 @@ class SettingsBackupActionsTest {
                 )
             )
         )
-        val actions = SettingsBackupActions(exportBackup, importBackup, uiState)
+        val actions = SettingsBackupActions(exportBackup, importBackup, uiState, text = fakeText)
         whenever(importBackup.inspect(org.mockito.kotlin.any())).thenReturn(
             InspectBackupResult.Success(
                 uriString = "content://local-backup",
