@@ -95,13 +95,19 @@ class ChannelHealthScanner internal constructor(
 
     /** Clears the running flag of a scan that was cancelled before or while it ran. */
     internal fun markStopped(providerId: Long) {
-        setState(providerId) { it.copy(running = false, paused = null) }
+        setState(providerId) { it.copy(running = false, paused = null, gaveUp = false) }
+    }
+
+    /** Forgets that the last scan gave up, e.g. when the user clears the results. */
+    internal fun clearGaveUp(providerId: Long) {
+        setState(providerId) { if (it.gaveUp) it.copy(gaveUp = false) else it }
     }
 
     /**
      * Probes the provider's live channels. When the same scan ([startedAt]) ran before, the channels it
      * had settled are skipped, so a scan the system stopped and WorkManager restarted carries on.
-     * Returns false when the scan could not run or gave up; the reason is never the login.
+     * Returns false when the scan could not run or gave up; the reason is never the login. A scan that
+     * gave up is flagged in its state ([ChannelHealthScanState.gaveUp]) so the user can be told.
      */
     internal suspend fun run(providerId: Long, categoryIds: Set<Long>?, startedAt: Long): Boolean {
         val config = snapshots.getSnapshot(providerId)?.configuration as? XtreamConfig
@@ -120,12 +126,16 @@ class ChannelHealthScanner internal constructor(
         var scanned = 0
         var lastProbedId = resume?.afterChannelId ?: 0L
         var finished = false
+        var gaveUp = false
         // Channels up to this id are settled; a held-back streak is not, so it is probed again after a restart.
         fun resumePoint() = ChannelHealthResume(startedAt, streak.firstOrNull()?.let { it.channelId - 1 } ?: lastProbedId)
         setState(providerId) { ChannelHealthScanState(running = true, total = channels.size) }
         try {
             var account = readAccount(providerId, config, previous = null)
-            if (!account.allowsHls) return false
+            if (!account.allowsHls) {
+                gaveUp = true
+                return false
+            }
             var unclearInARow = 0
             var backoffsInARow = 0
             for (channel in channels) {
@@ -135,7 +145,10 @@ class ChannelHealthScanner internal constructor(
                     setState(providerId) { it.copy(scanned = scanned) }
                     continue
                 }
-                account = waitForFreeConnection(providerId, config, account) ?: return false
+                account = waitForFreeConnection(providerId, config, account) ?: run {
+                    gaveUp = true
+                    return false
+                }
                 val url = XtreamUrlFactory.buildPlaybackUrl(
                     serverUrl = config.serverUrl,
                     username = config.username,
@@ -164,13 +177,19 @@ class ChannelHealthScanner internal constructor(
                 if (streak.size >= timings.massFailureStreak) {
                     // Everything failing at once points at the provider or the account, not the channels.
                     streak.clear()
-                    if (++backoffsInARow >= timings.maxBackoffsInARow) return false
+                    if (++backoffsInARow >= timings.maxBackoffsInARow) {
+                        gaveUp = true
+                        return false
+                    }
                     backOff(providerId)
                     unclearInARow = 0
                     account = readAccount(providerId, config, previous = account)
                 } else if (unclearInARow >= timings.unclearInARowBeforeBackoff) {
                     flush(providerId, pending, resumePoint())
-                    if (++backoffsInARow >= timings.maxBackoffsInARow) return false
+                    if (++backoffsInARow >= timings.maxBackoffsInARow) {
+                        gaveUp = true
+                        return false
+                    }
                     backOff(providerId)
                     unclearInARow = 0
                     account = readAccount(providerId, config, previous = account)
@@ -188,7 +207,7 @@ class ChannelHealthScanner internal constructor(
                 streak.clear()
                 flush(providerId, pending, resumePoint())
                 if (finished) results.markFinished(providerId)
-                setState(providerId) { it.copy(running = false, paused = null) }
+                setState(providerId) { it.copy(running = false, paused = null, gaveUp = gaveUp) }
             }
         }
     }

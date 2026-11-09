@@ -282,6 +282,36 @@ class ChannelHealthRepositoryImplTest {
     }
 
     @Test
+    fun `the scan state reports a scan that gave up until the results are cleared`() = runTest {
+        whenever(snapshots.getSnapshot(TEST_PROVIDER_ID)).thenReturn(xtreamSnapshot())
+        stubChannels(channelEntity(1L))
+        givenOutputFormats("ts")
+        assertThat(repository.observeScanState(TEST_PROVIDER_ID).first().gaveUp).isFalse()
+
+        assertThat(scanner.run(TEST_PROVIDER_ID, null, 0L)).isFalse()
+        assertThat(repository.observeScanState(TEST_PROVIDER_ID).first().gaveUp).isTrue()
+
+        repository.clearResults(TEST_PROVIDER_ID)
+        assertThat(repository.observeScanState(TEST_PROVIDER_ID).first().gaveUp).isFalse()
+    }
+
+    @Test
+    fun `a scan that gave up is forgotten when a new scan is queued or cancelled`() = runTest {
+        whenever(snapshots.getSnapshot(TEST_PROVIDER_ID)).thenReturn(xtreamSnapshot())
+        stubChannels(channelEntity(1L))
+        givenOutputFormats("ts")
+        scanner.run(TEST_PROVIDER_ID, null, 0L)
+        assertThat(repository.observeScanState(TEST_PROVIDER_ID).first().gaveUp).isTrue()
+        repository.cancelScan(TEST_PROVIDER_ID)
+        assertThat(repository.observeScanState(TEST_PROVIDER_ID).first().gaveUp).isFalse()
+
+        scanner.run(TEST_PROVIDER_ID, null, 0L)
+        givenOutputFormats("m3u8")
+        repository.startScan(TEST_PROVIDER_ID)
+        assertThat(repository.observeScanState(TEST_PROVIDER_ID).first().gaveUp).isFalse()
+    }
+
+    @Test
     fun `the scan state reports when the last scan finished`() = runTest {
         assertThat(repository.observeScanState(TEST_PROVIDER_ID).first().lastFinishedAt).isNull()
 
