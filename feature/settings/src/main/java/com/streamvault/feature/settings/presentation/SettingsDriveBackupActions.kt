@@ -33,7 +33,7 @@ class SettingsDriveBackupActions(
     private val providerRepository: ProviderRepository,
     private val uiState: MutableStateFlow<SettingsUiState>,
     /** Localized text for a string resource and its format arguments; the view model reads it from the app resources. */
-    private val text: (Int, List<Any>) -> String = { resId, _ -> resId.toString() },
+    private val text: (Int, List<Any>) -> String,
 ) {
 
     /**
@@ -74,7 +74,7 @@ class SettingsDriveBackupActions(
                         if (intent != null) {
                             runCatching { launcher.launch(intent) }
                                 .onFailure {
-                                    Log.w(TAG, "Drive sign-in could not be launched: ${it.message}", it)
+                                    Log.w(TAG, "Drive sign-in could not be launched: ${SettingsLogSanitizer.describe(it.message, it)}")
                                     return@update state.copy(
                                         driveIsBusy = false,
                                         userMessage = text(R.string.settings_drive_sign_in_failed, emptyList())
@@ -90,7 +90,7 @@ class SettingsDriveBackupActions(
                         }
                     }
                     is Result.Error -> {
-                        Log.w(TAG, "Drive sign-in failed: ${result.message}", result.exception)
+                        Log.w(TAG, "Drive sign-in failed: ${SettingsLogSanitizer.describe(result.message, result.exception)}")
                         state.copy(
                             driveIsBusy = false,
                             userMessage = text(R.string.settings_drive_sign_in_failed, emptyList())
@@ -115,7 +115,7 @@ class SettingsDriveBackupActions(
                             ?: text(R.string.settings_drive_signed_in, emptyList())
                     )
                     is Result.Error -> {
-                        Log.w(TAG, "Drive sign-in failed: ${result.message}", result.exception)
+                        Log.w(TAG, "Drive sign-in failed: ${SettingsLogSanitizer.describe(result.message, result.exception)}")
                         state.copy(
                             driveIsBusy = false,
                             drivePendingSignIn = null,
@@ -152,7 +152,7 @@ class SettingsDriveBackupActions(
                         userMessage = text(R.string.settings_drive_signed_out, emptyList())
                     )
                     is Result.Error -> {
-                        Log.w(TAG, "Drive sign-out failed: ${result.message}", result.exception)
+                        Log.w(TAG, "Drive sign-out failed: ${SettingsLogSanitizer.describe(result.message, result.exception)}")
                         state.copy(
                             driveIsBusy = false,
                             driveBackupOptions = emptyList(),
@@ -197,7 +197,7 @@ class SettingsDriveBackupActions(
             val credentials = runCatching {
                 if (plan.exportProviders) providerRepository.getAllProviderCredentials() else emptyList()
             }.getOrElse { error ->
-                Log.w(TAG, "Drive push failed: credentials unavailable: ${error.message}", error)
+                Log.w(TAG, "Drive push failed: credentials unavailable: ${SettingsLogSanitizer.describe(error.message, error)}")
                 uiState.update {
                     it.copy(
                         driveIsBusy = false,
@@ -208,7 +208,7 @@ class SettingsDriveBackupActions(
             }
             val backupResult = driveManager.pushBackup(credentials, plan)
             if (backupResult is Result.Error) {
-                Log.w(TAG, "Drive push failed: ${backupResult.message}", backupResult.exception)
+                Log.w(TAG, "Drive push failed: ${SettingsLogSanitizer.describe(backupResult.message, backupResult.exception)}")
                 uiState.update {
                     it.copy(
                         driveIsBusy = false,
@@ -248,7 +248,7 @@ class SettingsDriveBackupActions(
             if (!started) return@launch
             val listResult = driveManager.listBackups()
             if (listResult !is Result.Success) {
-                Log.w(TAG, "Drive pull failed: ${resultMessage(listResult)}", (listResult as? Result.Error)?.exception)
+                Log.w(TAG, "Drive pull failed: ${SettingsLogSanitizer.describe(resultMessage(listResult), (listResult as? Result.Error)?.exception)}")
                 uiState.update {
                     it.copy(
                         driveIsBusy = false,
@@ -334,7 +334,7 @@ class SettingsDriveBackupActions(
                     )
                 }
                 is Result.Error -> {
-                    Log.w(TAG, "Drive backup management failed: ${result.message}", result.exception)
+                    Log.w(TAG, "Drive backup management failed: ${SettingsLogSanitizer.describe(result.message, result.exception)}")
                     uiState.update {
                         it.copy(
                             driveIsBusy = false,
@@ -388,7 +388,7 @@ class SettingsDriveBackupActions(
                     }
                 }
                 is Result.Error -> {
-                    Log.w(TAG, "Drive backup deletion failed: ${result.message}", result.exception)
+                    Log.w(TAG, "Drive backup deletion failed: ${SettingsLogSanitizer.describe(result.message, result.exception)}")
                     uiState.update {
                         it.copy(
                             driveIsBusy = false,
@@ -404,7 +404,7 @@ class SettingsDriveBackupActions(
     private suspend fun pullSelectedBackup(snapshotId: String) {
         val pullResult = driveManager.pullBackup(snapshotId)
         if (pullResult is Result.Error) {
-            Log.w(TAG, "Drive pull failed: ${pullResult.message}", pullResult.exception)
+            Log.w(TAG, "Drive pull failed: ${SettingsLogSanitizer.describe(pullResult.message, pullResult.exception)}")
             uiState.update {
                 it.copy(
                     driveIsBusy = false,
@@ -421,13 +421,13 @@ class SettingsDriveBackupActions(
             val pendingCredentials = artifact.credentials ?: run {
                 val credentialsResult = driveManager.pullCredentials()
                 if (credentialsResult is Result.Error) {
-                    Log.w(TAG, "pullCredentials failed (non-fatal): ${credentialsResult.message}")
+                    Log.w(TAG, "pullCredentials failed (non-fatal): ${SettingsLogSanitizer.describe(credentialsResult.message, credentialsResult.exception)}")
                 }
                 (credentialsResult as? Result.Success)?.data
             }
             val inspectResult = importBackup.inspect(InspectBackupCommand(artifact.localUriString))
             if (inspectResult is InspectBackupResult.Error) {
-                Log.w(TAG, "Drive import failed: ${inspectResult.message}", inspectResult.exception)
+                Log.w(TAG, "Drive import failed: ${SettingsLogSanitizer.describe(inspectResult.message, inspectResult.exception)}")
             }
             uiState.update { state ->
                 when (inspectResult) {

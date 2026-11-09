@@ -1130,4 +1130,8 @@
     <string name="settings_speed_test_error_no_network">Nema aktivne mrežne veze</string>
     <string name="settings_speed_test_error_inspect_network">Aktivnu mrežu nije moguće provjeriti</string>
     <string name="settings_speed_test_error_generic">Test nije moguće dovršiti</string>
+    <string name="epg_error_generic">Vodič se nije mogao učitati.</string>
+    <string name="settings_restore_sync_progress">Sinkronizacija vraćenih pružatelja…</string>
+    <string name="settings_restore_sync_success">Odabrani vraćeni pružatelji uspješno su sinkronizirani</string>
+    <string name="settings_restore_sync_failures">Neke vraćene pružatelje nije bilo moguće sinkronizirati: %1$s</string>
 </resources>

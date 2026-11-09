@@ -29,7 +29,7 @@ class SettingsBackupActions(
     private val stremioAddonSectionLabel: (() -> String)? = null,
     private val loadRestoreProviders: suspend () -> List<LegacyProvider> = { uiState.value.providers },
     /** Localized text for a string resource and its format arguments; the view model reads it from the app resources. */
-    private val text: (Int, List<Any>) -> String = { resId, _ -> resId.toString() },
+    private val text: (Int, List<Any>) -> String,
 ) {
     fun exportConfig(
         scope: CoroutineScope,
@@ -53,7 +53,7 @@ class SettingsBackupActions(
             if (result is ExportBackupResult.Success) {
                 onSuccess?.invoke()
             } else if (result is ExportBackupResult.Error) {
-                Log.w(TAG, "Export failed: ${result.message}", result.exception)
+                Log.w(TAG, "Export failed: ${SettingsLogSanitizer.describe(result.message, result.exception)}")
             }
             uiState.update { state ->
                 state.copy(
@@ -85,7 +85,7 @@ class SettingsBackupActions(
             }
             val result = importBackup.inspect(InspectBackupCommand(uriString))
             if (result is InspectBackupResult.Error) {
-                Log.w(TAG, "Import failed: ${result.message}", result.exception)
+                Log.w(TAG, "Import failed: ${SettingsLogSanitizer.describe(result.message, result.exception)}")
             }
             uiState.update { state ->
                 when (result) {
@@ -182,7 +182,7 @@ class SettingsBackupActions(
         scope.launch {
             val result = importBackup.confirm(ImportBackupCommand(uriString, plan))
             if (result is ImportBackupResult.Error) {
-                Log.w(TAG, "Import failed: ${result.message}", result.exception)
+                Log.w(TAG, "Import failed: ${SettingsLogSanitizer.describe(result.message, result.exception)}")
             }
             val affectedProviders = if (offerProviderSync) {
                 (result as? ImportBackupResult.Success)?.result?.affectedProviders.orEmpty()
@@ -252,6 +252,14 @@ class SettingsBackupActions(
         const val TAG = "SettingsBackupActions"
     }
 }
+
+/** The localized outcome of syncing restored providers; [failures] holds the names of the providers that failed. */
+internal fun restoreSyncResultMessage(failures: List<String>, text: (Int, List<Any>) -> String): String =
+    if (failures.isEmpty()) {
+        text(R.string.settings_restore_sync_success, emptyList())
+    } else {
+        text(R.string.settings_restore_sync_failures, listOf(failures.joinToString()))
+    }
 
 /** Only offer sync when a backup reference identifies exactly one configured provider. */
 internal fun List<LegacyProvider>.findRestoreSyncProvider(reference: BackupProviderReference): LegacyProvider? =

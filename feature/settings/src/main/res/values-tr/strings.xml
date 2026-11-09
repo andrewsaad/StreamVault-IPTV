@@ -1129,4 +1129,8 @@
     <string name="settings_speed_test_error_no_network">Etkin ağ bağlantısı yok</string>
     <string name="settings_speed_test_error_inspect_network">Etkin aÄŸ denetlenemedi</string>
     <string name="settings_speed_test_error_generic">Test tamamlanamadı</string>
+    <string name="epg_error_generic">Rehber yüklenemedi.</string>
+    <string name="settings_restore_sync_progress">Geri yüklenen sağlayıcılar eşitleniyor…</string>
+    <string name="settings_restore_sync_success">Seçilen geri yüklenen sağlayıcılar başarıyla eşitlendi</string>
+    <string name="settings_restore_sync_failures">Geri yüklenen bazı sağlayıcılar eşitlenemedi: %1$s</string>
 </resources>

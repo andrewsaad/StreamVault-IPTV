@@ -1126,4 +1126,8 @@
     <string name="settings_speed_test_error_no_network">Không có kết nối mạng đang hoạt động</string>
     <string name="settings_speed_test_error_inspect_network">Không thể kiểm tra mạng đang hoạt động</string>
     <string name="settings_speed_test_error_generic">Không thể hoàn tất bài kiểm tra</string>
+    <string name="epg_error_generic">Không thể tải hướng dẫn.</string>
+    <string name="settings_restore_sync_progress">Đang đồng bộ các nhà cung cấp đã khôi phục…</string>
+    <string name="settings_restore_sync_success">Đã đồng bộ thành công các nhà cung cấp đã khôi phục được chọn</string>
+    <string name="settings_restore_sync_failures">Không thể đồng bộ một số nhà cung cấp đã khôi phục: %1$s</string>
 </resources>

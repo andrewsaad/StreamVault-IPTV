@@ -1133,4 +1133,8 @@
     <string name="settings_speed_test_error_no_network">Žiadne aktívne sieťové pripojenie</string>
     <string name="settings_speed_test_error_inspect_network">Aktívnu sieť sa nepodarilo skontrolovať</string>
     <string name="settings_speed_test_error_generic">Test sa nepodarilo dokončiť</string>
+    <string name="epg_error_generic">Sprievodcu sa nepodarilo načítať.</string>
+    <string name="settings_restore_sync_progress">Synchronizujú sa obnovení poskytovatelia…</string>
+    <string name="settings_restore_sync_success">Vybraní obnovení poskytovatelia boli úspešne synchronizovaní</string>
+    <string name="settings_restore_sync_failures">Niektorých obnovených poskytovateľov sa nepodarilo synchronizovať: %1$s</string>
 </resources>

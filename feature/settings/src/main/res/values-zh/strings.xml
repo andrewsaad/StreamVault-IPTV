@@ -1125,4 +1125,8 @@
     <string name="settings_speed_test_error_no_network">æ²¡æœ‰æ´»åŠ¨çš„ç½‘ç»œè¿žæŽ¥</string>
     <string name="settings_speed_test_error_inspect_network">无法检查当前网络</string>
     <string name="settings_speed_test_error_generic">无法完成测试</string>
+    <string name="epg_error_generic">无法加载指南。</string>
+    <string name="settings_restore_sync_progress">正在同步已恢复的提供商…</string>
+    <string name="settings_restore_sync_success">所选的已恢复提供商已成功同步</string>
+    <string name="settings_restore_sync_failures">部分已恢复的提供商无法同步：%1$s</string>
 </resources>

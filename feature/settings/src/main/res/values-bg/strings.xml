@@ -1127,4 +1127,8 @@
     <string name="settings_speed_test_error_no_network">Няма активна мрежова връзка</string>
     <string name="settings_speed_test_error_inspect_network">Активната мрежа не можа да бъде проверена</string>
     <string name="settings_speed_test_error_generic">Тестът не можа да бъде завършен</string>
+    <string name="epg_error_generic">Програмата не можа да бъде заредена.</string>
+    <string name="settings_restore_sync_progress">Синхронизиране на възстановените доставчици…</string>
+    <string name="settings_restore_sync_success">Избраните възстановени доставчици бяха синхронизирани успешно</string>
+    <string name="settings_restore_sync_failures">Някои възстановени доставчици не можаха да се синхронизират: %1$s</string>
 </resources>

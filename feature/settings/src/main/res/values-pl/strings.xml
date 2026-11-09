@@ -1135,4 +1135,8 @@
     <string name="settings_speed_test_error_no_network">Brak aktywnego połączenia sieciowego</string>
     <string name="settings_speed_test_error_inspect_network">Nie udało się sprawdzić aktywnej sieci</string>
     <string name="settings_speed_test_error_generic">Nie udało się ukończyć testu</string>
+    <string name="epg_error_generic">Nie udało się wczytać przewodnika.</string>
+    <string name="settings_restore_sync_progress">Synchronizowanie przywróconych dostawców…</string>
+    <string name="settings_restore_sync_success">Wybrani przywróceni dostawcy zostali zsynchronizowani</string>
+    <string name="settings_restore_sync_failures">Nie udało się zsynchronizować niektórych przywróconych dostawców: %1$s</string>
 </resources>

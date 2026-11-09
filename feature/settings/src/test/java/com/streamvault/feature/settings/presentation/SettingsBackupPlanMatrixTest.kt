@@ -55,7 +55,7 @@ class SettingsBackupPlanMatrixTest(
         whenever(importer.confirm(any())).thenReturn(ImportBackupResult.Success(
             BackupImportResult(outcome = outcome, restoreJobId = "job")
         ))
-        val actions = SettingsBackupActions(exporter, importer, ui)
+        val actions = SettingsBackupActions(exporter, importer, ui, text = fakeText)
         var followUps = 0
         actions.confirmBackupImport(this) { followUps++ }
         actions.confirmBackupImport(this) { followUps++ } // Double tap before coroutine dispatch.

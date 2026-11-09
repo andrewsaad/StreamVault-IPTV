@@ -1127,4 +1127,8 @@
     <string name="settings_speed_test_error_no_network">Nuk ka lidhje aktive me rrjetin</string>
     <string name="settings_speed_test_error_inspect_network">Rrjeti aktiv nuk u inspektua dot</string>
     <string name="settings_speed_test_error_generic">Testi nuk u përfundua dot</string>
+    <string name="epg_error_generic">Guida nuk mund të ngarkohej.</string>
+    <string name="settings_restore_sync_progress">Po sinkronizohen ofruesit e rikthyer…</string>
+    <string name="settings_restore_sync_success">Ofruesit e zgjedhur të rikthyer u sinkronizuan me sukses</string>
+    <string name="settings_restore_sync_failures">Disa ofrues të rikthyer nuk mund të sinkronizoheshin: %1$s</string>
 </resources>

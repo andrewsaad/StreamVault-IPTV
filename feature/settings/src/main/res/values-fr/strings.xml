@@ -1129,4 +1129,8 @@
     <string name="settings_speed_test_error_no_network">Aucune connexion réseau active</string>
     <string name="settings_speed_test_error_inspect_network">Impossible d\'inspecter le réseau actif</string>
     <string name="settings_speed_test_error_generic">Le test n\'a pas pu être terminé</string>
+    <string name="epg_error_generic">Impossible de charger le guide.</string>
+    <string name="settings_restore_sync_progress">Synchronisation des fournisseurs restaurés…</string>
+    <string name="settings_restore_sync_success">Les fournisseurs restaurés sélectionnés ont été synchronisés avec succès</string>
+    <string name="settings_restore_sync_failures">Certains fournisseurs restaurés n\'ont pas pu être synchronisés : %1$s</string>
 </resources>

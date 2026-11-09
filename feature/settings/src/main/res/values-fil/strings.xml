@@ -1127,4 +1127,8 @@
     <string name="settings_speed_test_error_no_network">Walang aktibong koneksyon sa network</string>
     <string name="settings_speed_test_error_inspect_network">Hindi nasuri ang aktibong network</string>
     <string name="settings_speed_test_error_generic">Hindi nakumpleto ang pagsubok</string>
+    <string name="epg_error_generic">Hindi ma-load ang guide.</string>
+    <string name="settings_restore_sync_progress">Sini-sync ang mga naibalik na provider…</string>
+    <string name="settings_restore_sync_success">Matagumpay na na-sync ang mga napiling naibalik na provider</string>
+    <string name="settings_restore_sync_failures">Hindi na-sync ang ilang naibalik na provider: %1$s</string>
 </resources>

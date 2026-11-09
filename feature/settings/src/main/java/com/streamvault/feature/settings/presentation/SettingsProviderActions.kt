@@ -55,7 +55,7 @@ internal class SettingsProviderActions(
 
     /** Combined-source repository errors are raw English; log them and show one localized sentence. */
     private fun showCombinedFailure(action: String, result: Result.Error) {
-        Log.w(TAG, "Combined source $action failed: ${result.message}", result.exception)
+        Log.w(TAG, "Combined source $action failed: ${SettingsLogSanitizer.describe(result.message, result.exception)}")
         uiState.update { it.copy(userMessage = appContext.getString(R.string.settings_combined_update_failed)) }
     }
 
@@ -70,7 +70,7 @@ internal class SettingsProviderActions(
             // Write to the repository first; only persist UI-layer preferences on success.
             when (val result = providerRepository.setActiveProvider(providerId)) {
                 is Result.Error -> {
-                    Log.w("SettingsProviderActions", "Could not activate provider: ${result.message}", result.exception)
+                    Log.w("SettingsProviderActions", "Could not activate provider: ${SettingsLogSanitizer.describe(result.message, result.exception)}")
                     uiState.update { it.copy(userMessage = appContext.getString(R.string.settings_provider_activate_failed)) }
                     return@launch
                 }
@@ -243,7 +243,7 @@ internal class SettingsProviderActions(
             if (provider.type != ProviderType.M3U) return@launch
             when (val result = providerRepository.updateProvider(provider.copy(m3uVodClassificationEnabled = enabled))) {
                 is Result.Error -> {
-                    Log.w(TAG, "Could not save provider setting: ${result.message}", result.exception)
+                    Log.w(TAG, "Could not save provider setting: ${SettingsLogSanitizer.describe(result.message, result.exception)}")
                     uiState.update { it.copy(userMessage = appContext.getString(R.string.settings_provider_setting_save_failed)) }
                 }
                 else -> uiState.update {
@@ -262,7 +262,7 @@ internal class SettingsProviderActions(
             val provider = providerRepository.getProvider(providerId) ?: return@launch
             when (val result = providerRepository.updateProvider(provider.copy(guideSourcePolicy = policy))) {
                 is Result.Error -> {
-                    Log.w(TAG, "Could not save guide source: ${result.message}", result.exception)
+                    Log.w(TAG, "Could not save guide source: ${SettingsLogSanitizer.describe(result.message, result.exception)}")
                     uiState.update { it.copy(userMessage = appContext.getString(R.string.settings_provider_guide_source_save_failed)) }
                 }
                 else -> uiState.update {
@@ -277,7 +277,7 @@ internal class SettingsProviderActions(
             val provider = providerRepository.getProvider(providerId) ?: return@launch
             when (val result = providerRepository.updateProvider(provider.copy(channelLogoSourcePolicy = policy))) {
                 is Result.Error -> {
-                    Log.w(TAG, "Could not save logo source: ${result.message}", result.exception)
+                    Log.w(TAG, "Could not save logo source: ${SettingsLogSanitizer.describe(result.message, result.exception)}")
                     uiState.update { it.copy(userMessage = appContext.getString(R.string.settings_provider_logo_source_save_failed)) }
                 }
                 else -> uiState.update {
@@ -462,7 +462,7 @@ internal class SettingsProviderActions(
                     runCatching { surfaceRefreshPort.refreshTvInputCatalog() }
                 }
                 is Result.Error -> {
-                    Log.w(TAG, "Could not delete provider: ${result.message}", result.exception)
+                    Log.w(TAG, "Could not delete provider: ${SettingsLogSanitizer.describe(result.message, result.exception)}")
                     uiState.update {
                         it.copy(
                             isDeletingProvider = false,

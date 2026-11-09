@@ -1205,4 +1205,8 @@
     <string name="settings_speed_test_error_no_network">No active network connection</string>
     <string name="settings_speed_test_error_inspect_network">The active network could not be inspected</string>
     <string name="settings_speed_test_error_generic">The test could not be completed</string>
+    <string name="epg_error_generic">The guide could not be loaded.</string>
+    <string name="settings_restore_sync_progress">Syncing restored providers…</string>
+    <string name="settings_restore_sync_success">Selected restored providers synced successfully</string>
+    <string name="settings_restore_sync_failures">Some restored providers could not sync: %1$s</string>
 </resources>

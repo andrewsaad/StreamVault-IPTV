@@ -151,7 +151,11 @@ class SettingsStringsLocaleParityTest {
         "settings_speed_test_error_network_service",
         "settings_speed_test_error_no_network",
         "settings_speed_test_error_inspect_network",
-        "settings_speed_test_error_generic"
+        "settings_speed_test_error_generic",
+        "epg_error_generic",
+        "settings_restore_sync_progress",
+        "settings_restore_sync_success",
+        "settings_restore_sync_failures"
     )
 
     private val localizedKeys = epgPresetKeys + channelCleanupKeys + userMessageKeys + actionMessageKeys

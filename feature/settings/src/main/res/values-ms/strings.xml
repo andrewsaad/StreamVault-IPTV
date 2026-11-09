@@ -1124,4 +1124,8 @@
     <string name="settings_speed_test_error_no_network">Tiada sambungan rangkaian aktif</string>
     <string name="settings_speed_test_error_inspect_network">Tidak dapat memeriksa rangkaian aktif</string>
     <string name="settings_speed_test_error_generic">Ujian tidak dapat diselesaikan</string>
+    <string name="epg_error_generic">Panduan tidak dapat dimuatkan.</string>
+    <string name="settings_restore_sync_progress">Menyegerakkan penyedia yang dipulihkan…</string>
+    <string name="settings_restore_sync_success">Penyedia terpilih yang dipulihkan berjaya disegerakkan</string>
+    <string name="settings_restore_sync_failures">Sesetengah penyedia yang dipulihkan tidak dapat disegerakkan: %1$s</string>
 </resources>

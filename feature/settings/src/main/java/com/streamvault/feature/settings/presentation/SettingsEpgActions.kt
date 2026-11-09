@@ -128,13 +128,13 @@ class SettingsEpgActions(
 
     private fun showUnexpectedPresetError(error: Exception) {
         // The exception text is raw English from lower layers; the user only ever sees the localized sentence.
-        Log.w("SettingsEpgActions", "Unexpected guide preset failure: ${error.message}", error)
+        Log.w("SettingsEpgActions", "Unexpected guide preset failure: ${SettingsLogSanitizer.describe(error.message, error)}")
         uiState.update { it.copy(userMessage = epgNotice(R.string.settings_epg_preset_failed, emptyList())) }
     }
 
     /** A repository refusal carries raw English text; log it and show the localized sentence for the action. */
     private fun showSourceFailure(result: Result.Error, @StringRes fallbackRes: Int) {
-        Log.w("SettingsEpgActions", "Guide source action failed: ${result.message}", result.exception)
+        Log.w("SettingsEpgActions", "Guide source action failed: ${SettingsLogSanitizer.describe(result.message, result.exception)}")
         uiState.update { it.copy(userMessage = epgNotice(fallbackRes, emptyList())) }
     }
 
@@ -442,7 +442,7 @@ class SettingsEpgActions(
 
     private fun showUnexpectedError(error: Exception, @StringRes fallbackRes: Int) {
         // The exception text is raw English from lower layers; the user only ever sees the localized sentence.
-        Log.w("SettingsEpgActions", "Unexpected guide failure: ${error.message}", error)
+        Log.w("SettingsEpgActions", "Unexpected guide failure: ${SettingsLogSanitizer.describe(error.message, error)}")
         uiState.update { it.copy(userMessage = epgNotice(fallbackRes, emptyList())) }
     }
 }

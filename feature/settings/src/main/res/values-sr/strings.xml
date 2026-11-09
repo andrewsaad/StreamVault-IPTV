@@ -1130,4 +1130,8 @@
     <string name="settings_speed_test_error_no_network">Нема активне мрежне везе</string>
     <string name="settings_speed_test_error_inspect_network">Активна мрежа није могла да се провери</string>
     <string name="settings_speed_test_error_generic">Тест није могао да се заврши</string>
+    <string name="epg_error_generic">Водич није могао да се учита.</string>
+    <string name="settings_restore_sync_progress">Синхронизација враћених провајдера…</string>
+    <string name="settings_restore_sync_success">Изабрани враћени провајдери су успешно синхронизовани</string>
+    <string name="settings_restore_sync_failures">Неке враћене провајдере није било могуће синхронизовати: %1$s</string>
 </resources>
