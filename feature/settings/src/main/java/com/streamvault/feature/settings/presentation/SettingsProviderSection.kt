@@ -176,6 +176,21 @@ public fun LazyListScope.providerSection(
             )
 
             Spacer(modifier = Modifier.height(12.dp))
+            var showChannelCleanup by rememberSaveable(selectedProvider.id) { mutableStateOf(false) }
+            ClickableSettingsRow(
+                label = stringResource(R.string.settings_channel_cleanup_title),
+                value = stringResource(R.string.settings_channel_cleanup_description),
+                onClick = { showChannelCleanup = true },
+            )
+            if (showChannelCleanup) {
+                ChannelCleanupDialog(
+                    providerId = selectedProvider.id,
+                    providerName = selectedProvider.name,
+                    onDismiss = { showChannelCleanup = false },
+                )
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
             SettingsProviderQualityControls(
                 providerId = selectedProvider.id,
                 preference = providerQualityPreference,
