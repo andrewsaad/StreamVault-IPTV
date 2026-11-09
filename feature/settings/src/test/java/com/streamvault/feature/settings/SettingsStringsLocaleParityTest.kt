@@ -7,7 +7,7 @@ import org.junit.Test
 import org.w3c.dom.Element
 
 /**
- * Guards FR-021 / SC-009: every EPG preset string must exist in the default resources and in
+ * Guards FR-021 / SC-009: every EPG preset and channel clean-up string must exist in the default resources and in
  * every locale folder of this module, with the same format placeholders, and every locale the
  * app advertises must have a matching values folder here.
  */
@@ -54,6 +54,36 @@ class SettingsStringsLocaleParityTest {
         "epg_error_reorder_source_failed"
     )
 
+    private val channelCleanupKeys = listOf(
+        "settings_channel_cleanup_title",
+        "settings_channel_cleanup_description",
+        "channel_cleanup_scan_note",
+        "channel_cleanup_scan_button",
+        "channel_cleanup_stop_button",
+        "channel_cleanup_last_finished",
+        "channel_cleanup_never_scanned",
+        "channel_cleanup_progress",
+        "channel_cleanup_paused_playback",
+        "channel_cleanup_paused_backoff",
+        "channel_cleanup_suggestions_title",
+        "channel_cleanup_empty",
+        "channel_cleanup_select_all",
+        "channel_cleanup_select_category",
+        "channel_cleanup_uncategorized",
+        "channel_cleanup_status_empty",
+        "channel_cleanup_status_dead",
+        "channel_cleanup_failed_days",
+        "channel_cleanup_row_summary",
+        "channel_cleanup_hide_selected",
+        "channel_cleanup_confirm_title",
+        "channel_cleanup_confirm_message",
+        "channel_cleanup_confirm_button",
+        "channel_cleanup_error_unsupported",
+        "channel_cleanup_close"
+    )
+
+    private val localizedKeys = epgPresetKeys + channelCleanupKeys
+
     @Test
     fun everyAdvertisedLocaleHasValuesFolder() {
         val missing = advertisedLocales()
@@ -67,7 +97,7 @@ class SettingsStringsLocaleParityTest {
     @Test
     fun epgPresetKeysExistInDefaultResources() {
         val defaults = readStrings(File(resDir, "values/strings.xml"))
-        val missing = epgPresetKeys.filterNot { defaults[it]?.isNotBlank() == true }
+        val missing = localizedKeys.filterNot { defaults[it]?.isNotBlank() == true }
         assertWithMessage("Keys missing from values/strings.xml").that(missing).isEmpty()
     }
 
@@ -77,7 +107,7 @@ class SettingsStringsLocaleParityTest {
         val problems = mutableListOf<String>()
         localeFolders().forEach { folder ->
             val strings = readStrings(File(folder, "strings.xml"))
-            epgPresetKeys.forEach { key ->
+            localizedKeys.forEach { key ->
                 val value = strings[key]
                 if (value.isNullOrBlank()) {
                     problems += "${folder.name}: missing $key"
