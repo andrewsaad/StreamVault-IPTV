@@ -1,5 +1,6 @@
 package com.streamvault.app.di
 
+import com.streamvault.data.health.ChannelHealthRepositoryImpl
 import com.streamvault.data.local.DatabaseTransactionRunner
 import com.streamvault.data.local.RoomDatabaseTransactionRunner
 import com.streamvault.data.manager.DownloadManagerImpl
@@ -66,6 +67,9 @@ abstract class RepositoryModule {
 
     @Binds @Singleton
     abstract fun bindChannelRepository(impl: ChannelRepositoryImpl): ChannelRepository
+
+    @Binds @Singleton
+    abstract fun bindChannelHealthRepository(impl: ChannelHealthRepositoryImpl): ChannelHealthRepository
 
     @Binds @Singleton
     abstract fun bindCombinedM3uRepository(impl: CombinedM3uRepositoryImpl): CombinedM3uRepository

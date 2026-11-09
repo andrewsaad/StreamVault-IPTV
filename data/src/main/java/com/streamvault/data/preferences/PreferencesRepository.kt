@@ -2826,6 +2826,19 @@ class PreferencesRepository @Inject constructor(
         }
     }
 
+    /** Channel health probe results of one provider, as the JSON owned by `data.health`. */
+    fun getChannelHealthResults(providerId: Long): Flow<String?> {
+        val key = stringPreferencesKey(channelHealthKey(providerId))
+        return context.dataStore.data.map { preferences -> preferences[key] }
+    }
+
+    suspend fun setChannelHealthResults(providerId: Long, json: String?) {
+        val key = stringPreferencesKey(channelHealthKey(providerId))
+        context.dataStore.edit { preferences ->
+            if (json == null) preferences.remove(key) else preferences[key] = json
+        }
+    }
+
     suspend fun getSportsEventChannelPicks(
         eventIds: Set<String>,
         nowMillis: Long = System.currentTimeMillis(),
@@ -3124,6 +3137,9 @@ class PreferencesRepository @Inject constructor(
 
     private fun hiddenChannelsKey(providerId: Long): String =
         "hidden_channels_${providerId}"
+
+    private fun channelHealthKey(providerId: Long): String =
+        "channel_health_${providerId}"
 
     private fun pinnedCategoriesKey(providerId: Long, type: ContentType): String =
         "pinned_categories_${providerId}_${type.name}"
