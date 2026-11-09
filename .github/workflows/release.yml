@@ -48,7 +48,7 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Prepare optional signing files
+      - name: Prepare release signing files
         shell: bash
         env:
           RELEASE_KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
@@ -67,7 +67,8 @@ jobs:
               > keystore.properties
             echo "Release signing files prepared."
           else
-            echo "No signing secrets configured. Building unsigned release APK."
+            echo "::error::Release signing secrets are not configured (RELEASE_KEYSTORE_BASE64, RELEASE_STORE_PASSWORD, RELEASE_KEY_ALIAS, RELEASE_KEY_PASSWORD). Refusing to publish an unsigned release APK."
+            exit 1
           fi
 
       - name: Grant execute permission for gradlew

@@ -58,4 +58,10 @@ grep -F -- '-no-metrics' "$smoke_workflow" >/dev/null
 grep -F 'adb_delay: -delay-adb' "$smoke_workflow" >/dev/null
 grep -F 'matrix.adb_delay' "$smoke_workflow" >/dev/null
 
+if grep -F 'Building unsigned release APK' "$release_workflow" >/dev/null; then
+  printf 'release workflow must fail, not publish an unsigned APK, when signing secrets are missing\n' >&2
+  exit 1
+fi
+grep -F 'Refusing to publish an unsigned release APK' "$release_workflow" >/dev/null
+
 printf 'platform smoke workflow test passed\n'
