@@ -9,6 +9,7 @@ import com.streamvault.data.remote.xtream.XtreamApiService
 import com.streamvault.domain.model.ChannelHealthStatus
 import com.streamvault.domain.model.Result
 import com.streamvault.domain.repository.ProviderSnapshotRepository
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
@@ -36,6 +37,8 @@ class ChannelHealthRepositoryImplTest {
         probe = mock<ChannelHealthProbe>(),
         results = results,
     )
+    // Whether WorkManager still has the provider's scan work queued, blocked or running.
+    private val workActive = MutableStateFlow(false)
     private val repository = ChannelHealthRepositoryImpl(
         snapshots = snapshots,
         channelDao = channelDao,
@@ -44,6 +47,10 @@ class ChannelHealthRepositoryImplTest {
         scanner = scanner,
         scheduler = scheduler,
     )
+
+    init {
+        whenever(scheduler.observeActive(any())).thenReturn(workActive)
+    }
 
     private suspend fun stubChannels(vararg channels: com.streamvault.data.local.entity.ChannelEntity) {
         whenever(channelDao.getByProviderSync(any())).thenReturn(channels.toList())
@@ -237,7 +244,27 @@ class ChannelHealthRepositoryImplTest {
 
         assertThat(result).isEqualTo(Result.success(Unit))
         verify(scheduler).enqueue(eq(TEST_PROVIDER_ID), eq(setOf(100L, 200L)), eq(clock.nowMillis))
+        workActive.value = true
         assertThat(repository.observeScanState(TEST_PROVIDER_ID).first().running).isTrue()
+    }
+
+    @Test
+    fun `the scan stays running between WorkManager runs while its work is still queued`() = runTest {
+        // The scanner itself is idle here: the job was stopped and has not been resumed yet.
+        assertThat(scanner.observeState(TEST_PROVIDER_ID).first().running).isFalse()
+        workActive.value = true
+
+        assertThat(repository.observeScanState(TEST_PROVIDER_ID).first().running).isTrue()
+    }
+
+    @Test
+    fun `the scan is not running once its work is gone`() = runTest {
+        whenever(snapshots.getSnapshot(TEST_PROVIDER_ID)).thenReturn(xtreamSnapshot())
+        givenOutputFormats("m3u8")
+        repository.startScan(TEST_PROVIDER_ID)
+        workActive.value = false
+
+        assertThat(repository.observeScanState(TEST_PROVIDER_ID).first().running).isFalse()
     }
 
     @Test

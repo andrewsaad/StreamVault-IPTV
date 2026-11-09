@@ -6,6 +6,7 @@ import androidx.work.CoroutineWorker
 import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
@@ -16,6 +17,9 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 
 /** Runs one provider's channel health scan in the background; the scan itself lives in [ChannelHealthScanner]. */
 class ChannelHealthScanWorker(appContext: Context, params: WorkerParameters) : CoroutineWorker(appContext, params) {
@@ -75,6 +79,22 @@ class ChannelHealthScanScheduler @Inject constructor(
             request
         )
     }
+
+    /**
+     * True while the provider's scan work is queued, blocked or running, including the gaps when
+     * WorkManager has stopped the job (about every 10 minutes) and will resume it.
+     */
+    fun observeActive(providerId: Long): Flow<Boolean> =
+        WorkManager.getInstance(context)
+            .getWorkInfosForUniqueWorkFlow(ChannelHealthScanWorker.uniqueName(providerId))
+            .map { infos ->
+                infos.any {
+                    it.state == WorkInfo.State.ENQUEUED ||
+                        it.state == WorkInfo.State.RUNNING ||
+                        it.state == WorkInfo.State.BLOCKED
+                }
+            }
+            .distinctUntilChanged()
 
     fun cancel(providerId: Long) {
         WorkManager.getInstance(context).cancelUniqueWork(ChannelHealthScanWorker.uniqueName(providerId))

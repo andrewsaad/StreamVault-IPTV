@@ -27,8 +27,12 @@ class ChannelHealthRepositoryImpl @Inject constructor(
     private val scheduler: ChannelHealthScanScheduler,
 ) : ChannelHealthRepository {
 
+    // "Running" follows the queued work, not the scanner's own flag, so the state does not drop to
+    // idle in the gaps when WorkManager has stopped the job and is about to resume it.
     override fun observeScanState(providerId: Long): Flow<ChannelHealthScanState> =
-        scanner.observeState(providerId)
+        combine(scanner.observeState(providerId), scheduler.observeActive(providerId)) { state, active ->
+            state.copy(running = active)
+        }
 
     override fun observeSuggestions(providerId: Long): Flow<List<ChannelHealthSuggestion>> =
         combine(results.observe(providerId), preferences.getHiddenChannelIds(providerId)) { document, hidden ->
