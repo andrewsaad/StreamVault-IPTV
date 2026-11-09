@@ -2,8 +2,9 @@ package com.streamvault.app.navigation
 
 import android.content.Intent
 import com.streamvault.core.navigation.PlayerNavigationRequest
+import com.streamvault.data.remote.stalker.StalkerUrlFactory
+import com.streamvault.data.remote.xtream.XtreamUrlFactory
 import com.streamvault.domain.model.ContentType
-import java.util.Locale
 
 /**
  * Carries a [PlayerNavigationRequest] as plain primitive intent extras so it survives
@@ -13,6 +14,14 @@ import java.util.Locale
  * Only the fields a Watch Next card needs are carried. Archive, combined-profile, Stremio and
  * return-destination fields are intentionally not encoded. [read] treats every extra as
  * untrusted: any malformed present value rejects the whole request.
+ *
+ * Security: MainActivity is exported with BROWSABLE VIEW filters, so a web page can set plain
+ * string/long extras through a Chrome `intent:` URL. The stream URL is therefore restricted to
+ * internal provider URLs (`xtream://`, `stalker://`) that the app resolves itself with the user's
+ * own provider configuration (see [isInternalProviderUrl]). Every other scheme (http, https,
+ * rtsp, rtmp, udp, file, content, ...) and an empty URL are rejected, so a page cannot force
+ * playback of an attacker-chosen URL. Cards whose history URL is not internal (e.g. M3U) keep
+ * the Serializable extra, which does not survive `Intent.toUri` and falls back to Home.
  */
 internal object PlayerRequestIntentExtras {
     private const val PREFIX = "com.streamvault.app.extra.PLAYER_REQUEST_"
@@ -35,7 +44,6 @@ internal object PlayerRequestIntentExtras {
     private const val MAX_TEXT_LENGTH = 1024
     private const val ABSENT_LONG = Long.MIN_VALUE
     private const val ABSENT_INT = Int.MIN_VALUE
-    private val allowedUrlSchemes = setOf("http", "https", "rtsp", "rtmp", "udp")
 
     fun write(intent: Intent, request: PlayerNavigationRequest): Intent = intent.apply {
         putExtra(STREAM_URL, request.streamUrl)
@@ -59,7 +67,7 @@ internal object PlayerRequestIntentExtras {
         if (!intent.hasExtra(STREAM_URL)) return null
 
         val streamUrl = intent.getStringExtra(STREAM_URL)
-            ?.takeIf { it.length <= MAX_URL_LENGTH && (it.isEmpty() || hasAllowedScheme(it)) }
+            ?.takeIf { it.length <= MAX_URL_LENGTH && isInternalProviderUrl(it) }
             ?: return null
         val title = intent.getStringExtra(TITLE)?.takeIf { it.length <= MAX_TEXT_LENGTH } ?: return null
         val contentType = intent.getStringExtra(CONTENT_TYPE)
@@ -97,9 +105,18 @@ internal object PlayerRequestIntentExtras {
         )
     }
 
-    private fun hasAllowedScheme(url: String): Boolean {
-        val scheme = url.substringBefore(':', missingDelimiterValue = "").lowercase(Locale.ROOT)
-        return scheme in allowedUrlSchemes
+    /**
+     * True only for persisted internal Xtream/Stalker stream URLs that cannot smuggle in a
+     * foreign URL: an Xtream `src` direct source and a Stalker command containing `://` are
+     * played as-is by the resolvers, so they are rejected here. An empty URL is not internal;
+     * playback needs a URL, it is not resolved from provider and content ids alone.
+     */
+    fun isInternalProviderUrl(url: String?): Boolean {
+        if (url.isNullOrBlank()) return false
+        XtreamUrlFactory.parseInternalStreamUrl(url)?.let { return it.directSource == null }
+        val token = StalkerUrlFactory.parseInternalStreamUrl(url) ?: return false
+        val commands = listOf(token.cmd) + token.playbackDescriptor?.candidates.orEmpty().map { it.cmd }
+        return commands.none { it.contains("://") }
     }
 
     private inline fun Intent.optionalString(key: String, maxLength: Int, malformed: () -> Nothing): String? {

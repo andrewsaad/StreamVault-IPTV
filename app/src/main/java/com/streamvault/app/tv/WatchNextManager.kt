@@ -166,10 +166,18 @@ class WatchNextManager @Inject constructor(
 
     @RequiresApi(Build.VERSION_CODES.O)
     private fun buildWatchNextValues(history: PlaybackHistory): ContentValues {
-        // Intent.toUri drops Serializable extras, so the request travels as plain primitive extras.
+        // Intent.toUri drops Serializable extras, so internal provider URLs travel as plain primitive
+        // extras. Other URLs must not: the exported activity would accept them from a web page.
+        val request = history.toPlayerNavigationRequest()
         val launchIntent = Intent(context, MainActivity::class.java)
             .setAction(Intent.ACTION_VIEW)
-            .also { PlayerRequestIntentExtras.write(it, history.toPlayerNavigationRequest()) }
+            .also {
+                if (PlayerRequestIntentExtras.isInternalProviderUrl(request.streamUrl)) {
+                    PlayerRequestIntentExtras.write(it, request)
+                } else {
+                    it.putExtra(MainActivity.EXTRA_PLAYER_REQUEST, request)
+                }
+            }
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
 
         return ContentValues().apply {
