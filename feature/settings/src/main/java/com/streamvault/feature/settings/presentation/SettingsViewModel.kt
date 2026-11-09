@@ -1584,7 +1584,7 @@ class SettingsViewModel @Inject constructor(
                 backupActions.dismissRestoreSyncChooser()
                 return@launch
             }
-            _uiState.update { it.copy(isSyncing = true, syncProgress = "Syncing restored providers…", syncCanCancel = false) }
+            _uiState.update { it.copy(isSyncing = true, syncProgress = appContext.getString(R.string.settings_restore_sync_progress), syncCanCancel = false) }
             val failures = mutableListOf<String>()
             providers.forEach { provider ->
                 if (settingsOperations.syncProvider(provider.id, force = true) is Result.Error) {
@@ -1596,10 +1596,8 @@ class SettingsViewModel @Inject constructor(
                 it.copy(
                     isSyncing = false,
                     syncProgress = null,
-                    userMessage = if (failures.isEmpty()) {
-                        "Selected restored providers synced successfully"
-                    } else {
-                        "Some restored providers could not sync: ${failures.joinToString()}"
+                    userMessage = restoreSyncResultMessage(failures) { resId, args ->
+                        appContext.getString(resId, *args.toTypedArray())
                     }
                 )
             }

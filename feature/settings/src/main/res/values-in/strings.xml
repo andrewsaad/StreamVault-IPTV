@@ -1129,4 +1129,8 @@
     <string name="settings_speed_test_error_no_network">Tidak ada koneksi jaringan aktif</string>
     <string name="settings_speed_test_error_inspect_network">Tidak dapat memeriksa jaringan aktif</string>
     <string name="settings_speed_test_error_generic">Pengujian tidak dapat diselesaikan</string>
+    <string name="epg_error_generic">Panduan tidak dapat dimuat.</string>
+    <string name="settings_restore_sync_progress">Menyinkronkan penyedia yang dipulihkan…</string>
+    <string name="settings_restore_sync_success">Penyedia terpilih yang dipulihkan berhasil disinkronkan</string>
+    <string name="settings_restore_sync_failures">Beberapa penyedia yang dipulihkan tidak dapat disinkronkan: %1$s</string>
 </resources>

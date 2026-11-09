@@ -1129,4 +1129,8 @@
     <string name="settings_speed_test_error_no_network">Δεν υπάρχει ενεργή σύνδεση δικτύου</string>
     <string name="settings_speed_test_error_inspect_network">Δεν ήταν δυνατός ο έλεγχος του ενεργού δικτύου</string>
     <string name="settings_speed_test_error_generic">Δεν ήταν δυνατή η ολοκλήρωση της δοκιμής</string>
+    <string name="epg_error_generic">Δεν ήταν δυνατή η φόρτωση του οδηγού.</string>
+    <string name="settings_restore_sync_progress">Συγχρονισμός των επαναφερμένων παρόχων…</string>
+    <string name="settings_restore_sync_success">Οι επιλεγμένοι επαναφερμένοι πάροχοι συγχρονίστηκαν με επιτυχία</string>
+    <string name="settings_restore_sync_failures">Ορισμένοι επαναφερμένοι πάροχοι δεν μπόρεσαν να συγχρονιστούν: %1$s</string>
 </resources>

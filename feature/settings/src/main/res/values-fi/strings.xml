@@ -1129,4 +1129,8 @@
     <string name="settings_speed_test_error_no_network">Ei aktiivista verkkoyhteyttä</string>
     <string name="settings_speed_test_error_inspect_network">Aktiivisen verkon tarkistus epäonnistui</string>
     <string name="settings_speed_test_error_generic">Testiä ei voitu suorittaa loppuun</string>
+    <string name="epg_error_generic">Opasta ei voitu ladata.</string>
+    <string name="settings_restore_sync_progress">Synkronoidaan palautettuja palveluntarjoajia…</string>
+    <string name="settings_restore_sync_success">Valitut palautetut palveluntarjoajat synkronoitiin onnistuneesti</string>
+    <string name="settings_restore_sync_failures">Joitakin palautettuja palveluntarjoajia ei voitu synkronoida: %1$s</string>
 </resources>

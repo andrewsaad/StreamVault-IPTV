@@ -1135,4 +1135,8 @@
     <string name="settings_speed_test_error_no_network">Немає активного мережевого підключення</string>
     <string name="settings_speed_test_error_inspect_network">Не вдалося перевірити активну мережу</string>
     <string name="settings_speed_test_error_generic">Не вдалося завершити тест</string>
+    <string name="epg_error_generic">Не вдалося завантажити програму передач.</string>
+    <string name="settings_restore_sync_progress">Синхронізація відновлених провайдерів…</string>
+    <string name="settings_restore_sync_success">Вибраних відновлених провайдерів успішно синхронізовано</string>
+    <string name="settings_restore_sync_failures">Не вдалося синхронізувати деяких відновлених провайдерів: %1$s</string>
 </resources>

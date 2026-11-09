@@ -1129,4 +1129,8 @@
     <string name="settings_speed_test_error_no_network">Ingen aktiv nätverksanslutning</string>
     <string name="settings_speed_test_error_inspect_network">Det gick inte att undersöka det aktiva nätverket</string>
     <string name="settings_speed_test_error_generic">Testet kunde inte slutföras</string>
+    <string name="epg_error_generic">Guiden kunde inte läsas in.</string>
+    <string name="settings_restore_sync_progress">Synkroniserar återställda leverantörer…</string>
+    <string name="settings_restore_sync_success">De valda återställda leverantörerna synkroniserades</string>
+    <string name="settings_restore_sync_failures">Vissa återställda leverantörer kunde inte synkroniseras: %1$s</string>
 </resources>

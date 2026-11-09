@@ -1132,4 +1132,8 @@
     <string name="settings_speed_test_error_no_network">אין חיבור רשת פעיל</string>
     <string name="settings_speed_test_error_inspect_network">לא ניתן היה לבדוק את הרשת הפעילה</string>
     <string name="settings_speed_test_error_generic">לא ניתן היה להשלים את הבדיקה</string>
+    <string name="epg_error_generic">לא ניתן היה לטעון את המדריך.</string>
+    <string name="settings_restore_sync_progress">מסנכרן את הספקים ששוחזרו…</string>
+    <string name="settings_restore_sync_success">הספקים שנבחרו ושוחזרו סונכרנו בהצלחה</string>
+    <string name="settings_restore_sync_failures">לא ניתן היה לסנכרן חלק מהספקים ששוחזרו: %1$s</string>
 </resources>

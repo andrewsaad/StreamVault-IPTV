@@ -1129,4 +1129,8 @@
     <string name="settings_speed_test_error_no_network">Ingen aktiv netværksforbindelse</string>
     <string name="settings_speed_test_error_inspect_network">Det aktive netværk kunne ikke undersøges</string>
     <string name="settings_speed_test_error_generic">Testen kunne ikke gennemføres</string>
+    <string name="epg_error_generic">Guiden kunne ikke indlæses.</string>
+    <string name="settings_restore_sync_progress">Synkroniserer gendannede udbydere…</string>
+    <string name="settings_restore_sync_success">De valgte gendannede udbydere blev synkroniseret</string>
+    <string name="settings_restore_sync_failures">Nogle gendannede udbydere kunne ikke synkroniseres: %1$s</string>
 </resources>

@@ -1124,4 +1124,8 @@
     <string name="settings_speed_test_error_no_network">æ²’æœ‰ä½œç”¨ä¸­çš„ç¶²è·¯é€£ç·š</string>
     <string name="settings_speed_test_error_inspect_network">ç„¡æ³•æª¢æŸ¥ç›®å‰çš„ç¶²è·¯</string>
     <string name="settings_speed_test_error_generic">無法完成測試</string>
+    <string name="epg_error_generic">無法載入指南。</string>
+    <string name="settings_restore_sync_progress">正在同步已還原的供應商…</string>
+    <string name="settings_restore_sync_success">所選的已還原供應商已成功同步</string>
+    <string name="settings_restore_sync_failures">部分已還原的供應商無法同步：%1$s</string>
 </resources>

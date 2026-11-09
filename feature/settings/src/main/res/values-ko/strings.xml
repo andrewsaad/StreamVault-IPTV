@@ -1125,4 +1125,8 @@
     <string name="settings_speed_test_error_no_network">활성 네트워크 연결이 없습니다</string>
     <string name="settings_speed_test_error_inspect_network">활성 네트워크를 확인하지 못했습니다</string>
     <string name="settings_speed_test_error_generic">테스트를 완료하지 못했습니다</string>
+    <string name="epg_error_generic">가이드를 불러오지 못했습니다.</string>
+    <string name="settings_restore_sync_progress">복원된 공급자를 동기화하는 중…</string>
+    <string name="settings_restore_sync_success">선택한 복원된 공급자를 동기화했습니다</string>
+    <string name="settings_restore_sync_failures">일부 복원된 공급자를 동기화하지 못했습니다: %1$s</string>
 </resources>

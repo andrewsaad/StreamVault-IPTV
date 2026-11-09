@@ -1141,4 +1141,8 @@
     <string name="settings_speed_test_error_no_network">لا يوجد اتصال شبكة نشط</string>
     <string name="settings_speed_test_error_inspect_network">تعذّر فحص الشبكة النشطة</string>
     <string name="settings_speed_test_error_generic">تعذّر إكمال الاختبار</string>
+    <string name="epg_error_generic">تعذّر تحميل الدليل.</string>
+    <string name="settings_restore_sync_progress">جارٍ مزامنة المزوّدين المستعادين…</string>
+    <string name="settings_restore_sync_success">تمت مزامنة المزوّدين المستعادين المحددين بنجاح</string>
+    <string name="settings_restore_sync_failures">تعذّرت مزامنة بعض المزوّدين المستعادين: %1$s</string>
 </resources>

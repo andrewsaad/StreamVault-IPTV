@@ -1127,4 +1127,8 @@
     <string name="settings_speed_test_error_no_network">कोई सक्रिय नेटवर्क कनेक्शन नहीं है</string>
     <string name="settings_speed_test_error_inspect_network">सक्रिय नेटवर्क की जाँच नहीं की जा सकी</string>
     <string name="settings_speed_test_error_generic">परीक्षण पूरा नहीं हो सका</string>
+    <string name="epg_error_generic">गाइड लोड नहीं हो सका।</string>
+    <string name="settings_restore_sync_progress">बहाल किए गए प्रदाताओं को सिंक किया जा रहा है…</string>
+    <string name="settings_restore_sync_success">चुने गए बहाल किए गए प्रदाता सफलतापूर्वक सिंक हो गए</string>
+    <string name="settings_restore_sync_failures">कुछ बहाल किए गए प्रदाता सिंक नहीं हो सके: %1$s</string>
 </resources>

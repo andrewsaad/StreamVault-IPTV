@@ -1129,4 +1129,8 @@
     <string name="settings_speed_test_error_no_network">Geen actieve netwerkverbinding</string>
     <string name="settings_speed_test_error_inspect_network">Het actieve netwerk kon niet worden gecontroleerd</string>
     <string name="settings_speed_test_error_generic">De test kon niet worden voltooid</string>
+    <string name="epg_error_generic">De gids kon niet worden geladen.</string>
+    <string name="settings_restore_sync_progress">Herstelde providers worden gesynchroniseerd…</string>
+    <string name="settings_restore_sync_success">De geselecteerde herstelde providers zijn gesynchroniseerd</string>
+    <string name="settings_restore_sync_failures">Sommige herstelde providers konden niet worden gesynchroniseerd: %1$s</string>
 </resources>

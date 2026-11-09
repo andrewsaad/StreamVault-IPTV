@@ -1127,4 +1127,8 @@
     <string name="settings_speed_test_error_no_network">هیچ اتصال شبکه فعالی وجود ندارد</string>
     <string name="settings_speed_test_error_inspect_network">بررسی شبکه فعال ناموفق بود</string>
     <string name="settings_speed_test_error_generic">تکمیل آزمایش ناموفق بود</string>
+    <string name="epg_error_generic">بارگیری راهنما ممکن نشد.</string>
+    <string name="settings_restore_sync_progress">در حال همگام‌سازی ارائه‌دهندگان بازیابی‌شده…</string>
+    <string name="settings_restore_sync_success">ارائه‌دهندگان بازیابی‌شدهٔ انتخاب‌شده با موفقیت همگام‌سازی شدند</string>
+    <string name="settings_restore_sync_failures">همگام‌سازی برخی ارائه‌دهندگان بازیابی‌شده ممکن نشد: %1$s</string>
 </resources>

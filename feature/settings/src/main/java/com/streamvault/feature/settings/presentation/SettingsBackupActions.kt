@@ -253,6 +253,14 @@ class SettingsBackupActions(
     }
 }
 
+/** The localized outcome of syncing restored providers; [failures] holds the names of the providers that failed. */
+internal fun restoreSyncResultMessage(failures: List<String>, text: (Int, List<Any>) -> String): String =
+    if (failures.isEmpty()) {
+        text(R.string.settings_restore_sync_success, emptyList())
+    } else {
+        text(R.string.settings_restore_sync_failures, listOf(failures.joinToString()))
+    }
+
 /** Only offer sync when a backup reference identifies exactly one configured provider. */
 internal fun List<LegacyProvider>.findRestoreSyncProvider(reference: BackupProviderReference): LegacyProvider? =
     singleOrNull { candidate ->

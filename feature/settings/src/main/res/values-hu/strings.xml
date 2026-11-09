@@ -1129,4 +1129,8 @@
     <string name="settings_speed_test_error_no_network">Nincs aktív hálózati kapcsolat</string>
     <string name="settings_speed_test_error_inspect_network">Az aktív hálózatot nem sikerült megvizsgálni</string>
     <string name="settings_speed_test_error_generic">A tesztet nem sikerült befejezni</string>
+    <string name="epg_error_generic">Az útmutatót nem sikerült betölteni.</string>
+    <string name="settings_restore_sync_progress">A visszaállított szolgáltatók szinkronizálása…</string>
+    <string name="settings_restore_sync_success">A kiválasztott visszaállított szolgáltatók szinkronizálása sikerült</string>
+    <string name="settings_restore_sync_failures">Egyes visszaállított szolgáltatókat nem sikerült szinkronizálni: %1$s</string>
 </resources>

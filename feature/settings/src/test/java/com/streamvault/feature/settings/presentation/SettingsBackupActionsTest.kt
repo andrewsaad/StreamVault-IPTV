@@ -41,6 +41,14 @@ class SettingsBackupActionsTest {
     }
 
     @Test
+    fun restoreSyncResultMessage_isLocalizedForSuccessAndNamesTheFailedProviders() {
+        assertThat(restoreSyncResultMessage(emptyList(), fakeText))
+            .isEqualTo(resText(R.string.settings_restore_sync_success))
+        assertThat(restoreSyncResultMessage(listOf("Alpha", "Beta"), fakeText))
+            .isEqualTo(resText(R.string.settings_restore_sync_failures, "Alpha, Beta"))
+    }
+
+    @Test
     fun missingProvider_neverOffersSyncWhetherProviderSectionWasExcludedOrEmpty() = runTest {
         for (includeProviders in listOf(false, true)) {
             val ui = MutableStateFlow(SettingsUiState(

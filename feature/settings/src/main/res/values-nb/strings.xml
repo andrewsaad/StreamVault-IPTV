@@ -1129,4 +1129,8 @@
     <string name="settings_speed_test_error_no_network">Ingen aktiv nettverkstilkobling</string>
     <string name="settings_speed_test_error_inspect_network">Kunne ikke undersøke det aktive nettverket</string>
     <string name="settings_speed_test_error_generic">Testen kunne ikke fullføres</string>
+    <string name="epg_error_generic">Guiden kunne ikke lastes inn.</string>
+    <string name="settings_restore_sync_progress">Synkroniserer gjenopprettede leverandører…</string>
+    <string name="settings_restore_sync_success">De valgte gjenopprettede leverandørene ble synkronisert</string>
+    <string name="settings_restore_sync_failures">Noen gjenopprettede leverandører kunne ikke synkroniseres: %1$s</string>
 </resources>

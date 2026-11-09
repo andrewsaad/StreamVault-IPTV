@@ -1125,4 +1125,8 @@
     <string name="settings_speed_test_error_no_network">Keine aktive Netzwerkverbindung</string>
     <string name="settings_speed_test_error_inspect_network">Das aktive Netzwerk konnte nicht geprüft werden</string>
     <string name="settings_speed_test_error_generic">Der Test konnte nicht abgeschlossen werden</string>
+    <string name="epg_error_generic">Der Guide konnte nicht geladen werden.</string>
+    <string name="settings_restore_sync_progress">Wiederhergestellte Anbieter werden synchronisiert…</string>
+    <string name="settings_restore_sync_success">Die ausgewählten wiederhergestellten Anbieter wurden erfolgreich synchronisiert</string>
+    <string name="settings_restore_sync_failures">Einige wiederhergestellte Anbieter konnten nicht synchronisiert werden: %1$s</string>
 </resources>

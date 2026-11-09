@@ -1127,4 +1127,8 @@
     <string name="settings_speed_test_error_no_network">有効なネットワーク接続がありません</string>
     <string name="settings_speed_test_error_inspect_network">有効なネットワークを確認できませんでした</string>
     <string name="settings_speed_test_error_generic">テストを完了できませんでした</string>
+    <string name="epg_error_generic">ガイドを読み込めませんでした。</string>
+    <string name="settings_restore_sync_progress">復元したプロバイダーを同期しています…</string>
+    <string name="settings_restore_sync_success">選択した復元済みプロバイダーを同期しました</string>
+    <string name="settings_restore_sync_failures">一部の復元済みプロバイダーを同期できませんでした: %1$s</string>
 </resources>

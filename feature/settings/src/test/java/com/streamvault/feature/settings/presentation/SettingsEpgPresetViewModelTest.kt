@@ -189,7 +189,19 @@ class SettingsEpgPresetViewModelTest {
             .isEqualTo("res:${com.streamvault.feature.settings.R.string.epg_source_error_empty_payload}")
         assertThat(localizeEpgError("HTTP 404; $empty", text, http))
             .isEqualTo("http:404; res:${com.streamvault.feature.settings.R.string.epg_source_error_empty_payload}")
-        assertThat(localizeEpgError("Connection reset", text, http)).isEqualTo("Connection reset")
+    }
+
+    @Test
+    fun `an unrecognised guide error is replaced by the generic localized message, never shown raw`() {
+        val text = { res: Int -> "res:$res" }
+        val http = { code: Int -> "http:$code" }
+        val generic = "res:${com.streamvault.feature.settings.R.string.epg_error_generic}"
+        val raw = "Failed to download EPG: http://host.example/xmltv.php?username=alice&password=s3cret"
+
+        assertThat(localizeEpgError("Connection reset", text, http)).isEqualTo(generic)
+        assertThat(localizeEpgError(raw, text, http)).isEqualTo(generic)
+        assertThat(localizeEpgError("HTTP 404; $raw", text, http)).isEqualTo("http:404; $generic")
+        assertThat(localizeEpgError("", text, http)).isEqualTo(generic)
     }
 
     @Test

@@ -1132,4 +1132,8 @@
     <string name="settings_speed_test_error_no_network">Nu există nicio conexiune de rețea activă</string>
     <string name="settings_speed_test_error_inspect_network">Rețeaua activă nu a putut fi verificată</string>
     <string name="settings_speed_test_error_generic">Testul nu a putut fi finalizat</string>
+    <string name="epg_error_generic">Ghidul nu a putut fi încărcat.</string>
+    <string name="settings_restore_sync_progress">Se sincronizează furnizorii restaurați…</string>
+    <string name="settings_restore_sync_success">Furnizorii restaurați selectați au fost sincronizați cu succes</string>
+    <string name="settings_restore_sync_failures">Unii furnizori restaurați nu au putut fi sincronizați: %1$s</string>
 </resources>

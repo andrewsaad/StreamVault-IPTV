@@ -237,7 +237,7 @@ sealed interface EpgPresetStatusLine {
 
 /**
  * The localized message for an [EpgPresetErrors] or [EpgSourceErrors] key, or null for any other
- * error text (a download or address error), which is shown as it is.
+ * error text (a download or address error), which is never shown as it is.
  */
 internal fun epgPresetErrorRes(message: String): Int? = when (message) {
     EpgPresetErrors.UNKNOWN_PRESET -> R.string.epg_preset_error_unknown
@@ -258,11 +258,14 @@ private val EPG_HTTP_STATUS_ERROR = Regex("""(?:Failed to download EPG: )?HTTP (
 /**
  * [message] with every known error key, and every HTTP status error, in it replaced by its localized
  * text. A preset refresh that failed on several files joins their errors with "; ", so each part is
- * looked up alone.
+ * looked up alone. Any other part (a download or address error) can carry the guide url and its login,
+ * so it is never shown: it becomes the generic localized guide error.
  */
 internal fun localizeEpgError(message: String, text: (Int) -> String, httpStatusText: (Int) -> String): String =
     message.split(EPG_ERROR_SEPARATOR).joinToString(EPG_ERROR_SEPARATOR) { part ->
-        epgPresetErrorRes(part)?.let(text) ?: epgHttpStatus(part)?.let(httpStatusText) ?: part
+        epgPresetErrorRes(part)?.let(text)
+            ?: epgHttpStatus(part)?.let(httpStatusText)
+            ?: text(R.string.epg_error_generic)
     }
 
 private const val EPG_ERROR_SEPARATOR = "; "

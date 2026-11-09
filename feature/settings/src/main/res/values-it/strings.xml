@@ -1125,4 +1125,8 @@
     <string name="settings_speed_test_error_no_network">Nessuna connessione di rete attiva</string>
     <string name="settings_speed_test_error_inspect_network">Impossibile esaminare la rete attiva</string>
     <string name="settings_speed_test_error_generic">Impossibile completare il test</string>
+    <string name="epg_error_generic">Impossibile caricare la guida.</string>
+    <string name="settings_restore_sync_progress">Sincronizzazione dei provider ripristinati…</string>
+    <string name="settings_restore_sync_success">I provider ripristinati selezionati sono stati sincronizzati correttamente</string>
+    <string name="settings_restore_sync_failures">Alcuni provider ripristinati non sono stati sincronizzati: %1$s</string>
 </resources>

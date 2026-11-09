@@ -1124,4 +1124,8 @@
     <string name="settings_speed_test_error_no_network">ไม่มีการเชื่อมต่อเครือข่ายที่ใช้งานอยู่</string>
     <string name="settings_speed_test_error_inspect_network">ตรวจสอบเครือข่ายที่ใช้งานอยู่ไม่สำเร็จ</string>
     <string name="settings_speed_test_error_generic">ทำการทดสอบไม่สำเร็จ</string>
+    <string name="epg_error_generic">ไม่สามารถโหลดคู่มือรายการได้</string>
+    <string name="settings_restore_sync_progress">กำลังซิงค์ผู้ให้บริการที่กู้คืน…</string>
+    <string name="settings_restore_sync_success">ซิงค์ผู้ให้บริการที่กู้คืนและเลือกไว้สำเร็จแล้ว</string>
+    <string name="settings_restore_sync_failures">ผู้ให้บริการที่กู้คืนบางรายซิงค์ไม่สำเร็จ: %1$s</string>
 </resources>
