@@ -24,8 +24,20 @@ internal data class ChannelProbeOutcome(
     val checkedAt: Long,
 )
 
-/** Where a scan that started at [startedAt] got to: channels up to [afterChannelId] (ids ascending) are done. */
-internal data class ChannelHealthResume(val startedAt: Long, val afterChannelId: Long)
+/**
+ * Where a scan that started at [startedAt] got to: channels up to [afterChannelId] (ids ascending) are done.
+ * [retryIds] are the channels whose answer was UNCLEAR (provider trouble) and get one more try once the
+ * main pass is over; [retryAfterChannelId] is null during the main pass and, once the retry pass has
+ * started, the last retried id (0 before the first). [serverErrorIds] are the [retryIds] whose UNCLEAR
+ * answer was an HTTP 5xx; a second 5xx on the retry makes such a channel count as EMPTY.
+ */
+internal data class ChannelHealthResume(
+    val startedAt: Long,
+    val afterChannelId: Long,
+    val retryIds: List<Long> = emptyList(),
+    val retryAfterChannelId: Long? = null,
+    val serverErrorIds: List<Long> = emptyList(),
+)
 
 /** Only channels whose latest answer was EMPTY or DEAD have a record; an OK answer removes it. */
 internal data class ChannelHealthDocument(
@@ -132,6 +144,9 @@ class ChannelHealthResults internal constructor(
         val records: List<StoredRecord> = emptyList(),
         val resumeStartedAt: Long? = null,
         val resumeAfterId: Long? = null,
+        val resumeRetryIds: List<Long> = emptyList(),
+        val resumeRetryAfterId: Long? = null,
+        val resumeServerErrorIds: List<Long> = emptyList(),
     )
 
     private fun encode(document: ChannelHealthDocument): String = json.encodeToString(
@@ -140,6 +155,9 @@ class ChannelHealthResults internal constructor(
             lastFinishedAt = document.lastFinishedAt,
             resumeStartedAt = document.resume?.startedAt,
             resumeAfterId = document.resume?.afterChannelId,
+            resumeRetryIds = document.resume?.retryIds.orEmpty(),
+            resumeRetryAfterId = document.resume?.retryAfterChannelId,
+            resumeServerErrorIds = document.resume?.serverErrorIds.orEmpty(),
             records = document.records.values.map {
                 StoredRecord(it.channelId, statusToStored(it.status), it.checkedAt, it.failedDays)
             },
@@ -156,7 +174,13 @@ class ChannelHealthResults internal constructor(
             ChannelHealthRecord(record.id, status, record.checkedAt, record.failedDays)
         }.associateBy { it.channelId }
         val resume = if (document.resumeStartedAt != null && document.resumeAfterId != null) {
-            ChannelHealthResume(document.resumeStartedAt, document.resumeAfterId)
+            ChannelHealthResume(
+                document.resumeStartedAt,
+                document.resumeAfterId,
+                document.resumeRetryIds,
+                document.resumeRetryAfterId,
+                document.resumeServerErrorIds,
+            )
         } else {
             null
         }

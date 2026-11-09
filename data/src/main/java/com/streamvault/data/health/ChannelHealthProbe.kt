@@ -12,6 +12,13 @@ import okhttp3.ResponseBody
 import okhttp3.logging.HttpLoggingInterceptor
 
 /**
+ * What a probe found. [serverError] is set only for an UNCLEAR answer that was an HTTP 5xx from the
+ * provider (not a timeout, IO error, 401/403 or a bad segment), so a scan can tell a provider that
+ * keeps refusing a channel from one that was merely unreachable. Never holds the url.
+ */
+internal data class ChannelProbeResult(val status: ChannelHealthStatus, val serverError: Boolean = false)
+
+/**
  * Checks one live channel the way the player would start it: the HLS playlist, then the first
  * piece of video. The url carries the provider login, so it is never logged, returned or put in
  * an exception message here.
@@ -26,40 +33,40 @@ internal class ChannelHealthProbe @Inject constructor(client: OkHttpClient) {
         .callTimeout(CALL_TIMEOUT_SECONDS, TimeUnit.SECONDS)
         .build()
 
-    suspend fun probe(playlistUrl: String, headers: Map<String, String> = emptyMap()): ChannelHealthStatus =
+    suspend fun probe(playlistUrl: String, headers: Map<String, String> = emptyMap()): ChannelProbeResult =
         try {
             classify(playlistUrl, headers)
         } catch (cancelled: CancellationException) {
             throw cancelled
         } catch (_: Exception) {
             // IO errors, timeouts and unparsable urls say nothing about the channel.
-            ChannelHealthStatus.UNCLEAR
+            ChannelProbeResult(ChannelHealthStatus.UNCLEAR)
         }
 
-    private suspend fun classify(playlistUrl: String, headers: Map<String, String>): ChannelHealthStatus {
+    private suspend fun classify(playlistUrl: String, headers: Map<String, String>): ChannelProbeResult {
         var playlist = when (val fetched = fetchPlaylist(playlistUrl, headers)) {
-            is Fetched.Verdict -> return fetched.status
+            is Fetched.Verdict -> return fetched.result
             is Fetched.Playlist -> fetched
         }
         if (playlist.isMaster) {
             // One variant level is enough: the first variant is what the player starts with.
-            val variantUrl = playlist.firstEntry ?: return ChannelHealthStatus.DEAD
+            val variantUrl = playlist.firstEntry ?: return ChannelProbeResult(ChannelHealthStatus.DEAD)
             playlist = when (val fetched = fetchPlaylist(variantUrl.toString(), headers)) {
-                is Fetched.Verdict -> return fetched.status
+                is Fetched.Verdict -> return fetched.result
                 is Fetched.Playlist -> fetched
             }
         }
-        val segmentUrl = playlist.firstEntry ?: return ChannelHealthStatus.DEAD
+        val segmentUrl = playlist.firstEntry ?: return ChannelProbeResult(ChannelHealthStatus.DEAD)
         return checkFirstBytes(segmentUrl, headers)
     }
 
     private suspend fun fetchPlaylist(url: String, headers: Map<String, String>): Fetched =
         client.newCall(request(url, headers).build()).useCancellableResponse { response ->
-            statusForHttpCode(response.code)?.let { return@useCancellableResponse Fetched.Verdict(it) }
+            resultForHttpCode(response.code)?.let { return@useCancellableResponse Fetched.Verdict(it) }
             val text = readText(response.body, MAX_PLAYLIST_BYTES)
             when {
-                text.isBlank() -> Fetched.Verdict(ChannelHealthStatus.EMPTY)
-                !text.contains("#EXTM3U") -> Fetched.Verdict(ChannelHealthStatus.DEAD)
+                text.isBlank() -> Fetched.Verdict(ChannelProbeResult(ChannelHealthStatus.EMPTY))
+                !text.contains("#EXTM3U") -> Fetched.Verdict(ChannelProbeResult(ChannelHealthStatus.DEAD))
                 else -> Fetched.Playlist(
                     firstEntry = firstEntry(text)?.let { response.request.url.resolve(it) },
                     isMaster = text.contains("#EXT-X-STREAM-INF")
@@ -67,29 +74,32 @@ internal class ChannelHealthProbe @Inject constructor(client: OkHttpClient) {
             }
         }
 
-    private suspend fun checkFirstBytes(segmentUrl: HttpUrl, headers: Map<String, String>): ChannelHealthStatus =
+    private suspend fun checkFirstBytes(segmentUrl: HttpUrl, headers: Map<String, String>): ChannelProbeResult =
         client.newCall(
             request(segmentUrl.toString(), headers).header("Range", "bytes=0-${MAX_SEGMENT_BYTES - 1}").build()
         ).useCancellableResponse { response ->
-            statusForHttpCode(response.code)?.let { return@useCancellableResponse it }
-            val source = response.body?.source() ?: return@useCancellableResponse ChannelHealthStatus.DEAD
+            resultForHttpCode(response.code)?.let { return@useCancellableResponse it }
+            val source = response.body?.source()
+                ?: return@useCancellableResponse ChannelProbeResult(ChannelHealthStatus.DEAD)
             source.request(MAX_SEGMENT_BYTES)
             val size = minOf(source.buffer.size, MAX_SEGMENT_BYTES)
-            when {
-                size < MIN_SEGMENT_BYTES -> ChannelHealthStatus.DEAD
-                source.buffer[0] != MPEG_TS_SYNC_BYTE -> ChannelHealthStatus.UNCLEAR
-                else -> ChannelHealthStatus.OK
-            }
+            ChannelProbeResult(
+                when {
+                    size < MIN_SEGMENT_BYTES -> ChannelHealthStatus.DEAD
+                    source.buffer[0] != MPEG_TS_SYNC_BYTE -> ChannelHealthStatus.UNCLEAR
+                    else -> ChannelHealthStatus.OK
+                },
+            )
         }
 
     private fun request(url: String, headers: Map<String, String>): Request.Builder =
         Request.Builder().url(url).apply { headers.forEach { (name, value) -> header(name, value) } }
 
-    private fun statusForHttpCode(code: Int): ChannelHealthStatus? = when (code) {
+    private fun resultForHttpCode(code: Int): ChannelProbeResult? = when (code) {
         in 200..299 -> null
         // 401 and 403 are not a verdict: Xtream answers 403 for a reached connection limit, an expired account or a blocked address.
-        404, 410 -> ChannelHealthStatus.DEAD
-        else -> ChannelHealthStatus.UNCLEAR
+        404, 410 -> ChannelProbeResult(ChannelHealthStatus.DEAD)
+        else -> ChannelProbeResult(ChannelHealthStatus.UNCLEAR, serverError = code in 500..599)
     }
 
     private fun readText(body: ResponseBody?, maxBytes: Long): String {
@@ -102,7 +112,7 @@ internal class ChannelHealthProbe @Inject constructor(client: OkHttpClient) {
         playlist.lineSequence().map { it.trim() }.firstOrNull { it.isNotEmpty() && !it.startsWith("#") }
 
     private sealed interface Fetched {
-        class Verdict(val status: ChannelHealthStatus) : Fetched
+        class Verdict(val result: ChannelProbeResult) : Fetched
         class Playlist(val firstEntry: HttpUrl?, val isMaster: Boolean) : Fetched
     }
 

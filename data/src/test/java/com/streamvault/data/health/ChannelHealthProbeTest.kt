@@ -33,7 +33,7 @@ class ChannelHealthProbeTest {
         Buffer().write(ByteArray(size) { index -> if (index == 0) firstByte.toByte() else 0x10 })
     )
 
-    private fun probeNow(): ChannelHealthStatus = runBlocking { probe.probe(playlistUrl()) }
+    private fun probeNow(): ChannelHealthStatus = runBlocking { probe.probe(playlistUrl()) }.status
 
     @Test
     fun `playlist and MPEG-TS segment are OK and the segment is asked with a range`() {
@@ -81,6 +81,8 @@ class ChannelHealthProbeTest {
             server.enqueue(MockResponse().setResponseCode(code))
 
             assertThat(probeNow()).isEqualTo(ChannelHealthStatus.UNCLEAR)
+            server.enqueue(MockResponse().setResponseCode(code))
+            assertThat(runBlocking { probe.probe(playlistUrl()) }.serverError).isFalse()
         }
     }
 
@@ -98,6 +100,8 @@ class ChannelHealthProbeTest {
             server.enqueue(MockResponse().setResponseCode(code))
 
             assertThat(probeNow()).isEqualTo(ChannelHealthStatus.UNCLEAR)
+            server.enqueue(MockResponse().setResponseCode(code))
+            assertThat(runBlocking { probe.probe(playlistUrl()) }.serverError).isTrue()
         }
     }
 
@@ -106,12 +110,15 @@ class ChannelHealthProbeTest {
         val url = playlistUrl()
         server.shutdown()
 
-        assertThat(runBlocking { probe.probe(url) }).isEqualTo(ChannelHealthStatus.UNCLEAR)
+        val result = runBlocking { probe.probe(url) }
+
+        assertThat(result).isEqualTo(ChannelProbeResult(ChannelHealthStatus.UNCLEAR, serverError = false))
     }
 
     @Test
     fun `an address that cannot be parsed is UNCLEAR`() {
-        assertThat(runBlocking { probe.probe("not an address") }).isEqualTo(ChannelHealthStatus.UNCLEAR)
+        assertThat(runBlocking { probe.probe("not an address") })
+            .isEqualTo(ChannelProbeResult(ChannelHealthStatus.UNCLEAR, serverError = false))
     }
 
     @Test
@@ -165,6 +172,7 @@ class ChannelHealthProbeTest {
         server.enqueue(playlist("#EXTM3U", "#EXTINF:6,", "seg0.ts"))
         server.enqueue(MockResponse().setResponseCode(502))
 
-        assertThat(probeNow()).isEqualTo(ChannelHealthStatus.UNCLEAR)
+        assertThat(runBlocking { probe.probe(playlistUrl()) })
+            .isEqualTo(ChannelProbeResult(ChannelHealthStatus.UNCLEAR, serverError = true))
     }
 }

@@ -106,6 +106,8 @@ class ChannelHealthScanner internal constructor(
     /**
      * Probes the provider's live channels. When the same scan ([startedAt]) ran before, the channels it
      * had settled are skipped, so a scan the system stopped and WorkManager restarted carries on.
+     * Channels the provider could not answer for (UNCLEAR) are probed once more after the main pass,
+     * following one provider backoff; the scan only counts as finished after that retry pass.
      * Returns false when the scan could not run or gave up; the reason is never the login. A scan that
      * gave up is flagged in its state ([ChannelHealthScanState.gaveUp]) so the user can be told.
      */
@@ -123,13 +125,58 @@ class ChannelHealthScanner internal constructor(
         val pending = ArrayList<ChannelProbeOutcome>()
         // Non-OK answers since the last OK; kept back from the store until an OK shows they are isolated.
         val streak = ArrayList<ChannelProbeOutcome>()
-        var scanned = 0
+        // Channels that answered UNCLEAR in the main pass, ascending; they get one more try afterwards.
+        val retryIds = sortedSetOf<Long>()
+        resume?.retryIds?.let { retryIds.addAll(it) }
+        // Of those, the ones whose answer was an HTTP 5xx (not a timeout or IO error).
+        val serverErrorIds = sortedSetOf<Long>()
+        resume?.serverErrorIds?.let { serverErrorIds.addAll(it) }
+        // Retried channels the provider refused with a 5xx again: they count as EMPTY once settled.
+        val refusedIds = HashSet<Long>()
+        var retrying = resume?.retryAfterChannelId != null
+        var queue = if (retrying) channels.filter { it.id in retryIds } else channels
+        // Ids up to this one are already done in the current pass (null: none).
+        var skipThrough = if (retrying) resume?.retryAfterChannelId else resume?.afterChannelId
+        var total = if (retrying) channels.size + queue.size else channels.size
+        var scanned = if (retrying) channels.size else 0
         var lastProbedId = resume?.afterChannelId ?: 0L
+        var retryAfterId: Long? = if (retrying) resume?.retryAfterChannelId else null
         var finished = false
         var gaveUp = false
         // Channels up to this id are settled; a held-back streak is not, so it is probed again after a restart.
-        fun resumePoint() = ChannelHealthResume(startedAt, streak.firstOrNull()?.let { it.channelId - 1 } ?: lastProbedId)
-        setState(providerId) { ChannelHealthScanState(running = true, total = channels.size) }
+        fun resumePoint(): ChannelHealthResume {
+            val heldBack = streak.firstOrNull()?.let { it.channelId - 1 }
+            val retryAfter = retryAfterId
+            if (retryAfter != null) {
+                return ChannelHealthResume(
+                    startedAt,
+                    lastProbedId,
+                    retryIds.toList(),
+                    heldBack ?: retryAfter,
+                    serverErrorIds.toList(),
+                )
+            }
+            val point = heldBack ?: lastProbedId
+            return ChannelHealthResume(
+                startedAt,
+                point,
+                retryIds.filter { it <= point },
+                serverErrorIds = serverErrorIds.filter { it <= point },
+            )
+        }
+        // A channel the provider refused with a 5xx on both passes counts as EMPTY; any other UNCLEAR stays unstored.
+        fun settled(outcomes: List<ChannelProbeOutcome>) = outcomes.map {
+            if (it.channelId in refusedIds) it.copy(status = ChannelHealthStatus.EMPTY) else it
+        }
+        var saved = resume
+        suspend fun flush() {
+            val point = resumePoint()
+            if (pending.isEmpty() && point == saved) return
+            results.record(providerId, pending.toList(), point)
+            pending.clear()
+            saved = point
+        }
+        setState(providerId) { ChannelHealthScanState(running = true, total = total, scanned = scanned) }
         try {
             var account = readAccount(providerId, config, previous = null)
             if (!account.allowsHls) {
@@ -138,64 +185,96 @@ class ChannelHealthScanner internal constructor(
             }
             var unclearInARow = 0
             var backoffsInARow = 0
-            for (channel in channels) {
-                currentCoroutineContext().ensureActive()
-                if (resume != null && channel.id <= resume.afterChannelId) {
+            while (true) {
+                for (channel in queue) {
+                    currentCoroutineContext().ensureActive()
+                    if (skipThrough != null && channel.id <= skipThrough) {
+                        scanned++
+                        setState(providerId) { it.copy(scanned = scanned) }
+                        continue
+                    }
+                    account = waitForFreeConnection(providerId, config, account) ?: run {
+                        gaveUp = true
+                        return false
+                    }
+                    val url = XtreamUrlFactory.buildPlaybackUrl(
+                        serverUrl = config.serverUrl,
+                        username = config.username,
+                        password = config.password,
+                        kind = XtreamStreamKind.LIVE,
+                        streamId = channel.streamId,
+                        containerExtension = "m3u8",
+                    )
+                    val result = probe.probe(url, headers)
+                    val status = result.status
+                    val outcome = ChannelProbeOutcome(channel.id, status, results.now())
+                    if (retrying) {
+                        retryAfterId = channel.id
+                    } else {
+                        lastProbedId = channel.id
+                        if (status == ChannelHealthStatus.UNCLEAR && retryIds.size < MAX_RETRY_CHANNELS) {
+                            retryIds += channel.id
+                            if (result.serverError) serverErrorIds += channel.id
+                        }
+                    }
+                    if (retrying && status == ChannelHealthStatus.UNCLEAR && result.serverError &&
+                        channel.id in serverErrorIds
+                    ) {
+                        refusedIds += channel.id
+                    }
                     scanned++
                     setState(providerId) { it.copy(scanned = scanned) }
-                    continue
-                }
-                account = waitForFreeConnection(providerId, config, account) ?: run {
-                    gaveUp = true
-                    return false
-                }
-                val url = XtreamUrlFactory.buildPlaybackUrl(
-                    serverUrl = config.serverUrl,
-                    username = config.username,
-                    password = config.password,
-                    kind = XtreamStreamKind.LIVE,
-                    streamId = channel.streamId,
-                    containerExtension = "m3u8",
-                )
-                val status = probe.probe(url, headers)
-                val outcome = ChannelProbeOutcome(channel.id, status, results.now())
-                lastProbedId = channel.id
-                scanned++
-                setState(providerId) { it.copy(scanned = scanned) }
-                if (status == ChannelHealthStatus.OK) {
-                    // A good answer shows the failures before it were the channels' own, so keep them.
-                    pending += streak
-                    pending += outcome
-                    streak.clear()
-                    unclearInARow = 0
-                    backoffsInARow = 0
-                } else {
-                    streak += outcome
-                    if (status == ChannelHealthStatus.UNCLEAR) unclearInARow++ else unclearInARow = 0
-                }
-                if (pending.size >= timings.flushEvery) flush(providerId, pending, resumePoint())
-                if (streak.size >= timings.massFailureStreak) {
-                    // Everything failing at once points at the provider or the account, not the channels.
-                    streak.clear()
-                    if (++backoffsInARow >= timings.maxBackoffsInARow) {
-                        gaveUp = true
-                        return false
+                    if (status == ChannelHealthStatus.OK) {
+                        // A good answer shows the failures before it were the channels' own, so keep them.
+                        pending += settled(streak)
+                        pending += outcome
+                        streak.clear()
+                        unclearInARow = 0
+                        backoffsInARow = 0
+                    } else {
+                        streak += outcome
+                        if (status == ChannelHealthStatus.UNCLEAR) unclearInARow++ else unclearInARow = 0
                     }
-                    backOff(providerId)
-                    unclearInARow = 0
-                    account = readAccount(providerId, config, previous = account)
-                } else if (unclearInARow >= timings.unclearInARowBeforeBackoff) {
-                    flush(providerId, pending, resumePoint())
-                    if (++backoffsInARow >= timings.maxBackoffsInARow) {
-                        gaveUp = true
-                        return false
+                    if (pending.size >= timings.flushEvery) flush()
+                    if (streak.size >= timings.massFailureStreak) {
+                        // Everything failing at once points at the provider or the account, not the channels.
+                        streak.clear()
+                        if (++backoffsInARow >= timings.maxBackoffsInARow) {
+                            gaveUp = true
+                            return false
+                        }
+                        backOff(providerId)
+                        unclearInARow = 0
+                        account = readAccount(providerId, config, previous = account)
+                    } else if (unclearInARow >= timings.unclearInARowBeforeBackoff) {
+                        flush()
+                        if (++backoffsInARow >= timings.maxBackoffsInARow) {
+                            gaveUp = true
+                            return false
+                        }
+                        backOff(providerId)
+                        unclearInARow = 0
+                        account = readAccount(providerId, config, previous = account)
+                    } else if (scanned < total) {
+                        delay(timings.pauseBetweenChannelsMs)
                     }
-                    backOff(providerId)
-                    unclearInARow = 0
-                    account = readAccount(providerId, config, previous = account)
-                } else if (scanned < channels.size) {
-                    delay(timings.pauseBetweenChannelsMs)
                 }
+                if (retrying || retryIds.isEmpty()) break
+                // Main pass over: settle what it held back, give the provider one backoff, then ask the
+                // UNCLEAR channels once more.
+                pending += settled(streak)
+                streak.clear()
+                flush()
+                backOff(providerId)
+                account = readAccount(providerId, config, previous = account)
+                retrying = true
+                retryAfterId = 0L
+                skipThrough = null
+                unclearInARow = 0
+                backoffsInARow = 0
+                queue = channels.filter { it.id in retryIds }
+                total = channels.size + queue.size
+                setState(providerId) { it.copy(total = total) }
             }
             finished = true
             return true
@@ -203,9 +282,10 @@ class ChannelHealthScanner internal constructor(
             throw cancelled
         } finally {
             withContext(NonCancellable) {
-                pending += streak
+                // A scan that gave up saw a provider in trouble, so its 5xx answers say nothing about the channels.
+                pending += if (gaveUp) streak.filterNot { it.channelId in refusedIds } else settled(streak)
                 streak.clear()
-                flush(providerId, pending, resumePoint())
+                flush()
                 if (finished) results.markFinished(providerId)
                 setState(providerId) { it.copy(running = false, paused = null, gaveUp = gaveUp) }
             }
@@ -265,16 +345,6 @@ class ChannelHealthScanner internal constructor(
             previous ?: AccountLimits(maxConnections = 1, activeConnections = 0)
         }
 
-    private suspend fun flush(
-        providerId: Long,
-        pending: MutableList<ChannelProbeOutcome>,
-        resume: ChannelHealthResume,
-    ) {
-        if (pending.isEmpty()) return
-        results.record(providerId, pending.toList(), resume)
-        pending.clear()
-    }
-
     private fun requestHeaders(providerId: Long, config: XtreamConfig): Map<String, String> {
         val profile = buildGenericProviderRequestProfile("provider:$providerId/health", config.httpUserAgent, config.httpHeaders)
         return buildMap {
@@ -289,5 +359,8 @@ class ChannelHealthScanner internal constructor(
 
     private companion object {
         const val TAG = "ChannelHealthScanner"
+
+        /** Most UNCLEAR channels remembered for the retry pass, to keep the stored document small. */
+        const val MAX_RETRY_CHANNELS = 1_000
     }
 }
