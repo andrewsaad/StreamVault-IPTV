@@ -13,6 +13,7 @@ import com.streamvault.domain.model.Result
 import com.streamvault.domain.repository.ProviderRepository
 import com.streamvault.domain.usecase.ImportBackup
 import com.streamvault.domain.usecase.InspectBackupResult
+import com.streamvault.feature.settings.R
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -20,6 +21,7 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
@@ -67,6 +69,7 @@ class SettingsDriveBackupActionsTest {
                 importBackup = importBackup,
                 providerRepository = providerRepository,
                 uiState = uiState,
+                text = fakeText,
             )
 
             actions.pushBackup(this)
@@ -74,7 +77,7 @@ class SettingsDriveBackupActionsTest {
 
             verify(driveManager).pushBackup(eq(credentials), any())
             verify(driveManager, never()).pushCredentials(any())
-            assertThat(uiState.value.userMessage).isEqualTo("Backup uploaded to Google Drive")
+            assertThat(uiState.value.userMessage).isEqualTo(resText(R.string.settings_drive_push_done))
             assertThat(uiState.value.driveIsBusy).isFalse()
         }
 
@@ -110,6 +113,7 @@ class SettingsDriveBackupActionsTest {
                 importBackup = importBackup,
                 providerRepository = providerRepository,
                 uiState = uiState,
+                text = fakeText,
             )
 
             actions.pullBackup(this)
@@ -135,6 +139,7 @@ class SettingsDriveBackupActionsTest {
             importBackup = importBackup,
             providerRepository = providerRepository,
             uiState = uiState,
+            text = fakeText,
         )
 
         actions.pushBackup(this)
@@ -163,6 +168,7 @@ class SettingsDriveBackupActionsTest {
                 importBackup = importBackup,
                 providerRepository = providerRepository,
                 uiState = uiState,
+                text = fakeText,
             )
 
             actions.pullBackup(this)
@@ -190,6 +196,7 @@ class SettingsDriveBackupActionsTest {
                 importBackup = importBackup,
                 providerRepository = providerRepository,
                 uiState = uiState,
+                text = fakeText,
             )
 
             actions.manageBackups(this)
@@ -201,8 +208,93 @@ class SettingsDriveBackupActionsTest {
 
             verify(driveManager).deleteBackup(eq(snapshot.id))
             assertThat(uiState.value.driveBackupManagementOptions).isEmpty()
-            assertThat(uiState.value.userMessage).isEqualTo("Drive backup deleted")
+            assertThat(uiState.value.userMessage).isEqualTo(resText(R.string.settings_drive_backup_deleted))
         }
+
+    private fun signedInState() = MutableStateFlow(
+        SettingsUiState(driveAuthState = DriveAuthState.SignedIn(DriveAccount(null, null)))
+    )
+
+    private fun actionsFor(uiState: MutableStateFlow<SettingsUiState>) = SettingsDriveBackupActions(
+        driveManager = driveManager,
+        importBackup = importBackup,
+        providerRepository = providerRepository,
+        uiState = uiState,
+        text = fakeText,
+    )
+
+    @Test
+    fun pushBackup_whenSignedOutAsksToSignInWithLocalizedText() = runTest(StandardTestDispatcher()) {
+        val uiState = MutableStateFlow(SettingsUiState())
+
+        actionsFor(uiState).pushBackup(this)
+        advanceUntilIdle()
+
+        assertThat(uiState.value.userMessage).isEqualTo(resText(R.string.settings_drive_sign_in_required))
+        verify(driveManager, never()).pushBackup(any(), any())
+    }
+
+    @Test
+    fun pushBackup_failureShowsLocalizedTextNotTheRawError() = runTest(StandardTestDispatcher()) {
+        whenever(providerRepository.getAllProviderCredentials()).thenReturn(emptyList())
+        whenever(driveManager.pushBackup(any(), any())).thenReturn(Result.Error("raw drive failure"))
+        val uiState = signedInState()
+
+        actionsFor(uiState).pushBackup(this)
+        advanceUntilIdle()
+
+        assertThat(uiState.value.userMessage).isEqualTo(resText(R.string.settings_drive_push_failed))
+        assertThat(uiState.value.userMessage).doesNotContain("raw drive failure")
+        assertThat(uiState.value.driveIsBusy).isFalse()
+    }
+
+    @Test
+    fun pullBackup_withNoSnapshotsShowsLocalizedNoBackupsText() = runTest(StandardTestDispatcher()) {
+        whenever(driveManager.listBackups()).thenReturn(Result.Success(emptyList()))
+        val uiState = signedInState()
+
+        actionsFor(uiState).pullBackup(this)
+        advanceUntilIdle()
+
+        assertThat(uiState.value.userMessage).isEqualTo(resText(R.string.settings_drive_no_backups))
+    }
+
+    @Test
+    fun pullBackup_listFailureShowsLocalizedTextNotTheRawError() = runTest(StandardTestDispatcher()) {
+        whenever(driveManager.listBackups()).thenReturn(Result.Error("raw list failure"))
+        val uiState = signedInState()
+
+        actionsFor(uiState).pullBackup(this)
+        advanceUntilIdle()
+
+        assertThat(uiState.value.userMessage).isEqualTo(resText(R.string.settings_drive_pull_failed))
+        assertThat(uiState.value.userMessage).doesNotContain("raw list failure")
+    }
+
+    @Test
+    fun completeSignIn_namesTheAccountThroughTheLocalizedTemplate() = runTest(StandardTestDispatcher()) {
+        whenever(driveManager.completeSignIn(anyOrNull()))
+            .thenReturn(Result.Success(DriveAccount("id", "user@example.com")))
+        val uiState = MutableStateFlow(SettingsUiState())
+
+        actionsFor(uiState).completeSignIn(this, null)
+        advanceUntilIdle()
+
+        assertThat(uiState.value.userMessage)
+            .isEqualTo(resText(R.string.settings_drive_signed_in_as, "user@example.com"))
+    }
+
+    @Test
+    fun manageBackups_failureShowsLocalizedTextNotTheRawError() = runTest(StandardTestDispatcher()) {
+        whenever(driveManager.listBackups()).thenReturn(Result.Error("raw manage failure"))
+        val uiState = signedInState()
+
+        actionsFor(uiState).manageBackups(this)
+        advanceUntilIdle()
+
+        assertThat(uiState.value.userMessage).isEqualTo(resText(R.string.settings_drive_manage_failed))
+        assertThat(uiState.value.userMessage).doesNotContain("raw manage failure")
+    }
 
     private fun emptyPreview() = BackupPreview(
         version = 12,

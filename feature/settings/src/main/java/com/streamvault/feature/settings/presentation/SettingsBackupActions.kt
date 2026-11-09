@@ -1,5 +1,6 @@
 package com.streamvault.feature.settings.presentation
 
+import android.util.Log
 import com.streamvault.domain.manager.BackupConflictStrategy
 import com.streamvault.domain.manager.BackupImportPlan
 import com.streamvault.domain.manager.BackupExportPlan
@@ -15,6 +16,7 @@ import com.streamvault.domain.usecase.ImportBackupCommand
 import com.streamvault.domain.usecase.ImportBackupResult
 import com.streamvault.domain.usecase.InspectBackupCommand
 import com.streamvault.domain.usecase.InspectBackupResult
+import com.streamvault.feature.settings.R
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
@@ -25,7 +27,9 @@ class SettingsBackupActions(
     private val importBackup: ImportBackup,
     private val uiState: MutableStateFlow<SettingsUiState>,
     private val stremioAddonSectionLabel: (() -> String)? = null,
-    private val loadRestoreProviders: suspend () -> List<LegacyProvider> = { uiState.value.providers }
+    private val loadRestoreProviders: suspend () -> List<LegacyProvider> = { uiState.value.providers },
+    /** Localized text for a string resource and its format arguments; the view model reads it from the app resources. */
+    private val text: (Int, List<Any>) -> String = { resId, _ -> resId.toString() },
 ) {
     fun exportConfig(
         scope: CoroutineScope,
@@ -48,6 +52,8 @@ class SettingsBackupActions(
             val result = exportBackup(ExportBackupCommand(uriString, plan))
             if (result is ExportBackupResult.Success) {
                 onSuccess?.invoke()
+            } else if (result is ExportBackupResult.Error) {
+                Log.w(TAG, "Export failed: ${result.message}", result.exception)
             }
             uiState.update { state ->
                 state.copy(
@@ -56,9 +62,9 @@ class SettingsBackupActions(
                     syncSectionLabel = null,
                     syncCanCancel = false,
                     userMessage = if (result is ExportBackupResult.Error) {
-                        "Export failed: ${result.message}"
+                        text(R.string.settings_backup_export_failed, emptyList())
                     } else {
-                        successMessage ?: "Configuration exported successfully"
+                        successMessage ?: text(R.string.settings_backup_exported, emptyList())
                     }
                 )
             }
@@ -78,6 +84,9 @@ class SettingsBackupActions(
                 )
             }
             val result = importBackup.inspect(InspectBackupCommand(uriString))
+            if (result is InspectBackupResult.Error) {
+                Log.w(TAG, "Import failed: ${result.message}", result.exception)
+            }
             uiState.update { state ->
                 when (result) {
                     is InspectBackupResult.Error -> state.copy(
@@ -85,7 +94,7 @@ class SettingsBackupActions(
                         syncStartedAt = 0L,
                         syncSectionLabel = null,
                         syncCanCancel = false,
-                        userMessage = "Import failed: ${result.message}"
+                        userMessage = text(R.string.settings_backup_import_failed, emptyList())
                     )
                     is InspectBackupResult.Success -> state.copy(
                         isSyncing = false,
@@ -161,7 +170,7 @@ class SettingsBackupActions(
                 !plan.importPlaybackHistory && !plan.importMultiViewPresets && !plan.importRecordingSchedules &&
                 !plan.importStremioAddons
             ) {
-                return@update state.copy(userMessage = "Select at least one section to import")
+                return@update state.copy(userMessage = text(R.string.settings_backup_select_section, emptyList()))
             }
             capturedUri = state.pendingBackupUri
             capturedPlan = plan
@@ -172,6 +181,9 @@ class SettingsBackupActions(
         val plan = capturedPlan ?: return
         scope.launch {
             val result = importBackup.confirm(ImportBackupCommand(uriString, plan))
+            if (result is ImportBackupResult.Error) {
+                Log.w(TAG, "Import failed: ${result.message}", result.exception)
+            }
             val affectedProviders = if (offerProviderSync) {
                 (result as? ImportBackupResult.Success)?.result?.affectedProviders.orEmpty()
             } else emptyList()
@@ -188,13 +200,13 @@ class SettingsBackupActions(
                     isImportingBackup = false,
                     isSyncing = false,
                     userMessage = if (result is ImportBackupResult.Error) {
-                        "Import failed: ${result.message}"
+                        text(R.string.settings_backup_import_failed, emptyList())
                     } else {
                         val success = result as ImportBackupResult.Success
                         val summary = stremioAddonSectionLabel?.let { label ->
                             success.importedSummary.replace(BACKUP_SECTION_STREMIO_ADDONS, label())
                         } ?: success.importedSummary
-                        "Configuration imported: $summary"
+                        text(R.string.settings_backup_imported, listOf(summary))
                     },
                     // Preserve the source and plan after partial/failed-before-commit outcomes so
                     // the user can retry the same durable checkpoint instead of starting over.
@@ -234,6 +246,10 @@ class SettingsBackupActions(
         uiState.update { state ->
             state.copy(pendingRestoreProviders = emptyList(), selectedRestoreProviderIndices = emptySet())
         }
+    }
+
+    private companion object {
+        const val TAG = "SettingsBackupActions"
     }
 }
 

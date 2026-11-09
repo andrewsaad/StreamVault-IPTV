@@ -4,6 +4,9 @@ import android.content.Context
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.os.SystemClock
+import android.util.Log
+import androidx.annotation.StringRes
+import com.streamvault.feature.settings.R
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -33,7 +36,11 @@ data class InternetSpeedTestSnapshot(
 
 sealed interface InternetSpeedTestResult {
     data class Success(val snapshot: InternetSpeedTestSnapshot) : InternetSpeedTestResult
-    data class Error(val message: String) : InternetSpeedTestResult
+    /**
+     * [reasonRes] is the localized, user-facing reason; [diagnostic] is raw developer text that is only logged,
+     * never shown.
+     */
+    data class Error(@StringRes val reasonRes: Int, val diagnostic: String? = null) : InternetSpeedTestResult
 }
 
 @Singleton
@@ -43,11 +50,11 @@ class InternetSpeedTestRunner @Inject constructor(
 ) {
     suspend fun run(): InternetSpeedTestResult = withContext(Dispatchers.IO) {
         val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
-            ?: return@withContext InternetSpeedTestResult.Error("Network service unavailable")
+            ?: return@withContext InternetSpeedTestResult.Error(R.string.settings_speed_test_error_network_service)
         val network = connectivityManager.activeNetwork
-            ?: return@withContext InternetSpeedTestResult.Error("No active network connection")
+            ?: return@withContext InternetSpeedTestResult.Error(R.string.settings_speed_test_error_no_network)
         val capabilities = connectivityManager.getNetworkCapabilities(network)
-            ?: return@withContext InternetSpeedTestResult.Error("Unable to inspect active network")
+            ?: return@withContext InternetSpeedTestResult.Error(R.string.settings_speed_test_error_inspect_network)
 
         val transport = capabilities.toTransport()
         val measuredAtMs = System.currentTimeMillis()
@@ -64,8 +71,13 @@ class InternetSpeedTestRunner @Inject constructor(
                 )
             )
         }.getOrElse {
-            InternetSpeedTestResult.Error(it.message ?: "Speed test failed")
+            Log.w(TAG, "Speed test failed: ${it.message}", it)
+            InternetSpeedTestResult.Error(R.string.settings_speed_test_error_generic, it.message)
         }
+    }
+
+    private companion object {
+        const val TAG = "InternetSpeedTestRunner"
     }
 
     private fun recommendMaxVideoHeight(megabitsPerSecond: Double): Int? {

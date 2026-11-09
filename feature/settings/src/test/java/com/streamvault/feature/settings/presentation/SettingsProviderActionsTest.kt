@@ -12,6 +12,7 @@ import com.streamvault.domain.repository.CombinedM3uRepository
 import com.streamvault.domain.repository.ProviderRepository
 import com.streamvault.domain.repository.SyncMetadataRepository
 import com.streamvault.domain.usecase.SyncProvider
+import com.streamvault.feature.settings.R
 import com.streamvault.feature.settings.api.SettingsSurfaceRefreshPort
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -42,9 +43,7 @@ class SettingsProviderActionsTest {
     private val requestedSyncs = mutableListOf<Long>()
 
     private val actions = SettingsProviderActions(
-        appContext = mock<android.content.Context>(defaultAnswer = org.mockito.stubbing.Answer { call ->
-            if (call.method.name == "getString") "Localized" else org.mockito.Answers.RETURNS_DEFAULTS.answer(call)
-        }),
+        appContext = fakeTextContext(),
         providerRepository = providerRepository,
         combinedM3uRepository = combinedM3uRepository,
         preferencesRepository = preferencesRepository,
@@ -183,7 +182,7 @@ class SettingsProviderActionsTest {
         verify(surfaceRefreshPort).refreshWatchNext()
         verify(surfaceRefreshPort).refreshRecommendations()
         verify(surfaceRefreshPort).refreshTvInputCatalog()
-        assertThat(uiState.value.userMessage).isEqualTo("Provider deleted")
+        assertThat(uiState.value.userMessage).isEqualTo(resText(R.string.settings_provider_deleted))
     }
 
     @Test
@@ -202,7 +201,7 @@ class SettingsProviderActionsTest {
         advanceUntilIdle()
 
         assertThat(uiState.value.userMessage)
-            .isEqualTo("Provider library deleted; final cleanup continues")
+            .isEqualTo(resText(R.string.settings_provider_delete_cleanup_pending))
     }
 
     @Test
@@ -229,7 +228,7 @@ class SettingsProviderActionsTest {
         verify(surfaceRefreshPort).refreshTvInputCatalog()
         assertThat(onSuccessCalled).isTrue()
         assertThat(uiState.value.isDeletingProvider).isFalse()
-        assertThat(uiState.value.userMessage).isEqualTo("Provider deleted")
+        assertThat(uiState.value.userMessage).isEqualTo(resText(R.string.settings_provider_deleted))
     }
 
     @Test
@@ -242,7 +241,7 @@ class SettingsProviderActionsTest {
         actions.setActiveProvider(this, 7L)
         advanceUntilIdle()
 
-        assertThat(uiState.value.userMessage).isEqualTo("Localized")
+        assertThat(uiState.value.userMessage).isEqualTo(resText(R.string.settings_provider_activate_failed))
         assertThat(uiState.value.userMessage).doesNotContain("raw english failure")
     }
 
@@ -253,7 +252,70 @@ class SettingsProviderActionsTest {
         actions.setActiveProvider(this, 7L)
         advanceUntilIdle()
 
-        assertThat(uiState.value.userMessage).isEqualTo("Localized")
+        assertThat(uiState.value.userMessage).isEqualTo(resText(R.string.settings_provider_activate_not_found))
         verify(providerRepository, never()).setActiveProvider(any())
+    }
+
+    private val xtream = Provider(
+        id = 7L, name = "Xtream", type = ProviderType.XTREAM_CODES, serverUrl = "https://example.test"
+    )
+
+    @Test
+    fun deleteProvider_failureShowsLocalizedTextNotTheRawError() = runTest(StandardTestDispatcher()) {
+        whenever(providerRepository.deleteProvider(eq(7L), any())).thenReturn(Result.error("raw delete failure"))
+
+        actions.deleteProvider(this, 7L)
+        advanceUntilIdle()
+
+        assertThat(uiState.value.userMessage).isEqualTo(resText(R.string.settings_provider_delete_failed))
+        assertThat(uiState.value.userMessage).doesNotContain("raw delete failure")
+        assertThat(uiState.value.isDeletingProvider).isFalse()
+    }
+
+    @Test
+    fun combinedSourceFailureShowsLocalizedTextNotTheRawError() = runTest(StandardTestDispatcher()) {
+        whenever(combinedM3uRepository.createProfile(any(), any())).thenReturn(Result.error("raw create failure"))
+        var failed = false
+
+        actions.createCombinedProfile(this, "Mix", listOf(7L), onError = { failed = true })
+        advanceUntilIdle()
+
+        assertThat(failed).isTrue()
+        assertThat(uiState.value.userMessage).isEqualTo(resText(R.string.settings_combined_update_failed))
+        assertThat(uiState.value.userMessage).doesNotContain("raw create failure")
+    }
+
+    @Test
+    fun combinedSourceDeleteSuccessShowsLocalizedText() = runTest(StandardTestDispatcher()) {
+        whenever(combinedM3uRepository.deleteProfile(3L)).thenReturn(Result.success(Unit))
+
+        actions.deleteCombinedProfile(this, 3L)
+        advanceUntilIdle()
+
+        assertThat(uiState.value.userMessage).isEqualTo(resText(R.string.settings_combined_deleted))
+    }
+
+    @Test
+    fun guideSourcePolicy_successNamesTheProviderThroughTheLocalizedTemplate() = runTest(StandardTestDispatcher()) {
+        whenever(providerRepository.getProvider(7L)).thenReturn(xtream)
+        whenever(providerRepository.updateProvider(any())).thenReturn(Result.success(Unit))
+
+        actions.setGuideSourcePolicy(this, 7L, com.streamvault.domain.model.GuideSourcePolicy.values().first())
+        advanceUntilIdle()
+
+        assertThat(uiState.value.userMessage)
+            .isEqualTo(resText(R.string.settings_provider_guide_source_updated, "Xtream"))
+    }
+
+    @Test
+    fun guideSourcePolicy_failureShowsLocalizedTextNotTheRawError() = runTest(StandardTestDispatcher()) {
+        whenever(providerRepository.getProvider(7L)).thenReturn(xtream)
+        whenever(providerRepository.updateProvider(any())).thenReturn(Result.error("raw save failure"))
+
+        actions.setGuideSourcePolicy(this, 7L, com.streamvault.domain.model.GuideSourcePolicy.values().first())
+        advanceUntilIdle()
+
+        assertThat(uiState.value.userMessage).isEqualTo(resText(R.string.settings_provider_guide_source_save_failed))
+        assertThat(uiState.value.userMessage).doesNotContain("raw save failure")
     }
 }

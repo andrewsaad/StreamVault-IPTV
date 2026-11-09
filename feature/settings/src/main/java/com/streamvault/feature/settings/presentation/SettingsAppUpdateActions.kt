@@ -1,6 +1,7 @@
 package com.streamvault.feature.settings.presentation
 
 import android.content.Context
+import android.util.Log
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
@@ -44,13 +45,16 @@ internal class SettingsAppUpdateActions(
                 is Result.Error -> {
                     preferencesRepository.setLastAppUpdateFailureTimestamp(checkedAt)
                     preferencesRepository.setLastAppUpdateOutcome("FAILURE: ${result.message}")
+                    // The port message is raw English from the network layer; the user sees the localized sentence.
+                    Log.w(TAG, "Update check failed: ${result.message}", result.exception)
+                    val failureText = appContext.getString(R.string.settings_update_check_failed)
                     uiState.update {
                         it.copy(
                             isCheckingForUpdates = false,
-                            userMessage = if (manual) result.message else it.userMessage,
+                            userMessage = if (manual) failureText else it.userMessage,
                             appUpdate = it.appUpdate.copy(
                                 lastCheckedAt = checkedAt,
-                                errorMessage = result.message
+                                errorMessage = failureText
                             )
                         )
                     }
@@ -129,7 +133,12 @@ internal class SettingsAppUpdateActions(
 
         scope.launch {
             when (val result = appUpdatePort.startDownload(latestRelease)) {
-                is Result.Error -> uiState.update { it.copy(userMessage = result.message) }
+                is Result.Error -> {
+                    Log.w(TAG, "Update download failed: ${result.message}", result.exception)
+                    uiState.update {
+                        it.copy(userMessage = appContext.getString(R.string.settings_update_download_failed))
+                    }
+                }
                 is Result.Success -> uiState.update {
                     it.copy(userMessage = appContext.getString(R.string.settings_update_download_started))
                 }
@@ -141,12 +150,21 @@ internal class SettingsAppUpdateActions(
     fun installDownloadedUpdate(scope: CoroutineScope) {
         scope.launch {
             when (val result = appUpdatePort.installDownloadedUpdate(uiState.value.appUpdate.downloadSha256)) {
-                is Result.Error -> uiState.update { it.copy(userMessage = result.message) }
+                is Result.Error -> {
+                    Log.w(TAG, "Update install failed: ${result.message}", result.exception)
+                    uiState.update {
+                        it.copy(userMessage = appContext.getString(R.string.settings_update_install_failed))
+                    }
+                }
                 is Result.Success -> uiState.update {
                     it.copy(userMessage = appContext.getString(R.string.settings_update_install_started))
                 }
                 Result.Loading -> Unit
             }
         }
+    }
+
+    private companion object {
+        const val TAG = "SettingsAppUpdateActions"
     }
 }

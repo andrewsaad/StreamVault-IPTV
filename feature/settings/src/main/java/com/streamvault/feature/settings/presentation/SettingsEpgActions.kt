@@ -127,8 +127,15 @@ class SettingsEpgActions(
     }
 
     private fun showUnexpectedPresetError(error: Exception) {
-        val message = error.message?.takeIf(String::isNotBlank) ?: return
-        uiState.update { it.copy(userMessage = message) }
+        // The exception text is raw English from lower layers; the user only ever sees the localized sentence.
+        Log.w("SettingsEpgActions", "Unexpected guide preset failure: ${error.message}", error)
+        uiState.update { it.copy(userMessage = epgNotice(R.string.settings_epg_preset_failed, emptyList())) }
+    }
+
+    /** A repository refusal carries raw English text; log it and show the localized sentence for the action. */
+    private fun showSourceFailure(result: Result.Error, @StringRes fallbackRes: Int) {
+        Log.w("SettingsEpgActions", "Guide source action failed: ${result.message}", result.exception)
+        uiState.update { it.copy(userMessage = epgNotice(fallbackRes, emptyList())) }
     }
 
     fun loadEpgAssignments(scope: CoroutineScope, providerId: Long) {
@@ -175,7 +182,7 @@ class SettingsEpgActions(
                     timezoneId = normalizedTimezoneId
                 )
                 if (result is Result.Error) {
-                    uiState.update { it.copy(userMessage = result.message) }
+                    showSourceFailure(result, R.string.epg_error_add_source_failed)
                     onError()
                 } else {
                     onSuccess()
@@ -211,7 +218,7 @@ class SettingsEpgActions(
                     )
                 )
                 if (updateResult is Result.Error) {
-                    uiState.update { it.copy(userMessage = updateResult.message) }
+                    showSourceFailure(updateResult, R.string.epg_error_update_timezone_failed)
                     onError()
                     return@launch
                 }
@@ -315,7 +322,7 @@ class SettingsEpgActions(
                 val nextPriority = (existingAssignments.maxOfOrNull { it.priority } ?: 0) + 1
                 val result = epgSourceRepository.assignSourceToProvider(providerId, epgSourceId, nextPriority)
                 if (result is Result.Error) {
-                    uiState.update { it.copy(userMessage = result.message) }
+                    showSourceFailure(result, R.string.epg_error_assign_source_failed)
                     return@launch
                 }
                 // A freshly-added source has no programme data yet, so assigning it would

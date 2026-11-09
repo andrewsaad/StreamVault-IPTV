@@ -38,6 +38,7 @@ class SettingsEpgPresetViewModelTest {
         var nextAddressResult: Result<Unit> = Result.Success(Unit)
         var reconcileCalls = 0
         var nextResult: Result<Unit> = Result.Success(Unit)
+        var reconcileFailure: Exception? = null
 
         override fun observe(): Flow<List<EpgPresetStatus>> = statuses
 
@@ -58,6 +59,7 @@ class SettingsEpgPresetViewModelTest {
 
         override suspend fun reconcile() {
             reconcileCalls++
+            reconcileFailure?.let { throw it }
         }
     }
 
@@ -429,6 +431,70 @@ class SettingsEpgPresetViewModelTest {
 
         assertThat(uiState.value.userMessage)
             .isEqualTo("notice:${com.streamvault.feature.settings.R.string.epg_error_delete_source_failed}")
+    }
+
+    @Test
+    fun `a refused new guide source shows the localized notice and never the raw error`() = runTest {
+        val repository: EpgSourceRepository = mock()
+        whenever(repository.addSource(any(), any(), any(), anyOrNull())).thenReturn(Result.error("A source with this URL already exists"))
+        val uiState = MutableStateFlow(SettingsUiState())
+        val actions = SettingsEpgActions(
+            repository, FakeEpgPresetManager(), uiState, epgNotice = { resId, _ -> "notice:$resId" },
+        )
+        var failed = false
+
+        actions.addEpgSource(this, "Mine", "https://example.com/mine.xml", null, onError = { failed = true })
+        advanceUntilIdle()
+
+        assertThat(failed).isTrue()
+        assertThat(uiState.value.userMessage).isEqualTo("notice:${R.string.epg_error_add_source_failed}")
+    }
+
+    @Test
+    fun `a refused timezone change shows the localized notice and never the raw error`() = runTest {
+        val repository: EpgSourceRepository = mock()
+        whenever(repository.updateSource(any())).thenReturn(Result.error("Source not found"))
+        val uiState = MutableStateFlow(SettingsUiState())
+        val actions = SettingsEpgActions(
+            repository, FakeEpgPresetManager(), uiState, epgNotice = { resId, _ -> "notice:$resId" },
+        )
+
+        actions.updateEpgSourceTimezone(
+            this, EpgSource(id = 7L, name = "Mine", url = "https://example.com/mine.xml"), "Europe/Amsterdam"
+        )
+        advanceUntilIdle()
+
+        assertThat(uiState.value.userMessage).isEqualTo("notice:${R.string.epg_error_update_timezone_failed}")
+    }
+
+    @Test
+    fun `a refused assignment shows the localized notice and never the raw error`() = runTest {
+        val repository: EpgSourceRepository = mock()
+        whenever(repository.assignSourceToProvider(any(), any(), any())).thenReturn(Result.error("Provider not found"))
+        val uiState = MutableStateFlow(SettingsUiState())
+        val actions = SettingsEpgActions(
+            repository, FakeEpgPresetManager(), uiState, epgNotice = { resId, _ -> "notice:$resId" },
+        )
+
+        actions.assignEpgSourceToProvider(this, 1L, 10L)
+        advanceUntilIdle()
+
+        assertThat(uiState.value.userMessage).isEqualTo("notice:${R.string.epg_error_assign_source_failed}")
+    }
+
+    @Test
+    fun `an unexpected preset failure shows the localized notice and never the exception text`() = runTest {
+        val manager = FakeEpgPresetManager().apply { reconcileFailure = IllegalStateException("raw preset failure") }
+        val uiState = MutableStateFlow(SettingsUiState())
+        val actions = SettingsEpgActions(
+            mock(), manager, uiState, epgNotice = { resId, _ -> "notice:$resId" },
+        )
+
+        val job = actions.observeEpgPresets(this)
+        advanceUntilIdle()
+
+        assertThat(uiState.value.userMessage).isEqualTo("notice:${R.string.settings_epg_preset_failed}")
+        job.cancel()
     }
 
     @Test

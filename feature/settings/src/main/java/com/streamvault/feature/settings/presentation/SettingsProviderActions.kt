@@ -49,7 +49,14 @@ internal class SettingsProviderActions(
     private val onSyncRequested: (CoroutineScope, Provider) -> Unit
 ) {
     private companion object {
+        const val TAG = "SettingsProviderActions"
         val AUTO_SWITCH_SYNC_STALE_AFTER_MS = 24.hours.inWholeMilliseconds
+    }
+
+    /** Combined-source repository errors are raw English; log them and show one localized sentence. */
+    private fun showCombinedFailure(action: String, result: Result.Error) {
+        Log.w(TAG, "Combined source $action failed: ${result.message}", result.exception)
+        uiState.update { it.copy(userMessage = appContext.getString(R.string.settings_combined_update_failed)) }
     }
 
     fun setActiveProvider(scope: CoroutineScope, providerId: Long) {
@@ -108,11 +115,11 @@ internal class SettingsProviderActions(
             when (val result = combinedM3uRepository.createProfile(name, providerIds)) {
                 is Result.Success -> {
                     combinedM3uRepository.setActiveLiveSource(ActiveLiveSource.CombinedM3uSource(result.data.id))
-                    uiState.update { it.copy(userMessage = "Combined M3U source created") }
+                    uiState.update { it.copy(userMessage = appContext.getString(R.string.settings_combined_created)) }
                     onSuccess()
                 }
                 is Result.Error -> {
-                    uiState.update { it.copy(userMessage = result.message) }
+                    showCombinedFailure("create", result)
                     onError()
                 }
                 Result.Loading -> Unit
@@ -123,8 +130,8 @@ internal class SettingsProviderActions(
     fun deleteCombinedProfile(scope: CoroutineScope, profileId: Long) {
         scope.launch {
             when (val result = combinedM3uRepository.deleteProfile(profileId)) {
-                is Result.Success -> uiState.update { it.copy(userMessage = "Combined M3U source deleted") }
-                is Result.Error -> uiState.update { it.copy(userMessage = result.message) }
+                is Result.Success -> uiState.update { it.copy(userMessage = appContext.getString(R.string.settings_combined_deleted)) }
+                is Result.Error -> showCombinedFailure("delete", result)
                 Result.Loading -> Unit
             }
         }
@@ -134,11 +141,11 @@ internal class SettingsProviderActions(
         scope.launch {
             when (val result = combinedM3uRepository.addProvider(profileId, providerId)) {
                 is Result.Success -> {
-                    uiState.update { it.copy(userMessage = "Playlist added to combined source") }
+                    uiState.update { it.copy(userMessage = appContext.getString(R.string.settings_combined_playlist_added)) }
                     onSuccess()
                 }
                 is Result.Error -> {
-                    uiState.update { it.copy(userMessage = result.message) }
+                    showCombinedFailure("add playlist", result)
                     onError()
                 }
                 Result.Loading -> Unit
@@ -150,11 +157,11 @@ internal class SettingsProviderActions(
         scope.launch {
             when (val result = combinedM3uRepository.updateProfileName(profileId, name)) {
                 is Result.Success -> {
-                    uiState.update { it.copy(userMessage = "Combined M3U source renamed") }
+                    uiState.update { it.copy(userMessage = appContext.getString(R.string.settings_combined_renamed)) }
                     onSuccess()
                 }
                 is Result.Error -> {
-                    uiState.update { it.copy(userMessage = result.message) }
+                    showCombinedFailure("rename", result)
                     onError()
                 }
                 Result.Loading -> Unit
@@ -176,8 +183,8 @@ internal class SettingsProviderActions(
                 }
             }
             when (val result = combinedM3uRepository.removeProvider(profileId, providerId)) {
-                is Result.Success -> uiState.update { it.copy(userMessage = "Playlist removed from combined source") }
-                is Result.Error -> uiState.update { it.copy(userMessage = result.message) }
+                is Result.Success -> uiState.update { it.copy(userMessage = appContext.getString(R.string.settings_combined_playlist_removed)) }
+                is Result.Error -> showCombinedFailure("remove playlist", result)
                 Result.Loading -> Unit
             }
         }
@@ -193,8 +200,8 @@ internal class SettingsProviderActions(
             if (targetIndex !in orderedProviderIds.indices) return@launch
             java.util.Collections.swap(orderedProviderIds, currentIndex, targetIndex)
             when (val result = combinedM3uRepository.reorderMembers(profileId, orderedProviderIds)) {
-                is Result.Success -> uiState.update { it.copy(userMessage = "Combined playlist order updated") }
-                is Result.Error -> uiState.update { it.copy(userMessage = result.message) }
+                is Result.Success -> uiState.update { it.copy(userMessage = appContext.getString(R.string.settings_combined_order_updated)) }
+                is Result.Error -> showCombinedFailure("reorder playlists", result)
                 Result.Loading -> Unit
             }
         }
@@ -218,9 +225,13 @@ internal class SettingsProviderActions(
             }
             when (val result = combinedM3uRepository.setMemberEnabled(profileId, providerId, enabled)) {
                 is Result.Success -> uiState.update {
-                    it.copy(userMessage = if (enabled) "Playlist enabled in combined source" else "Playlist disabled in combined source")
+                    it.copy(
+                        userMessage = appContext.getString(
+                            if (enabled) R.string.settings_combined_playlist_enabled else R.string.settings_combined_playlist_disabled
+                        )
+                    )
                 }
-                is Result.Error -> uiState.update { it.copy(userMessage = result.message) }
+                is Result.Error -> showCombinedFailure("toggle playlist", result)
                 Result.Loading -> Unit
             }
         }
@@ -231,14 +242,15 @@ internal class SettingsProviderActions(
             val provider = providerRepository.getProvider(providerId) ?: return@launch
             if (provider.type != ProviderType.M3U) return@launch
             when (val result = providerRepository.updateProvider(provider.copy(m3uVodClassificationEnabled = enabled))) {
-                is Result.Error -> uiState.update { it.copy(userMessage = "Could not save provider setting: ${result.message}") }
+                is Result.Error -> {
+                    Log.w(TAG, "Could not save provider setting: ${result.message}", result.exception)
+                    uiState.update { it.copy(userMessage = appContext.getString(R.string.settings_provider_setting_save_failed)) }
+                }
                 else -> uiState.update {
                     it.copy(
-                        userMessage = if (enabled) {
-                            "M3U VOD classification enabled. Refresh the playlist to reclassify content."
-                        } else {
-                            "M3U VOD classification disabled. Refresh the playlist to reclassify content."
-                        }
+                        userMessage = appContext.getString(
+                            if (enabled) R.string.settings_provider_m3u_vod_enabled else R.string.settings_provider_m3u_vod_disabled
+                        )
                     )
                 }
             }
@@ -249,8 +261,13 @@ internal class SettingsProviderActions(
         scope.launch {
             val provider = providerRepository.getProvider(providerId) ?: return@launch
             when (val result = providerRepository.updateProvider(provider.copy(guideSourcePolicy = policy))) {
-                is Result.Error -> uiState.update { it.copy(userMessage = "Could not save guide source: ${result.message}") }
-                else -> uiState.update { it.copy(userMessage = "Guide source updated for ${provider.name}") }
+                is Result.Error -> {
+                    Log.w(TAG, "Could not save guide source: ${result.message}", result.exception)
+                    uiState.update { it.copy(userMessage = appContext.getString(R.string.settings_provider_guide_source_save_failed)) }
+                }
+                else -> uiState.update {
+                    it.copy(userMessage = appContext.getString(R.string.settings_provider_guide_source_updated, provider.name))
+                }
             }
         }
     }
@@ -259,8 +276,13 @@ internal class SettingsProviderActions(
         scope.launch {
             val provider = providerRepository.getProvider(providerId) ?: return@launch
             when (val result = providerRepository.updateProvider(provider.copy(channelLogoSourcePolicy = policy))) {
-                is Result.Error -> uiState.update { it.copy(userMessage = "Could not save logo source: ${result.message}") }
-                else -> uiState.update { it.copy(userMessage = "Channel logo source updated for ${provider.name}") }
+                is Result.Error -> {
+                    Log.w(TAG, "Could not save logo source: ${result.message}", result.exception)
+                    uiState.update { it.copy(userMessage = appContext.getString(R.string.settings_provider_logo_source_save_failed)) }
+                }
+                else -> uiState.update {
+                    it.copy(userMessage = appContext.getString(R.string.settings_provider_logo_source_updated, provider.name))
+                }
             }
         }
     }
@@ -406,7 +428,7 @@ internal class SettingsProviderActions(
             uiState.update {
                 it.copy(
                     isDeletingProvider = true,
-                    deleteProviderProgressMessage = "Preparing provider deletion...",
+                    deleteProviderProgressMessage = appContext.getString(R.string.settings_provider_delete_preparing),
                     deleteProviderProgressFraction = 0f
                 )
             }
@@ -425,11 +447,13 @@ internal class SettingsProviderActions(
                             isDeletingProvider = false,
                             deleteProviderProgressMessage = null,
                             deleteProviderProgressFraction = null,
-                            userMessage = if (outcome.cleanupPending) {
-                                "Provider library deleted; final cleanup continues"
-                            } else {
-                                "Provider deleted"
-                            }
+                            userMessage = appContext.getString(
+                                if (outcome.cleanupPending) {
+                                    R.string.settings_provider_delete_cleanup_pending
+                                } else {
+                                    R.string.settings_provider_deleted
+                                }
+                            )
                         )
                     }
                     onSuccess()
@@ -437,13 +461,16 @@ internal class SettingsProviderActions(
                     runCatching { surfaceRefreshPort.refreshRecommendations() }
                     runCatching { surfaceRefreshPort.refreshTvInputCatalog() }
                 }
-                is Result.Error -> uiState.update {
-                    it.copy(
-                        isDeletingProvider = false,
-                        deleteProviderProgressMessage = null,
-                        deleteProviderProgressFraction = null,
-                        userMessage = "Could not delete provider: ${result.message}"
-                    )
+                is Result.Error -> {
+                    Log.w(TAG, "Could not delete provider: ${result.message}", result.exception)
+                    uiState.update {
+                        it.copy(
+                            isDeletingProvider = false,
+                            deleteProviderProgressMessage = null,
+                            deleteProviderProgressFraction = null,
+                            userMessage = appContext.getString(R.string.settings_provider_delete_failed)
+                        )
+                    }
                 }
                 Result.Loading -> Unit
             }

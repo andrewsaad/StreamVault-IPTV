@@ -27,7 +27,7 @@ class SettingsPreferencesContractTest {
         val updatePort = mock<SettingsAppUpdatePort>()
         whenever(updatePort.fetchLatestRelease()).thenReturn(Result.error("HTTP 503"))
         val state = MutableStateFlow(SettingsUiState())
-        val actions = SettingsAppUpdateActions(mock(), preferences, updatePort, state)
+        val actions = SettingsAppUpdateActions(fakeTextContext(), preferences, updatePort, state)
 
         actions.checkForAppUpdates(
             scope = backgroundScope,
@@ -36,7 +36,8 @@ class SettingsPreferencesContractTest {
         )
         testScheduler.runCurrent()
 
-        assertThat(state.value.appUpdate.errorMessage).isEqualTo("HTTP 503")
+        assertThat(state.value.appUpdate.errorMessage)
+            .isEqualTo(resText(com.streamvault.feature.settings.R.string.settings_update_check_failed))
         assertThat(state.value.isCheckingForUpdates).isFalse()
         assertThat(fake.outcomes).containsExactly("ATTEMPTED", "FAILURE: HTTP 503").inOrder()
         assertThat(fake.attemptTimestamp).isNotNull()
