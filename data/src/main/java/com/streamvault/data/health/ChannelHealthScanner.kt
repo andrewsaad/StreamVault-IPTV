@@ -128,6 +128,11 @@ class ChannelHealthScanner internal constructor(
         // Channels that answered UNCLEAR in the main pass, ascending; they get one more try afterwards.
         val retryIds = sortedSetOf<Long>()
         resume?.retryIds?.let { retryIds.addAll(it) }
+        // Of those, the ones whose answer was an HTTP 5xx (not a timeout or IO error).
+        val serverErrorIds = sortedSetOf<Long>()
+        resume?.serverErrorIds?.let { serverErrorIds.addAll(it) }
+        // Retried channels the provider refused with a 5xx again: they count as EMPTY once settled.
+        val refusedIds = HashSet<Long>()
         var retrying = resume?.retryAfterChannelId != null
         var queue = if (retrying) channels.filter { it.id in retryIds } else channels
         // Ids up to this one are already done in the current pass (null: none).
@@ -143,10 +148,25 @@ class ChannelHealthScanner internal constructor(
             val heldBack = streak.firstOrNull()?.let { it.channelId - 1 }
             val retryAfter = retryAfterId
             if (retryAfter != null) {
-                return ChannelHealthResume(startedAt, lastProbedId, retryIds.toList(), heldBack ?: retryAfter)
+                return ChannelHealthResume(
+                    startedAt,
+                    lastProbedId,
+                    retryIds.toList(),
+                    heldBack ?: retryAfter,
+                    serverErrorIds.toList(),
+                )
             }
             val point = heldBack ?: lastProbedId
-            return ChannelHealthResume(startedAt, point, retryIds.filter { it <= point })
+            return ChannelHealthResume(
+                startedAt,
+                point,
+                retryIds.filter { it <= point },
+                serverErrorIds = serverErrorIds.filter { it <= point },
+            )
+        }
+        // A channel the provider refused with a 5xx on both passes counts as EMPTY; any other UNCLEAR stays unstored.
+        fun settled(outcomes: List<ChannelProbeOutcome>) = outcomes.map {
+            if (it.channelId in refusedIds) it.copy(status = ChannelHealthStatus.EMPTY) else it
         }
         var saved = resume
         suspend fun flush() {
@@ -185,7 +205,8 @@ class ChannelHealthScanner internal constructor(
                         streamId = channel.streamId,
                         containerExtension = "m3u8",
                     )
-                    val status = probe.probe(url, headers)
+                    val result = probe.probe(url, headers)
+                    val status = result.status
                     val outcome = ChannelProbeOutcome(channel.id, status, results.now())
                     if (retrying) {
                         retryAfterId = channel.id
@@ -193,13 +214,19 @@ class ChannelHealthScanner internal constructor(
                         lastProbedId = channel.id
                         if (status == ChannelHealthStatus.UNCLEAR && retryIds.size < MAX_RETRY_CHANNELS) {
                             retryIds += channel.id
+                            if (result.serverError) serverErrorIds += channel.id
                         }
+                    }
+                    if (retrying && status == ChannelHealthStatus.UNCLEAR && result.serverError &&
+                        channel.id in serverErrorIds
+                    ) {
+                        refusedIds += channel.id
                     }
                     scanned++
                     setState(providerId) { it.copy(scanned = scanned) }
                     if (status == ChannelHealthStatus.OK) {
                         // A good answer shows the failures before it were the channels' own, so keep them.
-                        pending += streak
+                        pending += settled(streak)
                         pending += outcome
                         streak.clear()
                         unclearInARow = 0
@@ -235,7 +262,7 @@ class ChannelHealthScanner internal constructor(
                 if (retrying || retryIds.isEmpty()) break
                 // Main pass over: settle what it held back, give the provider one backoff, then ask the
                 // UNCLEAR channels once more.
-                pending += streak
+                pending += settled(streak)
                 streak.clear()
                 flush()
                 backOff(providerId)
@@ -255,7 +282,8 @@ class ChannelHealthScanner internal constructor(
             throw cancelled
         } finally {
             withContext(NonCancellable) {
-                pending += streak
+                // A scan that gave up saw a provider in trouble, so its 5xx answers say nothing about the channels.
+                pending += if (gaveUp) streak.filterNot { it.channelId in refusedIds } else settled(streak)
                 streak.clear()
                 flush()
                 if (finished) results.markFinished(providerId)
