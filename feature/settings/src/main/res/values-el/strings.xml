@@ -1049,6 +1049,7 @@
     <string name="channel_cleanup_progress">Σαρώθηκαν %1$d από %2$d κανάλια</string>
     <string name="channel_cleanup_paused_playback">Σε παύση ενώ παίζει κάτι</string>
     <string name="channel_cleanup_paused_backoff">Ο πάροχος είναι απασχολημένος, αναμονή</string>
+    <string name="channel_cleanup_gave_up">Η σάρωση σταμάτησε επειδή ο πάροχος δεν απάντησε. Δοκιμάστε ξανά αργότερα.</string>
     <string name="channel_cleanup_suggestions_title">Κανάλια που ίσως δεν λειτουργούν</string>
     <string name="channel_cleanup_empty">Δεν υπάρχουν ακόμη προτάσεις. Τα κανάλια που αποτυγχάνουν συνεχώς θα εμφανιστούν εδώ μετά από μια σάρωση.</string>
     <string name="channel_cleanup_select_all">Επιλογή όλων</string>

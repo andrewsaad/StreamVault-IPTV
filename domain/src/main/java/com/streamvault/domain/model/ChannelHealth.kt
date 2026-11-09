@@ -44,6 +44,8 @@ data class ChannelHealthScanState(
     val total: Int = 0,
     val paused: ChannelHealthPauseReason? = null,
     val lastFinishedAt: Long? = null,
+    /** The latest scan ended because the provider kept failing or the account could not be scanned; not set when it finished or the user stopped it. */
+    val gaveUp: Boolean = false,
 )
 
 object ChannelHealthRules {

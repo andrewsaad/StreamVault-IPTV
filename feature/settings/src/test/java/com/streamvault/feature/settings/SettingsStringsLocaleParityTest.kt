@@ -65,6 +65,7 @@ class SettingsStringsLocaleParityTest {
         "channel_cleanup_progress",
         "channel_cleanup_paused_playback",
         "channel_cleanup_paused_backoff",
+        "channel_cleanup_gave_up",
         "channel_cleanup_suggestions_title",
         "channel_cleanup_empty",
         "channel_cleanup_select_all",

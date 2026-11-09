@@ -382,6 +382,15 @@ class ProviderRepositoryImpl @Inject constructor(
             // repository also filters out references to missing providers.
             logger.warning("Could not clear the saved live source for deleted provider $id")
         }
+        try {
+            // Channel clean-up results live in preferences, keyed by provider id, so the rows
+            // deleted above do not take them along.
+            preferencesRepository.setChannelHealthResults(id, null)
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (_: Exception) {
+            logger.warning("Could not clear the channel health results for deleted provider $id")
+        }
         stalkerApiService.invalidateSessionScopes(id)
         reportProgress("Provider library removed.")
         reportProgress("Finalizing provider cleanup...")

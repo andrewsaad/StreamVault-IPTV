@@ -197,6 +197,7 @@ private fun resolvedSettingsCatalog(
         setting("sources.edit", SettingsCategory.SOURCES, SettingsPage.PROVIDERS, R.string.settings_edit, "provider details"),
         setting("sources.sync", SettingsCategory.SOURCES, SettingsPage.PROVIDERS, R.string.settings_sync_btn, "refresh provider"),
         setting("sources.delete", SettingsCategory.SOURCES, SettingsPage.PROVIDERS, R.string.settings_delete, "remove provider"),
+        setting(SETTINGS_CHANNEL_CLEANUP_ID, SettingsCategory.SOURCES, SettingsPage.PROVIDERS, R.string.settings_channel_cleanup_title, context.getString(R.string.settings_channel_cleanup_description)),
         setting("sources.parental_categories", SettingsCategory.PRIVACY, null, R.string.settings_provider_category_controls_action, "protected categories", "hidden categories"),
         setting("sources.combined.active", SettingsCategory.SOURCES, SettingsPage.PROVIDERS, R.string.settings_combined_use_live, "combined source"),
         setting("sources.combined.members", SettingsCategory.SOURCES, SettingsPage.PROVIDERS, R.string.settings_combined_add_playlist, "combined source members"),

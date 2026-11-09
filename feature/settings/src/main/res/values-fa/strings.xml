@@ -1047,6 +1047,7 @@
     <string name="channel_cleanup_progress">%1$d از %2$d کانال اسکن شد</string>
     <string name="channel_cleanup_paused_playback">هنگام پخش مکث شده است</string>
     <string name="channel_cleanup_paused_backoff">ارائه‌دهنده مشغول است، در انتظار</string>
+    <string name="channel_cleanup_gave_up">اسکن متوقف شد زیرا ارائه‌دهنده پاسخ نداد. بعداً دوباره امتحان کنید.</string>
     <string name="channel_cleanup_suggestions_title">کانال‌هایی که شاید کار نکنند</string>
     <string name="channel_cleanup_empty">هنوز پیشنهادی نیست. کانال‌هایی که مدام ناموفق‌اند پس از اسکن اینجا نمایش داده می‌شوند.</string>
     <string name="channel_cleanup_select_all">انتخاب همه</string>

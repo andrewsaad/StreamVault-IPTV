@@ -1047,6 +1047,7 @@
     <string name="channel_cleanup_progress">Скенирани %1$d од %2$d канали</string>
     <string name="channel_cleanup_paused_playback">Паузирано додека нешто се репродуцира</string>
     <string name="channel_cleanup_paused_backoff">Провајдерот е зафатен, се чека</string>
+    <string name="channel_cleanup_gave_up">Скенирањето запре бидејќи провајдерот не одговори. Обидете се повторно подоцна.</string>
     <string name="channel_cleanup_suggestions_title">Канали што можеби не работат</string>
     <string name="channel_cleanup_empty">Сè уште нема предлози. Каналите што постојано откажуваат ќе се појават овде по скенирање.</string>
     <string name="channel_cleanup_select_all">Избери ги сите</string>

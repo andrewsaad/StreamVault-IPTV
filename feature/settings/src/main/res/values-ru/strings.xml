@@ -1055,6 +1055,7 @@
     <string name="channel_cleanup_progress">Проверено каналов: %1$d из %2$d</string>
     <string name="channel_cleanup_paused_playback">Приостановлено, пока что-то воспроизводится</string>
     <string name="channel_cleanup_paused_backoff">Провайдер занят, ожидание</string>
+    <string name="channel_cleanup_gave_up">Сканирование остановлено, так как провайдер не ответил. Повторите попытку позже.</string>
     <string name="channel_cleanup_suggestions_title">Каналы, которые могут не работать</string>
     <string name="channel_cleanup_empty">Предложений пока нет. Каналы, которые постоянно не работают, появятся здесь после проверки.</string>
     <string name="channel_cleanup_select_all">Выбрать все</string>

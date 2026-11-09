@@ -559,6 +559,7 @@ public fun SettingsScreen(
                         add("sources.edit")
                         add("sources.sync")
                         add("sources.delete")
+                        add(SETTINGS_CHANNEL_CLEANUP_ID)
                         add("guide.assignment")
                         add("guide.policy")
                         add("guide.logo_policy")

@@ -1052,6 +1052,7 @@
     <string name="channel_cleanup_progress">נסרקו %1$d מתוך %2$d ערוצים</string>
     <string name="channel_cleanup_paused_playback">מושהה בזמן שמשהו מתנגן</string>
     <string name="channel_cleanup_paused_backoff">הספק עסוק, ממתין</string>
+    <string name="channel_cleanup_gave_up">הסריקה נעצרה מפני שהספק לא הגיב. נסו שוב מאוחר יותר.</string>
     <string name="channel_cleanup_suggestions_title">ערוצים שאולי לא עובדים</string>
     <string name="channel_cleanup_empty">אין הצעות עדיין. ערוצים שממשיכים להיכשל יופיעו כאן לאחר סריקה.</string>
     <string name="channel_cleanup_select_all">בחר הכול</string>

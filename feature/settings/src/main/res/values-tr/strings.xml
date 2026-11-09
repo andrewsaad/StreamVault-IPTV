@@ -1049,6 +1049,7 @@
     <string name="channel_cleanup_progress">%2$d kanaldan %1$d kanal tarandı</string>
     <string name="channel_cleanup_paused_playback">Bir şey oynatılırken duraklatıldı</string>
     <string name="channel_cleanup_paused_backoff">Sağlayıcı meşgul, bekleniyor</string>
+    <string name="channel_cleanup_gave_up">Sağlayıcı yanıt vermediği için tarama durduruldu. Daha sonra tekrar deneyin.</string>
     <string name="channel_cleanup_suggestions_title">Çalışmıyor olabilecek kanallar</string>
     <string name="channel_cleanup_empty">Henüz öneri yok. Sürekli başarısız olan kanallar taramadan sonra burada görünür.</string>
     <string name="channel_cleanup_select_all">Tümünü seç</string>

@@ -79,6 +79,25 @@ class SettingsCatalogTest {
     }
 
     @Test
+    fun `channel clean-up is found by its title and description and opens the providers page`() {
+        val cleanup = ResolvedSettingsCatalogEntry(
+            id = SETTINGS_CHANNEL_CLEANUP_ID,
+            category = SettingsCategory.SOURCES,
+            page = SettingsPage.PROVIDERS,
+            label = "Channel clean-up",
+            aliases = setOf("Scan the live channels of this provider and hide the ones that do not work"),
+        )
+
+        val byTitle = SettingsCatalogSearch.search(entries + cleanup, "clean-up").single()
+        val byDescription = SettingsCatalogSearch.search(entries + cleanup, "hide the ones").single()
+
+        assertThat(byTitle.id).isEqualTo("sources.channel_cleanup")
+        assertThat(byDescription).isEqualTo(byTitle)
+        assertThat(byTitle.category).isEqualTo(SettingsCategory.SOURCES)
+        assertThat(byTitle.page).isEqualTo(SettingsPage.PROVIDERS)
+    }
+
+    @Test
     fun `a result keeps the exact setting destination`() {
         val result = SettingsCatalogSearch.search(entries, "media").single()
 

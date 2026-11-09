@@ -1125,6 +1125,7 @@
     <string name="channel_cleanup_progress">Scanned %1$d of %2$d channels</string>
     <string name="channel_cleanup_paused_playback">Paused while something is playing</string>
     <string name="channel_cleanup_paused_backoff">Provider is busy, waiting</string>
+    <string name="channel_cleanup_gave_up">The scan stopped because the provider did not answer. Try again later.</string>
     <string name="channel_cleanup_suggestions_title">Channels that may not work</string>
     <string name="channel_cleanup_empty">No suggestions yet. Channels that keep failing will appear here after a scan.</string>
     <string name="channel_cleanup_select_all">Select all</string>

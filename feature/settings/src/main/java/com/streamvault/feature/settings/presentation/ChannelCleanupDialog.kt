@@ -177,6 +177,13 @@ private fun ChannelCleanupScanCard(
                     style = MaterialTheme.typography.bodyMedium,
                     color = OnSurface,
                 )
+                if (scan.gaveUp) {
+                    Text(
+                        text = stringResource(R.string.channel_cleanup_gave_up),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = ErrorColor,
+                    )
+                }
             }
             is ChannelCleanupScanUi.Running -> {
                 Text(

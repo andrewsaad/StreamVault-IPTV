@@ -12,6 +12,9 @@ data class SettingsSearchTarget(
     val requestId: Long,
 )
 
+/** Search catalog id of the Channel clean-up row on the provider page. */
+internal const val SETTINGS_CHANNEL_CLEANUP_ID = "sources.channel_cleanup"
+
 internal fun remoteShortcutSettingId(
     profile: RemoteShortcutProfile,
     button: RemoteColorButton,

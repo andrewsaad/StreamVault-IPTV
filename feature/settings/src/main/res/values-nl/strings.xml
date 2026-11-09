@@ -1049,6 +1049,7 @@
     <string name="channel_cleanup_progress">%1$d van %2$d kanalen gescand</string>
     <string name="channel_cleanup_paused_playback">Gepauzeerd terwijl er iets wordt afgespeeld</string>
     <string name="channel_cleanup_paused_backoff">Aanbieder is bezet, wachten</string>
+    <string name="channel_cleanup_gave_up">De scan is gestopt omdat de aanbieder niet reageerde. Probeer het later opnieuw.</string>
     <string name="channel_cleanup_suggestions_title">Kanalen die mogelijk niet werken</string>
     <string name="channel_cleanup_empty">Nog geen suggesties. Kanalen die blijven mislukken verschijnen hier na een scan.</string>
     <string name="channel_cleanup_select_all">Alles selecteren</string>

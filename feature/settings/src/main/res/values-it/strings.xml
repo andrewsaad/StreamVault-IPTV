@@ -1045,6 +1045,7 @@
     <string name="channel_cleanup_progress">%1$d di %2$d canali analizzati</string>
     <string name="channel_cleanup_paused_playback">In pausa mentre è in corso una riproduzione</string>
     <string name="channel_cleanup_paused_backoff">Il provider è occupato, in attesa</string>
+    <string name="channel_cleanup_gave_up">La scansione si è interrotta perché il provider non ha risposto. Riprova più tardi.</string>
     <string name="channel_cleanup_suggestions_title">Canali che potrebbero non funzionare</string>
     <string name="channel_cleanup_empty">Ancora nessun suggerimento. I canali che continuano a fallire compariranno qui dopo un\'analisi.</string>
     <string name="channel_cleanup_select_all">Seleziona tutto</string>

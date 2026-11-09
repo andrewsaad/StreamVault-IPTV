@@ -1049,6 +1049,7 @@
     <string name="channel_cleanup_progress">Skannet %1$d av %2$d kanaler</string>
     <string name="channel_cleanup_paused_playback">Satt på pause mens noe spilles av</string>
     <string name="channel_cleanup_paused_backoff">Leverandøren er opptatt, venter</string>
+    <string name="channel_cleanup_gave_up">Skanningen ble stoppet fordi leverandøren ikke svarte. Prøv igjen senere.</string>
     <string name="channel_cleanup_suggestions_title">Kanaler som kanskje ikke fungerer</string>
     <string name="channel_cleanup_empty">Ingen forslag ennå. Kanaler som stadig feiler, vises her etter en skanning.</string>
     <string name="channel_cleanup_select_all">Velg alle</string>

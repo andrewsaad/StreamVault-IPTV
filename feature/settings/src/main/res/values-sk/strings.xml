@@ -1053,6 +1053,7 @@
     <string name="channel_cleanup_progress">Skontrolované kanály: %1$d z %2$d</string>
     <string name="channel_cleanup_paused_playback">Pozastavené, kým sa niečo prehráva</string>
     <string name="channel_cleanup_paused_backoff">Poskytovateľ je vyťažený, čaká sa</string>
+    <string name="channel_cleanup_gave_up">Skenovanie sa zastavilo, pretože poskytovateľ neodpovedal. Skúste to znova neskôr.</string>
     <string name="channel_cleanup_suggestions_title">Kanály, ktoré možno nefungujú</string>
     <string name="channel_cleanup_empty">Zatiaľ žiadne návrhy. Kanály, ktoré stále zlyhávajú, sa tu zobrazia po kontrole.</string>
     <string name="channel_cleanup_select_all">Vybrať všetko</string>

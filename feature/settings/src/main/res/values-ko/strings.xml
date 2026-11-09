@@ -1045,6 +1045,7 @@
     <string name="channel_cleanup_progress">채널 %2$d개 중 %1$d개 검사함</string>
     <string name="channel_cleanup_paused_playback">재생 중이라 일시중지됨</string>
     <string name="channel_cleanup_paused_backoff">제공업체가 사용 중입니다. 대기 중</string>
+    <string name="channel_cleanup_gave_up">제공업체가 응답하지 않아 검사를 중단했습니다. 나중에 다시 시도하세요.</string>
     <string name="channel_cleanup_suggestions_title">작동하지 않을 수 있는 채널</string>
     <string name="channel_cleanup_empty">아직 제안이 없습니다. 계속 실패하는 채널이 검사 후 여기에 표시됩니다.</string>
     <string name="channel_cleanup_select_all">모두 선택</string>

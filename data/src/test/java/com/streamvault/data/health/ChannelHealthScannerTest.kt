@@ -98,6 +98,7 @@ class ChannelHealthScannerTest {
         assertThat(state.scanned).isEqualTo(2)
         assertThat(state.total).isEqualTo(2)
         assertThat(state.lastFinishedAt).isEqualTo(clock.nowMillis)
+        assertThat(state.gaveUp).isFalse()
         verify(probe).probe(
             "$TEST_SERVER/live/$TEST_USERNAME/$TEST_PASSWORD/11.m3u8",
             emptyMap(),
@@ -249,7 +250,59 @@ class ChannelHealthScannerTest {
         assertThat(state.running).isFalse()
         assertThat(state.paused).isNull()
         assertThat(state.lastFinishedAt).isNull()
+        assertThat(state.gaveUp).isTrue()
         assertThat(results.read(TEST_PROVIDER_ID).records).isEmpty()
+    }
+
+    @Test
+    fun `repeated mass failures also count as giving up`() = runTest {
+        givenChannels(*(1L..40L).map { channelEntity(it) }.toTypedArray())
+        givenAccount("1", "0")
+        givenProbe(ChannelHealthStatus.EMPTY)
+
+        assertThat(scanner.run(TEST_PROVIDER_ID, null, 0L)).isFalse()
+
+        assertThat(scanner.observeState(TEST_PROVIDER_ID).first().gaveUp).isTrue()
+    }
+
+    @Test
+    fun `a scan that gave up stops reporting it once a new scan is queued or the user stops`() = runTest {
+        givenChannels(*(1L..20L).map { channelEntity(it) }.toTypedArray())
+        givenAccount("1", "0")
+        givenProbe(ChannelHealthStatus.UNCLEAR)
+        scanner.run(TEST_PROVIDER_ID, null, 0L)
+        assertThat(scanner.observeState(TEST_PROVIDER_ID).first().gaveUp).isTrue()
+
+        scanner.markQueued(TEST_PROVIDER_ID)
+        assertThat(scanner.observeState(TEST_PROVIDER_ID).first().gaveUp).isFalse()
+
+        // A different startedAt each time, so no run carries on from the previous one's progress.
+        scanner.run(TEST_PROVIDER_ID, null, 1L)
+        assertThat(scanner.observeState(TEST_PROVIDER_ID).first().gaveUp).isTrue()
+        scanner.markStopped(TEST_PROVIDER_ID)
+        assertThat(scanner.observeState(TEST_PROVIDER_ID).first().gaveUp).isFalse()
+
+        scanner.run(TEST_PROVIDER_ID, null, 2L)
+        assertThat(scanner.observeState(TEST_PROVIDER_ID).first().gaveUp).isTrue()
+        scanner.clearGaveUp(TEST_PROVIDER_ID)
+        assertThat(scanner.observeState(TEST_PROVIDER_ID).first().gaveUp).isFalse()
+    }
+
+    @Test
+    fun `a scan the user cancels does not count as giving up`() = runTest {
+        givenChannels(*(1L..5L).map { channelEntity(it) }.toTypedArray())
+        givenAccount("1", "0")
+        givenProbe(ChannelHealthStatus.OK)
+        val job = backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { scanner.run(TEST_PROVIDER_ID, null, 500L) }
+        advanceTimeBy(6_000L)
+        runCurrent()
+
+        job.cancel()
+        advanceUntilIdle()
+
+        val state = scanner.observeState(TEST_PROVIDER_ID).first()
+        assertThat(state.running).isFalse()
+        assertThat(state.gaveUp).isFalse()
     }
 
     @Test
@@ -335,6 +388,7 @@ class ChannelHealthScannerTest {
             assertThat(state.running).isFalse()
             assertThat(state.paused).isNull()
             assertThat(state.lastFinishedAt).isNull()
+            assertThat(state.gaveUp).isTrue()
         } finally {
             AutomaticSyncActivity.stopped(player)
         }
@@ -414,6 +468,7 @@ class ChannelHealthScannerTest {
 
         verifyNoInteractions(probe)
         assertThat(scanner.observeState(TEST_PROVIDER_ID).first().lastFinishedAt).isNull()
+        assertThat(scanner.observeState(TEST_PROVIDER_ID).first().gaveUp).isTrue()
     }
 
     @Test
@@ -422,5 +477,6 @@ class ChannelHealthScannerTest {
 
         assertThat(scanner.run(TEST_PROVIDER_ID, null, 0L)).isFalse()
         verifyNoInteractions(probe)
+        assertThat(scanner.observeState(TEST_PROVIDER_ID).first().gaveUp).isFalse()
     }
 }

@@ -1044,6 +1044,7 @@
     <string name="channel_cleanup_progress">已掃描 %1$d / %2$d 個頻道</string>
     <string name="channel_cleanup_paused_playback">正在播放內容，已暫停</string>
     <string name="channel_cleanup_paused_backoff">供應商忙碌中，正在等待</string>
+    <string name="channel_cleanup_gave_up">由於供應商沒有回應，掃描已停止。請稍後再試。</string>
     <string name="channel_cleanup_suggestions_title">可能無法播放的頻道</string>
     <string name="channel_cleanup_empty">目前沒有建議。持續失敗的頻道會在掃描後顯示在這裡。</string>
     <string name="channel_cleanup_select_all">全選</string>

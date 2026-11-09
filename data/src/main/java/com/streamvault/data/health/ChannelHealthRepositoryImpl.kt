@@ -78,5 +78,6 @@ class ChannelHealthRepositoryImpl @Inject constructor(
 
     override suspend fun clearResults(providerId: Long) {
         results.clear(providerId)
+        scanner.clearGaveUp(providerId)
     }
 }
