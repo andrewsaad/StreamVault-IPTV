@@ -151,7 +151,7 @@ class ChannelHealthScannerTest {
         givenChannels(*(1L..5L).map { channelEntity(it) }.toTypedArray())
         givenAccount("1", "0")
         givenProbe(ChannelHealthStatus.OK)
-        val job = backgroundScope.launch { scanner.run(TEST_PROVIDER_ID, null, 500L) }
+        val job = backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { scanner.run(TEST_PROVIDER_ID, null, 500L) }
         // Probes at 0 s, 6 s and 12 s.
         advanceTimeBy(12_000L)
         runCurrent()
