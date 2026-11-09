@@ -20,6 +20,7 @@ class ExternalNavigationRequestParser @Inject constructor(
 ) {
     fun parse(intent: Intent): ExternalNavigationRequest? {
         readPlayerRequestExtra(intent)?.let { return ExternalNavigationRequest.Player(it) }
+        PlayerRequestIntentExtras.read(intent)?.let { return ExternalNavigationRequest.Player(it) }
         readExternalDestinationExtra(intent)?.let { return ExternalNavigationRequest.Destination(it) }
 
         intent.getStringExtra(MainActivity.EXTRA_EXTERNAL_ROUTE)

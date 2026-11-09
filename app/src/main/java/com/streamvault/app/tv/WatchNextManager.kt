@@ -13,6 +13,7 @@ import androidx.annotation.RequiresApi
 import com.streamvault.app.MainActivity
 import com.streamvault.app.R
 import com.streamvault.app.device.isTelevisionDevice
+import com.streamvault.app.navigation.PlayerRequestIntentExtras
 import com.streamvault.app.navigation.toPlayerNavigationRequest
 import com.streamvault.domain.model.ContentType
 import com.streamvault.domain.model.PlaybackHistory
@@ -165,9 +166,10 @@ class WatchNextManager @Inject constructor(
 
     @RequiresApi(Build.VERSION_CODES.O)
     private fun buildWatchNextValues(history: PlaybackHistory): ContentValues {
+        // Intent.toUri drops Serializable extras, so the request travels as plain primitive extras.
         val launchIntent = Intent(context, MainActivity::class.java)
             .setAction(Intent.ACTION_VIEW)
-            .putExtra(MainActivity.EXTRA_PLAYER_REQUEST, history.toPlayerNavigationRequest())
+            .also { PlayerRequestIntentExtras.write(it, history.toPlayerNavigationRequest()) }
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
 
         return ContentValues().apply {

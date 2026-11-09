@@ -1,6 +1,8 @@
 package com.streamvault.app.tv
 
 import android.content.ContentResolver
+import android.content.ContentValues
+import android.content.Intent
 import android.content.Context
 import android.content.pm.PackageManager
 import android.database.Cursor
@@ -9,6 +11,9 @@ import android.os.Build
 import android.provider.BaseColumns
 import com.google.common.truth.Truth.assertThat
 import com.streamvault.app.R
+import com.streamvault.app.navigation.ExternalNavigationRequestParser
+import com.streamvault.app.navigation.toPlayerNavigationRequest
+import com.streamvault.core.navigation.ExternalNavigationRequest
 import com.streamvault.domain.model.ContentType
 import com.streamvault.domain.model.PlaybackHistory
 import com.streamvault.domain.repository.PlaybackHistoryRepository
@@ -25,6 +30,7 @@ import org.mockito.kotlin.whenever
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
@@ -93,6 +99,44 @@ class WatchNextManagerTest {
             anyOrNull()
         )
         assertThat(uriCaptor.firstValue.lastPathSegment).isEqualTo("101")
+    }
+
+    @Test
+    fun `launcher intent uri carries a player request that the parser rebuilds`() = runTest {
+        val context = mock<Context>()
+        val resolver = mock<ContentResolver>()
+        val packageManager = mock<PackageManager>()
+        val cursor = mock<Cursor>()
+        whenever(context.contentResolver).thenReturn(resolver)
+        whenever(context.packageManager).thenReturn(packageManager)
+        whenever(context.packageName).thenReturn("com.streamvault.app")
+        whenever(context.getString(R.string.saved_preset_watch_next)).thenReturn("Continue watching")
+        whenever(packageManager.hasSystemFeature(PackageManager.FEATURE_LEANBACK)).thenReturn(true)
+        whenever(resolver.query(any(), any(), anyOrNull(), anyOrNull(), anyOrNull())).thenReturn(cursor)
+        whenever(cursor.getColumnIndexOrThrow(BaseColumns._ID)).thenReturn(0)
+        whenever(cursor.getColumnIndexOrThrow("internal_provider_id")).thenReturn(1)
+        whenever(cursor.getColumnIndex("last_engagement_time_utc_millis")).thenReturn(2)
+        whenever(cursor.moveToNext()).thenReturn(true, false)
+        whenever(cursor.getString(1)).thenReturn("5:SERIES_EPISODE:10")
+        whenever(cursor.getLong(0)).thenReturn(101L)
+        whenever(cursor.getLong(2)).thenReturn(1_000L)
+
+        val manager = WatchNextManager(
+            context = context,
+            playbackHistoryRepository = mock<PlaybackHistoryRepository>(),
+            providerRepository = mock<ProviderRepository>()
+        )
+        val history = history(contentId = 10L, providerId = 5L, lastWatchedAt = 2_000L)
+
+        manager.updateWatchNextProgress(history)
+
+        val valuesCaptor = argumentCaptor<ContentValues>()
+        verify(resolver).update(any(), valuesCaptor.capture(), anyOrNull(), anyOrNull())
+        val intentUri = valuesCaptor.firstValue.getAsString("intent_uri")
+        val launchIntent = Intent.parseUri(intentUri, Intent.URI_INTENT_SCHEME)
+        val parsed = ExternalNavigationRequestParser(RuntimeEnvironment.getApplication()).parse(launchIntent)
+
+        assertThat(parsed).isEqualTo(ExternalNavigationRequest.Player(history.toPlayerNavigationRequest()))
     }
 
     @Test
