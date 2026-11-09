@@ -33,7 +33,9 @@ internal data class ChannelHealthTimings(
     val backoffMs: Long = 5L * 60_000L,
     val playbackPollMs: Long = 15_000L,
     val unclearInARowBeforeBackoff: Int = 3,
-    /** Backoffs in a row with no usable answer in between before the scan gives up. */
+    /** Non-OK answers of any kind in a row that count as a provider problem, not as dead channels. */
+    val massFailureStreak: Int = 10,
+    /** Backoffs in a row with no OK answer in between before the scan gives up. */
     val maxBackoffsInARow: Int = 3,
     val flushEvery: Int = 20,
 )
@@ -100,6 +102,8 @@ class ChannelHealthScanner internal constructor(
         val alreadyChecked = results.read(providerId).records
         val headers = requestHeaders(providerId, config)
         val pending = ArrayList<ChannelProbeOutcome>()
+        // Non-OK answers since the last OK; kept back from the store until an OK shows they are isolated.
+        val streak = ArrayList<ChannelProbeOutcome>()
         var scanned = 0
         var finished = false
         setState(providerId) { ChannelHealthScanState(running = true, total = channels.size) }
@@ -124,20 +128,32 @@ class ChannelHealthScanner internal constructor(
                     containerExtension = "m3u8",
                 )
                 val status = probe.probe(url, headers)
-                pending += ChannelProbeOutcome(channel.id, status, results.now())
+                val outcome = ChannelProbeOutcome(channel.id, status, results.now())
                 scanned++
                 setState(providerId) { it.copy(scanned = scanned) }
-                if (pending.size >= timings.flushEvery) flush(providerId, pending)
-                if (status == ChannelHealthStatus.UNCLEAR) unclearInARow++ else {
+                if (status == ChannelHealthStatus.OK) {
+                    // A good answer shows the failures before it were the channels' own, so keep them.
+                    pending += streak
+                    pending += outcome
+                    streak.clear()
                     unclearInARow = 0
                     backoffsInARow = 0
+                } else {
+                    streak += outcome
+                    if (status == ChannelHealthStatus.UNCLEAR) unclearInARow++ else unclearInARow = 0
                 }
-                if (unclearInARow >= timings.unclearInARowBeforeBackoff) {
+                if (pending.size >= timings.flushEvery) flush(providerId, pending)
+                if (streak.size >= timings.massFailureStreak) {
+                    // Everything failing at once points at the provider or the account, not the channels.
+                    streak.clear()
+                    if (++backoffsInARow >= timings.maxBackoffsInARow) return false
+                    backOff(providerId)
+                    unclearInARow = 0
+                    account = readAccount(providerId, config, previous = account)
+                } else if (unclearInARow >= timings.unclearInARowBeforeBackoff) {
                     flush(providerId, pending)
                     if (++backoffsInARow >= timings.maxBackoffsInARow) return false
-                    setState(providerId) { it.copy(paused = ChannelHealthPauseReason.PROVIDER_BACKOFF) }
-                    delay(timings.backoffMs)
-                    setState(providerId) { it.copy(paused = null) }
+                    backOff(providerId)
                     unclearInARow = 0
                     account = readAccount(providerId, config, previous = account)
                 } else if (scanned < channels.size) {
@@ -150,11 +166,18 @@ class ChannelHealthScanner internal constructor(
             throw cancelled
         } finally {
             withContext(NonCancellable) {
+                pending += streak
                 flush(providerId, pending)
                 if (finished) results.markFinished(providerId)
                 setState(providerId) { it.copy(running = false, paused = null) }
             }
         }
+    }
+
+    private suspend fun backOff(providerId: Long) {
+        setState(providerId) { it.copy(paused = ChannelHealthPauseReason.PROVIDER_BACKOFF) }
+        delay(timings.backoffMs)
+        setState(providerId) { it.copy(paused = null) }
     }
 
     /** Yields while the account has no free connection: local playback on a one-connection account, or others using it. */

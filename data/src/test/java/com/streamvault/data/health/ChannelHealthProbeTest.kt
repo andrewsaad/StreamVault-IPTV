@@ -67,12 +67,29 @@ class ChannelHealthProbeTest {
     }
 
     @Test
-    fun `not found, gone, forbidden and unauthorized playlists are DEAD`() {
-        listOf(404, 410, 403, 401).forEach { code ->
+    fun `not found and gone playlists are DEAD`() {
+        listOf(404, 410).forEach { code ->
             server.enqueue(MockResponse().setResponseCode(code))
 
             assertThat(probeNow()).isEqualTo(ChannelHealthStatus.DEAD)
         }
+    }
+
+    @Test
+    fun `unauthorized and forbidden playlists are UNCLEAR because they can mean a connection limit`() {
+        listOf(401, 403).forEach { code ->
+            server.enqueue(MockResponse().setResponseCode(code))
+
+            assertThat(probeNow()).isEqualTo(ChannelHealthStatus.UNCLEAR)
+        }
+    }
+
+    @Test
+    fun `a forbidden segment is UNCLEAR`() {
+        server.enqueue(playlist("#EXTM3U", "#EXTINF:6,", "seg0.ts"))
+        server.enqueue(MockResponse().setResponseCode(403))
+
+        assertThat(probeNow()).isEqualTo(ChannelHealthStatus.UNCLEAR)
     }
 
     @Test

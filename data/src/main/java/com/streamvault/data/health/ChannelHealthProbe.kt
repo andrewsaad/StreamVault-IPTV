@@ -87,7 +87,8 @@ internal class ChannelHealthProbe @Inject constructor(client: OkHttpClient) {
 
     private fun statusForHttpCode(code: Int): ChannelHealthStatus? = when (code) {
         in 200..299 -> null
-        401, 403, 404, 410 -> ChannelHealthStatus.DEAD
+        // 401 and 403 are not a verdict: Xtream answers 403 for a reached connection limit, an expired account or a blocked address.
+        404, 410 -> ChannelHealthStatus.DEAD
         else -> ChannelHealthStatus.UNCLEAR
     }
 

@@ -20,6 +20,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceTimeBy
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
@@ -28,6 +29,7 @@ import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
@@ -151,6 +153,57 @@ class ChannelHealthScannerTest {
         runCurrent()
         assertThat(scanner.observeState(TEST_PROVIDER_ID).first().paused).isNull()
         job.cancel()
+    }
+
+    @Test
+    fun `ten empty answers in a row store nothing and back the scan off`() = runTest {
+        givenChannels(*(1L..14L).map { channelEntity(it) }.toTypedArray())
+        givenAccount("1", "0")
+        givenProbe(ChannelHealthStatus.EMPTY)
+        val job = backgroundScope.launch { scanner.run(TEST_PROVIDER_ID, null, 0L) }
+
+        // The tenth probe is at 54 s; the backoff starts right after it.
+        advanceTimeBy(54_000L)
+        runCurrent()
+        assertThat(scanner.observeState(TEST_PROVIDER_ID).first().paused)
+            .isEqualTo(ChannelHealthPauseReason.PROVIDER_BACKOFF)
+        assertThat(results.read(TEST_PROVIDER_ID).records).isEmpty()
+
+        advanceTimeBy(5L * 60_000L)
+        runCurrent()
+        // The account info is read again before the scan carries on.
+        verify(xtreamApi, times(2)).authenticate(any(), any())
+        job.cancel()
+        advanceUntilIdle()
+        assertThat(results.read(TEST_PROVIDER_ID).records.keys).doesNotContain(1L)
+    }
+
+    @Test
+    fun `nine empty answers followed by a good one are all stored`() = runTest {
+        givenChannels(*(1L..10L).map { channelEntity(it) }.toTypedArray())
+        givenAccount("1", "0")
+        whenever(probe.probe(any(), any())).doAnswer {
+            if (it.getArgument<String>(0).endsWith("/20.m3u8")) ChannelHealthStatus.OK else ChannelHealthStatus.EMPTY
+        }
+
+        assertThat(scanner.run(TEST_PROVIDER_ID, null, 0L)).isTrue()
+
+        assertThat(results.read(TEST_PROVIDER_ID).records.keys).containsExactly(1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L)
+    }
+
+    @Test
+    fun `an isolated empty answer between good ones is stored`() = runTest {
+        givenChannels(channelEntity(1L), channelEntity(2L), channelEntity(3L))
+        givenAccount("1", "0")
+        whenever(probe.probe(any(), any())).doAnswer {
+            if (it.getArgument<String>(0).endsWith("/12.m3u8")) ChannelHealthStatus.EMPTY else ChannelHealthStatus.OK
+        }
+
+        assertThat(scanner.run(TEST_PROVIDER_ID, null, 0L)).isTrue()
+
+        val records = results.read(TEST_PROVIDER_ID).records
+        assertThat(records.getValue(2L).status).isEqualTo(ChannelHealthStatus.EMPTY)
+        assertThat(records.getValue(2L).failedDays).isEqualTo(1)
     }
 
     @Test
