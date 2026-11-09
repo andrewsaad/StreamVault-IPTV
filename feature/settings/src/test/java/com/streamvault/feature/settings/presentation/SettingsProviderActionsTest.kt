@@ -231,4 +231,29 @@ class SettingsProviderActionsTest {
         assertThat(uiState.value.isDeletingProvider).isFalse()
         assertThat(uiState.value.userMessage).isEqualTo("Provider deleted")
     }
+
+    @Test
+    fun setActiveProvider_failureShowsLocalizedTextNotTheRawError() = runTest(StandardTestDispatcher()) {
+        whenever(providerRepository.getProvider(7L)).thenReturn(Provider(
+            id = 7L, name = "Xtream", type = ProviderType.XTREAM_CODES, serverUrl = "https://example.test"
+        ))
+        whenever(providerRepository.setActiveProvider(7L)).thenReturn(Result.error("raw english failure"))
+
+        actions.setActiveProvider(this, 7L)
+        advanceUntilIdle()
+
+        assertThat(uiState.value.userMessage).isEqualTo("Localized")
+        assertThat(uiState.value.userMessage).doesNotContain("raw english failure")
+    }
+
+    @Test
+    fun setActiveProvider_missingProviderShowsLocalizedText() = runTest(StandardTestDispatcher()) {
+        whenever(providerRepository.getProvider(7L)).thenReturn(null)
+
+        actions.setActiveProvider(this, 7L)
+        advanceUntilIdle()
+
+        assertThat(uiState.value.userMessage).isEqualTo("Localized")
+        verify(providerRepository, never()).setActiveProvider(any())
+    }
 }

@@ -82,7 +82,23 @@ class SettingsStringsLocaleParityTest {
         "channel_cleanup_close"
     )
 
-    private val localizedKeys = epgPresetKeys + channelCleanupKeys
+    private val userMessageKeys = listOf(
+        "settings_history_clear_failed",
+        "settings_category_unhidden",
+        "settings_xtream_text_decoding_changed",
+        "settings_provider_activate_not_found",
+        "settings_provider_activate_failed",
+        "settings_provider_connected",
+        "settings_combined_activate_not_found",
+        "settings_combined_activate_needs_playlist",
+        "settings_combined_activate_needs_enabled",
+        "settings_combined_activated",
+        "settings_combined_activate_failed",
+        "settings_combined_remove_last_active",
+        "settings_combined_disable_last_active"
+    )
+
+    private val localizedKeys = epgPresetKeys + channelCleanupKeys + userMessageKeys
 
     @Test
     fun everyAdvertisedLocaleHasValuesFolder() {
