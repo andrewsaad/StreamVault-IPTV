@@ -321,6 +321,165 @@ class ChannelHealthScannerTest {
         assertThat(scanner.observeState(TEST_PROVIDER_ID).first().lastFinishedAt).isNotNull()
     }
 
+    /**
+     * Answers per channel id, one entry per attempt; the last one repeats. Returns the ids in the order
+     * they were probed.
+     */
+    private suspend fun givenProbeAnswers(answers: Map<Long, List<ChannelHealthStatus>>): MutableList<Long> {
+        val probed = mutableListOf<Long>()
+        val attempts = mutableMapOf<Long, Int>()
+        whenever(probe.probe(any(), any())).doAnswer {
+            // The stream id is the channel id plus 10 in these tests.
+            val id = it.getArgument<String>(0).substringAfterLast('/').removeSuffix(".m3u8").toLong() - 10L
+            probed += id
+            val attempt = attempts.getOrDefault(id, 0)
+            attempts[id] = attempt + 1
+            val list = answers.getValue(id)
+            list[minOf(attempt, list.lastIndex)]
+        }
+        return probed
+    }
+
+    @Test
+    fun `channels that answered unclear are probed once more after the provider backoff`() = runTest {
+        givenChannels(*(1L..4L).map { channelEntity(it) }.toTypedArray())
+        givenAccount("1", "0")
+        val probed = givenProbeAnswers(
+            mapOf(
+                1L to listOf(ChannelHealthStatus.OK),
+                2L to listOf(ChannelHealthStatus.UNCLEAR, ChannelHealthStatus.OK),
+                3L to listOf(ChannelHealthStatus.UNCLEAR, ChannelHealthStatus.OK),
+                4L to listOf(ChannelHealthStatus.OK),
+            ),
+        )
+
+        val finished = scanner.run(TEST_PROVIDER_ID, null, 0L)
+
+        assertThat(finished).isTrue()
+        assertThat(probed).containsExactly(1L, 2L, 3L, 4L, 2L, 3L).inOrder()
+        // Four probes 6 s apart, then the 5 minute backoff before the retries.
+        assertThat(testScheduler.currentTime).isAtLeast(18_000L + 5L * 60_000L)
+        val state = scanner.observeState(TEST_PROVIDER_ID).first()
+        assertThat(state.scanned).isEqualTo(6)
+        assertThat(state.total).isEqualTo(6)
+        assertThat(state.lastFinishedAt).isEqualTo(clock.nowMillis)
+        assertThat(results.read(TEST_PROVIDER_ID).resume).isNull()
+    }
+
+    @Test
+    fun `a retry that now answers empty is stored with one failed day`() = runTest {
+        givenChannels(channelEntity(1L), channelEntity(2L))
+        givenAccount("1", "0")
+        givenProbeAnswers(
+            mapOf(
+                1L to listOf(ChannelHealthStatus.UNCLEAR, ChannelHealthStatus.EMPTY),
+                2L to listOf(ChannelHealthStatus.OK),
+            ),
+        )
+
+        assertThat(scanner.run(TEST_PROVIDER_ID, null, 0L)).isTrue()
+
+        val records = results.read(TEST_PROVIDER_ID).records
+        assertThat(records.keys).containsExactly(1L)
+        assertThat(records.getValue(1L).status).isEqualTo(ChannelHealthStatus.EMPTY)
+        assertThat(records.getValue(1L).failedDays).isEqualTo(1)
+    }
+
+    @Test
+    fun `a retry that answers ok clears the channel's record`() = runTest {
+        givenChannels(channelEntity(1L))
+        givenAccount("1", "0")
+        results.record(
+            TEST_PROVIDER_ID,
+            listOf(ChannelProbeOutcome(1L, ChannelHealthStatus.EMPTY, clock.nowMillis - DAY_MS)),
+        )
+        assertThat(results.read(TEST_PROVIDER_ID).records.keys).containsExactly(1L)
+        givenProbeAnswers(mapOf(1L to listOf(ChannelHealthStatus.UNCLEAR, ChannelHealthStatus.OK)))
+
+        assertThat(scanner.run(TEST_PROVIDER_ID, null, 0L)).isTrue()
+
+        assertThat(results.read(TEST_PROVIDER_ID).records).isEmpty()
+    }
+
+    @Test
+    fun `a channel that is still unclear after the retry is neither stored nor tried a third time`() = runTest {
+        givenChannels(channelEntity(1L), channelEntity(2L))
+        givenAccount("1", "0")
+        val probed = givenProbeAnswers(
+            mapOf(
+                1L to listOf(ChannelHealthStatus.UNCLEAR),
+                2L to listOf(ChannelHealthStatus.OK),
+            ),
+        )
+
+        assertThat(scanner.run(TEST_PROVIDER_ID, null, 0L)).isTrue()
+
+        assertThat(probed).containsExactly(1L, 2L, 1L).inOrder()
+        assertThat(results.read(TEST_PROVIDER_ID).records).isEmpty()
+        assertThat(scanner.observeState(TEST_PROVIDER_ID).first().lastFinishedAt).isNotNull()
+    }
+
+    @Test
+    fun `a scan stopped during the retry pass resumes the remaining retries after a restart`() = runTest {
+        givenChannels(*(1L..5L).map { channelEntity(it) }.toTypedArray())
+        givenAccount("1", "0")
+        val probed = givenProbeAnswers(
+            mapOf(
+                1L to listOf(ChannelHealthStatus.UNCLEAR, ChannelHealthStatus.EMPTY),
+                2L to listOf(ChannelHealthStatus.OK),
+                3L to listOf(ChannelHealthStatus.UNCLEAR, ChannelHealthStatus.OK),
+                4L to listOf(ChannelHealthStatus.OK),
+                5L to listOf(ChannelHealthStatus.UNCLEAR, ChannelHealthStatus.EMPTY),
+            ),
+        )
+        val job = backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { scanner.run(TEST_PROVIDER_ID, null, 500L) }
+        // Main pass probes at 0 to 24 s, the backoff ends at 324 s, then retries at 324 s and 330 s.
+        advanceTimeBy(330_000L)
+        runCurrent()
+        job.cancel()
+        advanceUntilIdle()
+        assertThat(probed).containsExactly(1L, 2L, 3L, 4L, 5L, 1L, 3L).inOrder()
+        assertThat(results.read(TEST_PROVIDER_ID).resume)
+            .isEqualTo(ChannelHealthResume(500L, 5L, listOf(1L, 3L, 5L), 3L))
+
+        assertThat(scanner.run(TEST_PROVIDER_ID, null, 500L)).isTrue()
+
+        // Only the last retry is left; no new backoff and no second main pass.
+        assertThat(probed.drop(7)).containsExactly(5L)
+        val document = results.read(TEST_PROVIDER_ID)
+        assertThat(document.records.keys).containsExactly(1L, 5L)
+        assertThat(document.records.getValue(5L).failedDays).isEqualTo(1)
+        assertThat(document.resume).isNull()
+        assertThat(document.lastFinishedAt).isEqualTo(clock.nowMillis)
+        val state = scanner.observeState(TEST_PROVIDER_ID).first()
+        assertThat(state.scanned).isEqualTo(8)
+        assertThat(state.total).isEqualTo(8)
+    }
+
+    @Test
+    fun `no retry pass or backoff when nothing was unclear`() = runTest {
+        givenChannels(channelEntity(1L), channelEntity(2L))
+        givenAccount("1", "0")
+        val probed = givenProbeAnswers(
+            mapOf(
+                1L to listOf(ChannelHealthStatus.OK),
+                2L to listOf(ChannelHealthStatus.EMPTY),
+            ),
+        )
+
+        assertThat(scanner.run(TEST_PROVIDER_ID, null, 0L)).isTrue()
+
+        assertThat(probed).containsExactly(1L, 2L).inOrder()
+        assertThat(testScheduler.currentTime).isLessThan(60_000L)
+    }
+
+    @Test
+    fun `a progress marker stored before retries existed still reads back`() = runTest {
+        storage.health.value = """{"resumeStartedAt":500,"resumeAfterId":1}"""
+
+        assertThat(results.read(TEST_PROVIDER_ID).resume).isEqualTo(ChannelHealthResume(500L, 1L))
+    }
+
     @Test
     fun `a one connection account yields to playback and resumes afterwards`() = runTest {
         givenChannels(channelEntity(1L))
