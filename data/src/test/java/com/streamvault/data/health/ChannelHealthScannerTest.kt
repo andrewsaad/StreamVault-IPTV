@@ -478,19 +478,128 @@ class ChannelHealthScannerTest {
         assertThat(testScheduler.currentTime).isLessThan(60_000L)
     }
 
+    /**
+     * Answers for channels 1..[total] where the [refused] ones answer 503 every time, the [recovering] ones
+     * time out once and then answer OK, and the rest answer OK. Keep refused and recovering ids apart so the
+     * main pass never has three unclear answers in a row.
+     */
+    private fun flakyProvider(total: Long, refused: Set<Long>, recovering: Set<Long>): Map<Long, List<ChannelProbeResult>> =
+        (1L..total).associateWith {
+            when (it) {
+                in refused -> listOf(serverError)
+                in recovering -> listOf(unclear, ok)
+                else -> listOf(ok)
+            }
+        }
+
     @Test
     fun `a channel the provider refuses with a server error on both passes is stored as empty`() = runTest {
-        givenChannels(channelEntity(1L), channelEntity(2L))
+        givenChannels(*(1L..7L).map { channelEntity(it) }.toTypedArray())
         givenAccount("1", "0")
-        val probed = givenProbeAnswers(mapOf(1L to listOf(serverError), 2L to listOf(ok)))
+        // Three other channels recover on the retry, so the provider was serving while it refused channel 1.
+        val probed = givenProbeAnswers(flakyProvider(7L, refused = setOf(1L), recovering = setOf(3L, 5L, 7L)))
 
         assertThat(scanner.run(TEST_PROVIDER_ID, null, 0L)).isTrue()
 
-        assertThat(probed).containsExactly(1L, 2L, 1L).inOrder()
+        assertThat(probed.drop(7)).containsExactly(1L, 3L, 5L, 7L).inOrder()
         val records = results.read(TEST_PROVIDER_ID).records
         assertThat(records.keys).containsExactly(1L)
         assertThat(records.getValue(1L).status).isEqualTo(ChannelHealthStatus.EMPTY)
         assertThat(records.getValue(1L).failedDays).isEqualTo(1)
+    }
+
+    @Test
+    fun `server errors on two channels with three good answers around them in the retry pass are stored`() = runTest {
+        givenChannels(*(1L..9L).map { channelEntity(it) }.toTypedArray())
+        givenAccount("1", "0")
+        givenProbeAnswers(flakyProvider(9L, refused = setOf(1L, 5L), recovering = setOf(3L, 7L, 9L)))
+
+        assertThat(scanner.run(TEST_PROVIDER_ID, null, 0L)).isTrue()
+
+        val records = results.read(TEST_PROVIDER_ID).records
+        assertThat(records.keys).containsExactly(1L, 5L)
+        assertThat(records.values.map { it.status }.distinct()).containsExactly(ChannelHealthStatus.EMPTY)
+    }
+
+    @Test
+    fun `a server error provider wide with only five retry channels stores nothing`() = runTest {
+        givenChannels(*(1L..5L).map { channelEntity(it) }.toTypedArray())
+        givenAccount("1", "0")
+        val probed = givenProbeAnswers((1L..5L).associateWith { listOf(serverError) })
+
+        // Too few retry channels for the mass failure guard or the give up count to act.
+        assertThat(scanner.run(TEST_PROVIDER_ID, null, 0L)).isTrue()
+
+        assertThat(probed).hasSize(10)
+        assertThat(results.read(TEST_PROVIDER_ID).records).isEmpty()
+        assertThat(scanner.observeState(TEST_PROVIDER_ID).first().lastFinishedAt).isNotNull()
+    }
+
+    @Test
+    fun `intermittent server errors with at least half of the retry pass refused store nothing`() = runTest {
+        givenChannels(*(1L..11L).map { channelEntity(it) }.toTypedArray())
+        givenAccount("1", "0")
+        // The retry pass alternates 503 and OK: three refused out of six attempts is exactly half.
+        givenProbeAnswers(flakyProvider(11L, refused = setOf(1L, 5L, 9L), recovering = setOf(3L, 7L, 11L)))
+
+        assertThat(scanner.run(TEST_PROVIDER_ID, null, 0L)).isTrue()
+
+        assertThat(results.read(TEST_PROVIDER_ID).records).isEmpty()
+        assertThat(scanner.observeState(TEST_PROVIDER_ID).first().lastFinishedAt).isNotNull()
+    }
+
+    @Test
+    fun `a small retry queue after a healthy main pass with one good retry answer stores the refused channels`() = runTest {
+        givenChannels(*(1L..53L).map { channelEntity(it) }.toTypedArray())
+        givenAccount("1", "0")
+        // Exactly 50 good main pass answers (48 + channels 50 and 52); the retry queue is 49, 51 and 53.
+        givenProbeAnswers(flakyProvider(53L, refused = setOf(49L, 53L), recovering = setOf(51L)))
+
+        assertThat(scanner.run(TEST_PROVIDER_ID, null, 0L)).isTrue()
+
+        assertThat(results.read(TEST_PROVIDER_ID).records.keys).containsExactly(49L, 53L)
+    }
+
+    @Test
+    fun `a healthy main pass does not help when the retry pass has no good answer`() = runTest {
+        givenChannels(*(1L..53L).map { channelEntity(it) }.toTypedArray())
+        givenAccount("1", "0")
+        givenProbeAnswers(flakyProvider(53L, refused = setOf(49L, 51L, 53L), recovering = emptySet()))
+
+        assertThat(scanner.run(TEST_PROVIDER_ID, null, 0L)).isTrue()
+
+        assertThat(results.read(TEST_PROVIDER_ID).records).isEmpty()
+    }
+
+    @Test
+    fun `refused channels are stored when the retry pass alone shows a healthy provider`() {
+        assertThat(shouldStoreRefusals(mainOk = 0, retryOk = 3, retryAttempts = 6, refused = 2)).isTrue()
+        assertThat(shouldStoreRefusals(mainOk = 0, retryOk = 3, retryAttempts = 4, refused = 1)).isTrue()
+        assertThat(shouldStoreRefusals(mainOk = 0, retryOk = 4, retryAttempts = 7, refused = 3)).isTrue()
+    }
+
+    @Test
+    fun `refused channels are dropped when the retry pass has fewer than three good answers`() {
+        assertThat(shouldStoreRefusals(mainOk = 0, retryOk = 2, retryAttempts = 4, refused = 1)).isFalse()
+        assertThat(shouldStoreRefusals(mainOk = 49, retryOk = 0, retryAttempts = 5, refused = 5)).isFalse()
+    }
+
+    @Test
+    fun `refused channels are dropped when half or more of the retry pass was refused`() {
+        assertThat(shouldStoreRefusals(mainOk = 0, retryOk = 3, retryAttempts = 6, refused = 3)).isFalse()
+        assertThat(shouldStoreRefusals(mainOk = 0, retryOk = 3, retryAttempts = 6, refused = 4)).isFalse()
+    }
+
+    @Test
+    fun `a main pass with fifty good answers and one good retry answer is enough`() {
+        assertThat(shouldStoreRefusals(mainOk = 50, retryOk = 1, retryAttempts = 3, refused = 2)).isTrue()
+        assertThat(shouldStoreRefusals(mainOk = 49, retryOk = 1, retryAttempts = 3, refused = 2)).isFalse()
+        assertThat(shouldStoreRefusals(mainOk = 500, retryOk = 0, retryAttempts = 3, refused = 3)).isFalse()
+    }
+
+    @Test
+    fun `nothing is stored when no channel was refused`() {
+        assertThat(shouldStoreRefusals(mainOk = 500, retryOk = 10, retryAttempts = 10, refused = 0)).isFalse()
     }
 
     @Test
@@ -565,22 +674,23 @@ class ChannelHealthScannerTest {
 
     @Test
     fun `server errors remembered for the retry pass survive a restart`() = runTest {
-        givenChannels(channelEntity(1L), channelEntity(2L), channelEntity(3L))
+        givenChannels(*(1L..7L).map { channelEntity(it) }.toTypedArray())
         givenAccount("1", "0")
-        givenProbeAnswers(mapOf(1L to listOf(serverError), 2L to listOf(ok), 3L to listOf(serverError)))
+        givenProbeAnswers(flakyProvider(7L, refused = setOf(1L), recovering = setOf(3L, 5L, 7L)))
         val job = backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { scanner.run(TEST_PROVIDER_ID, null, 500L) }
-        // Main pass at 0 to 12 s, the backoff ends at 312 s, then the first retry.
-        advanceTimeBy(312_000L)
+        // Main pass at 0 to 36 s, the backoff ends at 336 s, then the first retry (channel 1, refused).
+        advanceTimeBy(336_000L)
         runCurrent()
         job.cancel()
         advanceUntilIdle()
+        // The refusal is only held back, so the retry pass resumes before it and nothing is stored yet.
         assertThat(results.read(TEST_PROVIDER_ID).resume)
-            .isEqualTo(ChannelHealthResume(500L, 3L, listOf(1L, 3L), 1L, listOf(1L, 3L)))
-        assertThat(results.read(TEST_PROVIDER_ID).records.keys).containsExactly(1L)
+            .isEqualTo(ChannelHealthResume(500L, 7L, listOf(1L, 3L, 5L, 7L), 0L, listOf(1L)))
+        assertThat(results.read(TEST_PROVIDER_ID).records).isEmpty()
 
         assertThat(scanner.run(TEST_PROVIDER_ID, null, 500L)).isTrue()
 
-        assertThat(results.read(TEST_PROVIDER_ID).records.keys).containsExactly(1L, 3L)
+        assertThat(results.read(TEST_PROVIDER_ID).records.keys).containsExactly(1L)
     }
 
     @Test
