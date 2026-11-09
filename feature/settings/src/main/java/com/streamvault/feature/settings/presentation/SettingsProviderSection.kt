@@ -181,6 +181,7 @@ public fun LazyListScope.providerSection(
                 label = stringResource(R.string.settings_channel_cleanup_title),
                 value = stringResource(R.string.settings_channel_cleanup_description),
                 onClick = { showChannelCleanup = true },
+                modifier = if (targetItemId == SETTINGS_CHANNEL_CLEANUP_ID) targetFocusModifier else Modifier,
             )
             if (showChannelCleanup) {
                 ChannelCleanupDialog(
