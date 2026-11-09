@@ -493,6 +493,30 @@ class ProviderRepositoryImplTest {
     }
 
     @Test
+    fun `deleteProvider clears the provider's channel health results`() = runTest {
+        whenever(recordingRunDao.getIdsByProvider(7L)).thenReturn(emptyList())
+        whenever(programReminderDao.getIdsByProvider(7L)).thenReturn(emptyList())
+
+        val result = repository.deleteProvider(7L)
+
+        assertThat(result.isSuccess).isTrue()
+        verify(preferencesRepository).setChannelHealthResults(7L, null)
+    }
+
+    @Test
+    fun `deleteProvider keeps success when clearing channel health results fails`() = runTest {
+        whenever(recordingRunDao.getIdsByProvider(7L)).thenReturn(emptyList())
+        whenever(programReminderDao.getIdsByProvider(7L)).thenReturn(emptyList())
+        doAnswer { throw IllegalStateException("datastore unavailable") }
+            .whenever(preferencesRepository).setChannelHealthResults(7L, null)
+
+        val result = repository.deleteProvider(7L)
+
+        assertThat(result.isSuccess).isTrue()
+        verify(providerDao).delete(7L)
+    }
+
+    @Test
     fun `validateM3u marks provider active only after successful onboarding`() = runTest {
         val existingProvider = Provider(
             id = 5L,
