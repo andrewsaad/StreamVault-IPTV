@@ -1049,6 +1049,7 @@
     <string name="channel_cleanup_progress">%1$d / %2$d csatorna ellenőrizve</string>
     <string name="channel_cleanup_paused_playback">Szüneteltetve, amíg lejátszás folyik</string>
     <string name="channel_cleanup_paused_backoff">A szolgáltató elfoglalt, várakozás</string>
+    <string name="channel_cleanup_gave_up">A vizsgálat leállt, mert a szolgáltató nem válaszolt. Próbálja újra később.</string>
     <string name="channel_cleanup_suggestions_title">Csatornák, amelyek talán nem működnek</string>
     <string name="channel_cleanup_empty">Még nincs javaslat. A rendszeresen hibás csatornák egy ellenőrzés után itt jelennek meg.</string>
     <string name="channel_cleanup_select_all">Összes kijelölése</string>

@@ -1049,6 +1049,7 @@
     <string name="channel_cleanup_progress">Skannattu %1$d / %2$d kanavaa</string>
     <string name="channel_cleanup_paused_playback">Tauolla, kun jotain toistetaan</string>
     <string name="channel_cleanup_paused_backoff">Palveluntarjoaja on varattu, odotetaan</string>
+    <string name="channel_cleanup_gave_up">Skannaus pysähtyi, koska palveluntarjoaja ei vastannut. Yritä myöhemmin uudelleen.</string>
     <string name="channel_cleanup_suggestions_title">Kanavat, jotka eivät ehkä toimi</string>
     <string name="channel_cleanup_empty">Ei ehdotuksia vielä. Jatkuvasti epäonnistuvat kanavat näkyvät tässä skannauksen jälkeen.</string>
     <string name="channel_cleanup_select_all">Valitse kaikki</string>

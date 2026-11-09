@@ -1047,6 +1047,7 @@
     <string name="channel_cleanup_progress">%2$d में से %1$d चैनल स्कैन हुए</string>
     <string name="channel_cleanup_paused_playback">कुछ चलने के दौरान रोका गया</string>
     <string name="channel_cleanup_paused_backoff">प्रदाता व्यस्त है, प्रतीक्षा जारी है</string>
+    <string name="channel_cleanup_gave_up">स्कैन रुक गया क्योंकि प्रदाता ने जवाब नहीं दिया। कृपया बाद में पुनः प्रयास करें।</string>
     <string name="channel_cleanup_suggestions_title">ऐसे चैनल जो शायद काम नहीं करते</string>
     <string name="channel_cleanup_empty">अभी कोई सुझाव नहीं है। जो चैनल बार-बार विफल होते हैं, वे स्कैन के बाद यहाँ दिखेंगे।</string>
     <string name="channel_cleanup_select_all">सभी चुनें</string>

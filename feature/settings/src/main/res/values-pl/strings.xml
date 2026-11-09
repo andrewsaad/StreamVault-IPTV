@@ -1055,6 +1055,7 @@
     <string name="channel_cleanup_progress">Przeskanowano %1$d z %2$d kanałów</string>
     <string name="channel_cleanup_paused_playback">Wstrzymano na czas odtwarzania</string>
     <string name="channel_cleanup_paused_backoff">Dostawca jest zajęty, oczekiwanie</string>
+    <string name="channel_cleanup_gave_up">Skanowanie zatrzymano, ponieważ dostawca nie odpowiedział. Spróbuj ponownie później.</string>
     <string name="channel_cleanup_suggestions_title">Kanały, które mogą nie działać</string>
     <string name="channel_cleanup_empty">Brak propozycji. Kanały, które wciąż zawodzą, pojawią się tutaj po skanowaniu.</string>
     <string name="channel_cleanup_select_all">Zaznacz wszystko</string>

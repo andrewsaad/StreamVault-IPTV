@@ -281,6 +281,20 @@ class ChannelCleanupViewModelTest {
     }
 
     @Test
+    fun `a scan that gave up shows as idle with the give-up flag until the next scan`() {
+        val vm = viewModel()
+
+        repository.scanState.value = ChannelHealthScanState(scanned = 40, total = 300, gaveUp = true)
+        assertThat(vm.uiState.value.scan).isEqualTo(ChannelCleanupScanUi.Idle(null, gaveUp = true))
+
+        repository.scanState.value = ChannelHealthScanState(running = true, scanned = 0, total = 300)
+        assertThat(vm.uiState.value.scan).isEqualTo(ChannelCleanupScanUi.Running(0, 300))
+
+        repository.scanState.value = ChannelHealthScanState(lastFinishedAt = 7_000L)
+        assertThat(vm.uiState.value.scan).isEqualTo(ChannelCleanupScanUi.Idle(7_000L, gaveUp = false))
+    }
+
+    @Test
     fun `pause reasons have their own localized text`() {
         assertThat(channelCleanupPausedLabelRes(ChannelHealthPauseReason.PLAYBACK_ACTIVE))
             .isEqualTo(R.string.channel_cleanup_paused_playback)

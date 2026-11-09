@@ -1049,6 +1049,7 @@
     <string name="channel_cleanup_progress">%1$d dari %2$d saluran dipindai</string>
     <string name="channel_cleanup_paused_playback">Dijeda saat ada yang diputar</string>
     <string name="channel_cleanup_paused_backoff">Penyedia sedang sibuk, menunggu</string>
+    <string name="channel_cleanup_gave_up">Pemindaian dihentikan karena penyedia tidak merespons. Coba lagi nanti.</string>
     <string name="channel_cleanup_suggestions_title">Saluran yang mungkin tidak berfungsi</string>
     <string name="channel_cleanup_empty">Belum ada saran. Saluran yang terus gagal akan muncul di sini setelah pemindaian.</string>
     <string name="channel_cleanup_select_all">Pilih semua</string>

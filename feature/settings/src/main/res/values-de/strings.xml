@@ -1045,6 +1045,7 @@
     <string name="channel_cleanup_progress">%1$d von %2$d Kanälen geprüft</string>
     <string name="channel_cleanup_paused_playback">Pausiert, während etwas wiedergegeben wird</string>
     <string name="channel_cleanup_paused_backoff">Anbieter ausgelastet, Warten</string>
+    <string name="channel_cleanup_gave_up">Der Scan wurde beendet, weil der Anbieter nicht geantwortet hat. Versuchen Sie es später erneut.</string>
     <string name="channel_cleanup_suggestions_title">Kanäle, die möglicherweise nicht funktionieren</string>
     <string name="channel_cleanup_empty">Noch keine Vorschläge. Kanäle, die immer wieder ausfallen, erscheinen nach einem Scan hier.</string>
     <string name="channel_cleanup_select_all">Alle auswählen</string>

@@ -1052,6 +1052,7 @@
     <string name="channel_cleanup_progress">%1$d din %2$d canale scanate</string>
     <string name="channel_cleanup_paused_playback">În pauză cât timp se redă ceva</string>
     <string name="channel_cleanup_paused_backoff">Furnizorul este ocupat, se așteaptă</string>
+    <string name="channel_cleanup_gave_up">Scanarea s-a oprit deoarece furnizorul nu a răspuns. Încercați din nou mai târziu.</string>
     <string name="channel_cleanup_suggestions_title">Canale care poate nu funcționează</string>
     <string name="channel_cleanup_empty">Încă nu există sugestii. Canalele care continuă să eșueze vor apărea aici după o scanare.</string>
     <string name="channel_cleanup_select_all">Selectează tot</string>

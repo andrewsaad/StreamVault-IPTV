@@ -1047,6 +1047,7 @@
     <string name="channel_cleanup_progress">%2$d 件中 %1$d 件のチャンネルをスキャン済み</string>
     <string name="channel_cleanup_paused_playback">再生中のため一時停止中</string>
     <string name="channel_cleanup_paused_backoff">プロバイダーがビジー状態です。待機中</string>
+    <string name="channel_cleanup_gave_up">プロバイダーが応答しなかったため、スキャンを停止しました。後でもう一度お試しください。</string>
     <string name="channel_cleanup_suggestions_title">動作していない可能性のあるチャンネル</string>
     <string name="channel_cleanup_empty">候補はまだありません。失敗が続くチャンネルは、スキャン後にここに表示されます。</string>
     <string name="channel_cleanup_select_all">すべて選択</string>

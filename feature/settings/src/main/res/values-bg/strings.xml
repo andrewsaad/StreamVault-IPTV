@@ -1047,6 +1047,7 @@
     <string name="channel_cleanup_progress">Сканирани %1$d от %2$d канала</string>
     <string name="channel_cleanup_paused_playback">На пауза, докато се възпроизвежда нещо</string>
     <string name="channel_cleanup_paused_backoff">Доставчикът е зает, изчакване</string>
+    <string name="channel_cleanup_gave_up">Сканирането спря, защото доставчикът не отговори. Опитайте отново по-късно.</string>
     <string name="channel_cleanup_suggestions_title">Канали, които може да не работят</string>
     <string name="channel_cleanup_empty">Все още няма предложения. Каналите, които продължават да не работят, ще се появят тук след сканиране.</string>
     <string name="channel_cleanup_select_all">Избери всички</string>

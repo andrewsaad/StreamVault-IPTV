@@ -1047,6 +1047,7 @@
     <string name="channel_cleanup_progress">U skanuan %1$d nga %2$d kanale</string>
     <string name="channel_cleanup_paused_playback">Në pauzë ndërsa po luhet diçka</string>
     <string name="channel_cleanup_paused_backoff">Ofruesi është i zënë, po pritet</string>
+    <string name="channel_cleanup_gave_up">Skanimi u ndal sepse ofruesi nuk u përgjigj. Provo përsëri më vonë.</string>
     <string name="channel_cleanup_suggestions_title">Kanale që mund të mos funksionojnë</string>
     <string name="channel_cleanup_empty">Ende nuk ka sugjerime. Kanalet që vazhdojnë të dështojnë do të shfaqen këtu pas një skanimi.</string>
     <string name="channel_cleanup_select_all">Zgjidh të gjitha</string>

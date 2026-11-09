@@ -1044,6 +1044,7 @@
     <string name="channel_cleanup_progress">%1$d daripada %2$d saluran diimbas</string>
     <string name="channel_cleanup_paused_playback">Dijeda semasa sesuatu sedang dimainkan</string>
     <string name="channel_cleanup_paused_backoff">Penyedia sibuk, sedang menunggu</string>
+    <string name="channel_cleanup_gave_up">Imbasan dihentikan kerana penyedia tidak membalas. Cuba lagi nanti.</string>
     <string name="channel_cleanup_suggestions_title">Saluran yang mungkin tidak berfungsi</string>
     <string name="channel_cleanup_empty">Belum ada cadangan. Saluran yang terus gagal akan muncul di sini selepas pengimbasan.</string>
     <string name="channel_cleanup_select_all">Pilih semua</string>

@@ -26,7 +26,8 @@ import kotlinx.coroutines.launch
 
 /** What the scan card shows. */
 sealed interface ChannelCleanupScanUi {
-    data class Idle(val lastFinishedAt: Long?) : ChannelCleanupScanUi
+    /** [gaveUp]: the last scan stopped because the provider kept failing, so the user is told to try later. */
+    data class Idle(val lastFinishedAt: Long?, val gaveUp: Boolean = false) : ChannelCleanupScanUi
     data class Running(val scanned: Int, val total: Int) : ChannelCleanupScanUi
     data class Paused(
         val reason: ChannelHealthPauseReason,
@@ -69,7 +70,7 @@ internal fun mapChannelCleanupScan(state: ChannelHealthScanState): ChannelCleanu
     return when {
         paused != null -> ChannelCleanupScanUi.Paused(paused, state.scanned, state.total)
         state.running -> ChannelCleanupScanUi.Running(state.scanned, state.total)
-        else -> ChannelCleanupScanUi.Idle(state.lastFinishedAt)
+        else -> ChannelCleanupScanUi.Idle(state.lastFinishedAt, state.gaveUp)
     }
 }
 

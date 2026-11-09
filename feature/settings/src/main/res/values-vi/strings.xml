@@ -1046,6 +1046,7 @@
     <string name="channel_cleanup_progress">Đã quét %1$d trên %2$d kênh</string>
     <string name="channel_cleanup_paused_playback">Tạm dừng khi đang phát nội dung</string>
     <string name="channel_cleanup_paused_backoff">Nhà cung cấp đang bận, đang chờ</string>
+    <string name="channel_cleanup_gave_up">Quá trình quét đã dừng vì nhà cung cấp không phản hồi. Hãy thử lại sau.</string>
     <string name="channel_cleanup_suggestions_title">Các kênh có thể không hoạt động</string>
     <string name="channel_cleanup_empty">Chưa có đề xuất nào. Các kênh liên tục lỗi sẽ xuất hiện ở đây sau khi quét.</string>
     <string name="channel_cleanup_select_all">Chọn tất cả</string>
