@@ -819,7 +819,10 @@ class Media3PlayerEngine @Inject constructor(
         liveStartupWatchdog.reset()
         startupRefreshGate.clear()
         liveMpegTsEndRecovery.reset()
-        viewBinder.setDisplayFrameRate(null)
+        // The refresh-rate vote is not cleared here: a channel change stops the engine and prepares the
+        // next stream right away, and clearing now drops the TV out of its matched mode for the seconds
+        // the new rate takes to detect (two blank switches per zap). PlayerRefreshRateHost releases the
+        // vote when playback really ends, in the background, in PiP or on leaving the screen.
         com.streamvault.domain.sync.AutomaticSyncActivity.stopped(this)
         clearAdaptiveDecodePressure()
         retryJob?.cancel()

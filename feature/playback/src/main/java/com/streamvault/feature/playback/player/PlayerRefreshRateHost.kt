@@ -14,6 +14,13 @@ import com.streamvault.player.PlaybackState
 import com.streamvault.player.PlayerEngine
 import kotlinx.coroutines.delay
 
+/**
+ * How long the previous vote is kept while the new stream's rate is unknown. A live stream with no
+ * declared frame rate took 6 to 9 seconds after its first frame to be measured (game room TV, Nov 8),
+ * so a shorter grace period released the mode and then asked for it again: two blank switches per zap.
+ */
+internal const val REFRESH_RATE_GRACE_MS = 15_000L
+
 /** A single fullscreen vote; background, PiP, previews, and multiview cannot compete for HDMI. */
 @Composable
 internal fun PlayerRefreshRateHost(
@@ -55,9 +62,9 @@ internal fun PlayerRefreshRateHost(
             delay(1_000)
             engine.setDisplayFrameRate(presentationRate)
         } else {
-            // Keep the previous mode during short channel transitions, but release it for radio,
+            // Keep the previous mode during channel transitions (see REFRESH_RATE_GRACE_MS), but release it for radio,
             // stopped playback, or a source whose cadence cannot be established.
-            delay(5_000)
+            delay(REFRESH_RATE_GRACE_MS)
             Log.i("DisplayRefreshRate", "refresh-match grace-expired state=$playbackState")
             engine.setDisplayFrameRate(null)
         }
