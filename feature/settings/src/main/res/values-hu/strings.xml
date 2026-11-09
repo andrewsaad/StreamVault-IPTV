@@ -1064,4 +1064,17 @@
     <string name="channel_cleanup_confirm_button">Elrejtés</string>
     <string name="channel_cleanup_error_unsupported">Ez a szolgáltatótípus nem ellenőrizhető</string>
     <string name="channel_cleanup_close">Bezárás</string>
+    <string name="settings_history_clear_failed">Az előzményeket nem sikerült törölni</string>
+    <string name="settings_category_unhidden">A(z) %1$s már nincs elrejtve</string>
+    <string name="settings_xtream_text_decoding_changed">Az Xtream szövegdekódolása megváltozott. Frissítse az egyes Xtream-szolgáltatókat egyszer a címek újraimportálásához.</string>
+    <string name="settings_provider_activate_not_found">A szolgáltatót nem sikerült aktiválni: nem található</string>
+    <string name="settings_provider_activate_failed">A szolgáltatót nem sikerült aktiválni</string>
+    <string name="settings_provider_connected">Csatlakozva ehhez: %1$s</string>
+    <string name="settings_combined_activate_not_found">Az egyesített forrást nem sikerült aktiválni: nem található</string>
+    <string name="settings_combined_activate_needs_playlist">Az aktiválás előtt adjon hozzá legalább egy lejátszási listát ehhez az egyesített forráshoz</string>
+    <string name="settings_combined_activate_needs_enabled">Az aktiválás előtt engedélyezzen legalább egy lejátszási listát ebben az egyesített forrásban</string>
+    <string name="settings_combined_activated">Az egyesített M3U-forrás aktiválva</string>
+    <string name="settings_combined_activate_failed">Az egyesített forrást nem sikerült aktiválni</string>
+    <string name="settings_combined_remove_last_active">Az utolsó aktív lejátszási lista nem távolítható el a jelenlegi élő forrásból</string>
+    <string name="settings_combined_disable_last_active">Az utolsó aktív lejátszási lista nem tiltható le a jelenlegi élő forrásban</string>
 </resources>

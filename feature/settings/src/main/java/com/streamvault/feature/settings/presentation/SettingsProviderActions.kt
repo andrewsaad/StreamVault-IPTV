@@ -1,6 +1,7 @@
 package com.streamvault.feature.settings.presentation
 
 import android.content.Context
+import android.util.Log
 import com.streamvault.feature.settings.R
 
 import com.streamvault.feature.settings.api.SettingsSurfaceRefreshPort
@@ -56,13 +57,14 @@ internal class SettingsProviderActions(
             // Validate the provider exists before writing any preferences.
             val provider = providerRepository.getProvider(providerId)
             if (provider == null) {
-                uiState.update { it.copy(userMessage = "Could not activate provider: provider not found") }
+                uiState.update { it.copy(userMessage = appContext.getString(R.string.settings_provider_activate_not_found)) }
                 return@launch
             }
             // Write to the repository first; only persist UI-layer preferences on success.
             when (val result = providerRepository.setActiveProvider(providerId)) {
                 is Result.Error -> {
-                    uiState.update { it.copy(userMessage = "Could not activate provider: ${result.message}") }
+                    Log.w("SettingsProviderActions", "Could not activate provider: ${result.message}", result.exception)
+                    uiState.update { it.copy(userMessage = appContext.getString(R.string.settings_provider_activate_failed)) }
                     return@launch
                 }
                 else -> Unit
@@ -74,7 +76,7 @@ internal class SettingsProviderActions(
             surfaceRefreshPort.refreshRecommendations()
             surfaceRefreshPort.refreshTvInputCatalog()
             settingsOperations.requestAutomaticSyncCheck()
-            uiState.update { it.copy(userMessage = "Connected to ${provider.name}") }
+            uiState.update { it.copy(userMessage = appContext.getString(R.string.settings_provider_connected, provider.name)) }
         }
     }
 
@@ -84,17 +86,17 @@ internal class SettingsProviderActions(
             val profile = combinedM3uRepository.getProfile(profileId)
             when {
                 profile == null ->
-                    uiState.update { it.copy(userMessage = "Could not activate combined source: profile not found") }
+                    uiState.update { it.copy(userMessage = appContext.getString(R.string.settings_combined_activate_not_found)) }
                 profile.members.isEmpty() ->
-                    uiState.update { it.copy(userMessage = "Add at least one playlist to this combined source before activating it") }
+                    uiState.update { it.copy(userMessage = appContext.getString(R.string.settings_combined_activate_needs_playlist)) }
                 profile.members.none { it.enabled } ->
-                    uiState.update { it.copy(userMessage = "Enable at least one playlist in this combined source before activating it") }
+                    uiState.update { it.copy(userMessage = appContext.getString(R.string.settings_combined_activate_needs_enabled)) }
                 else -> when (combinedM3uRepository.setActiveLiveSource(ActiveLiveSource.CombinedM3uSource(profileId))) {
                     is Result.Success -> {
                         surfaceRefreshPort.refreshRecommendations()
-                        uiState.update { it.copy(userMessage = "Combined M3U source activated") }
+                        uiState.update { it.copy(userMessage = appContext.getString(R.string.settings_combined_activated)) }
                     }
-                    is Result.Error -> uiState.update { it.copy(userMessage = "Could not activate combined source") }
+                    is Result.Error -> uiState.update { it.copy(userMessage = appContext.getString(R.string.settings_combined_activate_failed)) }
                     Result.Loading -> Unit
                 }
             }
@@ -169,7 +171,7 @@ internal class SettingsProviderActions(
                 val removingEnabledMember = memberToRemove?.enabled == true
                 val remainingEnabled = profile.members.count { it.providerId != providerId && it.enabled }
                 if (removingEnabledMember && remainingEnabled == 0) {
-                    uiState.update { it.copy(userMessage = "Cannot remove the last active playlist from the current live source") }
+                    uiState.update { it.copy(userMessage = appContext.getString(R.string.settings_combined_remove_last_active)) }
                     return@launch
                 }
             }
@@ -209,7 +211,7 @@ internal class SettingsProviderActions(
                 ) {
                     val remainingEnabled = profile.members.count { it.providerId != providerId && it.enabled }
                     if (remainingEnabled == 0) {
-                        uiState.update { it.copy(userMessage = "Cannot disable the last active playlist in the current live source") }
+                        uiState.update { it.copy(userMessage = appContext.getString(R.string.settings_combined_disable_last_active)) }
                         return@launch
                     }
                 }

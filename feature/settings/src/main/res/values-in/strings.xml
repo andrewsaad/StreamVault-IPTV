@@ -1064,4 +1064,17 @@
     <string name="channel_cleanup_confirm_button">Sembunyikan</string>
     <string name="channel_cleanup_error_unsupported">Jenis penyedia ini tidak dapat dipindai</string>
     <string name="channel_cleanup_close">Tutup</string>
+    <string name="settings_history_clear_failed">Tidak dapat menghapus riwayat</string>
+    <string name="settings_category_unhidden">%1$s tidak lagi disembunyikan</string>
+    <string name="settings_xtream_text_decoding_changed">Pendekodean teks Xtream berubah. Segarkan setiap penyedia Xtream satu kali untuk mengimpor ulang judul.</string>
+    <string name="settings_provider_activate_not_found">Tidak dapat mengaktifkan penyedia: tidak ditemukan</string>
+    <string name="settings_provider_activate_failed">Tidak dapat mengaktifkan penyedia</string>
+    <string name="settings_provider_connected">Terhubung ke %1$s</string>
+    <string name="settings_combined_activate_not_found">Tidak dapat mengaktifkan sumber gabungan: tidak ditemukan</string>
+    <string name="settings_combined_activate_needs_playlist">Tambahkan setidaknya satu playlist ke sumber gabungan ini sebelum mengaktifkannya</string>
+    <string name="settings_combined_activate_needs_enabled">Aktifkan setidaknya satu playlist di sumber gabungan ini sebelum mengaktifkannya</string>
+    <string name="settings_combined_activated">Sumber M3U gabungan diaktifkan</string>
+    <string name="settings_combined_activate_failed">Tidak dapat mengaktifkan sumber gabungan</string>
+    <string name="settings_combined_remove_last_active">Playlist aktif terakhir tidak dapat dihapus dari sumber live saat ini</string>
+    <string name="settings_combined_disable_last_active">Playlist aktif terakhir tidak dapat dinonaktifkan di sumber live saat ini</string>
 </resources>

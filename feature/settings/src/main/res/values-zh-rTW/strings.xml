@@ -1059,4 +1059,17 @@
     <string name="channel_cleanup_confirm_button">隱藏</string>
     <string name="channel_cleanup_error_unsupported">無法掃描此類型的供應商</string>
     <string name="channel_cleanup_close">關閉</string>
+    <string name="settings_history_clear_failed">無法清除記錄</string>
+    <string name="settings_category_unhidden">%1$s 已取消隱藏</string>
+    <string name="settings_xtream_text_decoding_changed">Xtream 文字解碼方式已變更。請將每個 Xtream 供應商重新整理一次，以重新匯入標題。</string>
+    <string name="settings_provider_activate_not_found">無法啟用供應商：找不到</string>
+    <string name="settings_provider_activate_failed">無法啟用供應商</string>
+    <string name="settings_provider_connected">已連線至 %1$s</string>
+    <string name="settings_combined_activate_not_found">無法啟用組合來源：找不到</string>
+    <string name="settings_combined_activate_needs_playlist">啟用前，請至少在此組合來源中新增一個播放清單</string>
+    <string name="settings_combined_activate_needs_enabled">啟用前，請至少在此組合來源中啟用一個播放清單</string>
+    <string name="settings_combined_activated">組合 M3U 來源已啟用</string>
+    <string name="settings_combined_activate_failed">無法啟用組合來源</string>
+    <string name="settings_combined_remove_last_active">無法從目前的直播來源移除最後一個作用中的播放清單</string>
+    <string name="settings_combined_disable_last_active">無法在目前的直播來源停用最後一個作用中的播放清單</string>
 </resources>

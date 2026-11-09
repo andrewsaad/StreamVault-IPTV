@@ -1059,4 +1059,17 @@
     <string name="channel_cleanup_confirm_button">ซ่อน</string>
     <string name="channel_cleanup_error_unsupported">ไม่สามารถสแกนผู้ให้บริการประเภทนี้ได้</string>
     <string name="channel_cleanup_close">ปิด</string>
+    <string name="settings_history_clear_failed">ล้างประวัติไม่สำเร็จ</string>
+    <string name="settings_category_unhidden">%1$s ไม่ถูกซ่อนอีกต่อไป</string>
+    <string name="settings_xtream_text_decoding_changed">การถอดรหัสข้อความ Xtream เปลี่ยนไป รีเฟรชผู้ให้บริการ Xtream แต่ละรายหนึ่งครั้งเพื่อนำเข้าชื่อเรื่องใหม่</string>
+    <string name="settings_provider_activate_not_found">เปิดใช้งานผู้ให้บริการไม่สำเร็จ: ไม่พบผู้ให้บริการ</string>
+    <string name="settings_provider_activate_failed">เปิดใช้งานผู้ให้บริการไม่สำเร็จ</string>
+    <string name="settings_provider_connected">เชื่อมต่อกับ %1$s แล้ว</string>
+    <string name="settings_combined_activate_not_found">เปิดใช้งานแหล่งที่มารวมไม่สำเร็จ: ไม่พบแหล่งที่มา</string>
+    <string name="settings_combined_activate_needs_playlist">เพิ่มเพลย์ลิสต์อย่างน้อยหนึ่งรายการในแหล่งที่มารวมนี้ก่อนเปิดใช้งาน</string>
+    <string name="settings_combined_activate_needs_enabled">เปิดใช้เพลย์ลิสต์อย่างน้อยหนึ่งรายการในแหล่งที่มารวมนี้ก่อนเปิดใช้งาน</string>
+    <string name="settings_combined_activated">เปิดใช้งานแหล่งที่มา M3U รวมแล้ว</string>
+    <string name="settings_combined_activate_failed">เปิดใช้งานแหล่งที่มารวมไม่สำเร็จ</string>
+    <string name="settings_combined_remove_last_active">ไม่สามารถนำเพลย์ลิสต์ที่ใช้งานอยู่รายการสุดท้ายออกจากแหล่งที่มาสดปัจจุบันได้</string>
+    <string name="settings_combined_disable_last_active">ไม่สามารถปิดใช้งานเพลย์ลิสต์ที่ใช้งานอยู่รายการสุดท้ายในแหล่งที่มาสดปัจจุบันได้</string>
 </resources>

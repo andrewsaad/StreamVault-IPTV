@@ -1062,4 +1062,17 @@
     <string name="channel_cleanup_confirm_button">Fshih</string>
     <string name="channel_cleanup_error_unsupported">Ky lloj ofruesi nuk mund të skanohet</string>
     <string name="channel_cleanup_close">Mbyll</string>
+    <string name="settings_history_clear_failed">Historiku nuk u fshi dot</string>
+    <string name="settings_category_unhidden">%1$s nuk është më i fshehur</string>
+    <string name="settings_xtream_text_decoding_changed">Dekodimi i tekstit Xtream ndryshoi. Rifreskoni çdo ofrues Xtream një herë për të importuar sërish titujt.</string>
+    <string name="settings_provider_activate_not_found">Ofruesi nuk u aktivizua dot: nuk u gjet</string>
+    <string name="settings_provider_activate_failed">Ofruesi nuk u aktivizua dot</string>
+    <string name="settings_provider_connected">U lidh me %1$s</string>
+    <string name="settings_combined_activate_not_found">Burimi i kombinuar nuk u aktivizua dot: nuk u gjet</string>
+    <string name="settings_combined_activate_needs_playlist">Shtoni të paktën një listë luajtjeje në këtë burim të kombinuar përpara se ta aktivizoni</string>
+    <string name="settings_combined_activate_needs_enabled">Aktivizoni të paktën një listë luajtjeje në këtë burim të kombinuar përpara se ta aktivizoni</string>
+    <string name="settings_combined_activated">Burimi i kombinuar M3U u aktivizua</string>
+    <string name="settings_combined_activate_failed">Burimi i kombinuar nuk u aktivizua dot</string>
+    <string name="settings_combined_remove_last_active">Lista e fundit aktive e luajtjes nuk mund të hiqet nga burimi aktual i drejtpërdrejtë</string>
+    <string name="settings_combined_disable_last_active">Lista e fundit aktive e luajtjes nuk mund të çaktivizohet në burimin aktual të drejtpërdrejtë</string>
 </resources>

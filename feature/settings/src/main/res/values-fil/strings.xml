@@ -1062,4 +1062,17 @@
     <string name="channel_cleanup_confirm_button">Itago</string>
     <string name="channel_cleanup_error_unsupported">Hindi ma-scan ang ganitong uri ng provider</string>
     <string name="channel_cleanup_close">Isara</string>
+    <string name="settings_history_clear_failed">Hindi na-clear ang history</string>
+    <string name="settings_category_unhidden">Hindi na nakatago ang %1$s</string>
+    <string name="settings_xtream_text_decoding_changed">Nagbago ang text decoding ng Xtream. I-refresh nang isang beses ang bawat Xtream provider para ma-import muli ang mga pamagat.</string>
+    <string name="settings_provider_activate_not_found">Hindi ma-activate ang provider: hindi ito nahanap</string>
+    <string name="settings_provider_activate_failed">Hindi ma-activate ang provider</string>
+    <string name="settings_provider_connected">Nakakonekta sa %1$s</string>
+    <string name="settings_combined_activate_not_found">Hindi ma-activate ang pinagsamang source: hindi ito nahanap</string>
+    <string name="settings_combined_activate_needs_playlist">Magdagdag ng kahit isang playlist sa pinagsamang source na ito bago ito i-activate</string>
+    <string name="settings_combined_activate_needs_enabled">I-enable ang kahit isang playlist sa pinagsamang source na ito bago ito i-activate</string>
+    <string name="settings_combined_activated">Na-activate ang pinagsamang M3U source</string>
+    <string name="settings_combined_activate_failed">Hindi ma-activate ang pinagsamang source</string>
+    <string name="settings_combined_remove_last_active">Hindi maaalis ang huling aktibong playlist sa kasalukuyang live source</string>
+    <string name="settings_combined_disable_last_active">Hindi maaaring i-disable ang huling aktibong playlist sa kasalukuyang live source</string>
 </resources>

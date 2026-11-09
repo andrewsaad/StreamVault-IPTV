@@ -1064,4 +1064,17 @@
     <string name="channel_cleanup_confirm_button">Skjul</string>
     <string name="channel_cleanup_error_unsupported">Denne udbydertype kan ikke scannes</string>
     <string name="channel_cleanup_close">Luk</string>
+    <string name="settings_history_clear_failed">Historikken kunne ikke ryddes</string>
+    <string name="settings_category_unhidden">%1$s er ikke længere skjult</string>
+    <string name="settings_xtream_text_decoding_changed">Xtream-tekstafkodningen er ændret. Opdater hver Xtream-udbyder én gang for at importere titlerne igen.</string>
+    <string name="settings_provider_activate_not_found">Udbyderen kunne ikke aktiveres: den blev ikke fundet</string>
+    <string name="settings_provider_activate_failed">Udbyderen kunne ikke aktiveres</string>
+    <string name="settings_provider_connected">Forbundet til %1$s</string>
+    <string name="settings_combined_activate_not_found">Den kombinerede kilde kunne ikke aktiveres: den blev ikke fundet</string>
+    <string name="settings_combined_activate_needs_playlist">Tilføj mindst én playliste til denne kombinerede kilde, før den aktiveres</string>
+    <string name="settings_combined_activate_needs_enabled">Aktivér mindst én playliste i denne kombinerede kilde, før den aktiveres</string>
+    <string name="settings_combined_activated">Kombineret M3U-kilde aktiveret</string>
+    <string name="settings_combined_activate_failed">Den kombinerede kilde kunne ikke aktiveres</string>
+    <string name="settings_combined_remove_last_active">Den sidste aktive playliste kan ikke fjernes fra den aktuelle live-kilde</string>
+    <string name="settings_combined_disable_last_active">Den sidste aktive playliste kan ikke deaktiveres i den aktuelle live-kilde</string>
 </resources>

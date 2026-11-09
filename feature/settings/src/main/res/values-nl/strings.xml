@@ -1064,4 +1064,17 @@
     <string name="channel_cleanup_confirm_button">Verbergen</string>
     <string name="channel_cleanup_error_unsupported">Dit type aanbieder kan niet worden gescand</string>
     <string name="channel_cleanup_close">Sluiten</string>
+    <string name="settings_history_clear_failed">De geschiedenis kon niet worden gewist</string>
+    <string name="settings_category_unhidden">%1$s is niet langer verborgen</string>
+    <string name="settings_xtream_text_decoding_changed">De Xtream-tekstdecodering is gewijzigd. Ververs elke Xtream-provider één keer om de titels opnieuw te importeren.</string>
+    <string name="settings_provider_activate_not_found">De provider kon niet worden geactiveerd: niet gevonden</string>
+    <string name="settings_provider_activate_failed">De provider kon niet worden geactiveerd</string>
+    <string name="settings_provider_connected">Verbonden met %1$s</string>
+    <string name="settings_combined_activate_not_found">De gecombineerde bron kon niet worden geactiveerd: niet gevonden</string>
+    <string name="settings_combined_activate_needs_playlist">Voeg minstens één afspeellijst toe aan deze gecombineerde bron voordat je deze activeert</string>
+    <string name="settings_combined_activate_needs_enabled">Schakel minstens één afspeellijst in deze gecombineerde bron in voordat je deze activeert</string>
+    <string name="settings_combined_activated">Gecombineerde M3U-bron geactiveerd</string>
+    <string name="settings_combined_activate_failed">De gecombineerde bron kon niet worden geactiveerd</string>
+    <string name="settings_combined_remove_last_active">De laatste actieve afspeellijst kan niet uit de huidige livebron worden verwijderd</string>
+    <string name="settings_combined_disable_last_active">De laatste actieve afspeellijst in de huidige livebron kan niet worden uitgeschakeld</string>
 </resources>

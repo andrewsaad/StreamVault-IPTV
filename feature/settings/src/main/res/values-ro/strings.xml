@@ -1067,4 +1067,17 @@
     <string name="channel_cleanup_confirm_button">Ascunde</string>
     <string name="channel_cleanup_error_unsupported">Acest tip de furnizor nu poate fi scanat</string>
     <string name="channel_cleanup_close">Închide</string>
+    <string name="settings_history_clear_failed">Istoricul nu a putut fi șters</string>
+    <string name="settings_category_unhidden">%1$s nu mai este ascuns</string>
+    <string name="settings_xtream_text_decoding_changed">Decodarea textului Xtream s-a schimbat. Reîmprospătați fiecare furnizor Xtream o dată pentru a reimporta titlurile.</string>
+    <string name="settings_provider_activate_not_found">Furnizorul nu a putut fi activat: nu a fost găsit</string>
+    <string name="settings_provider_activate_failed">Furnizorul nu a putut fi activat</string>
+    <string name="settings_provider_connected">Conectat la %1$s</string>
+    <string name="settings_combined_activate_not_found">Sursa combinată nu a putut fi activată: nu a fost găsită</string>
+    <string name="settings_combined_activate_needs_playlist">Adăugați cel puțin o listă de redare la această sursă combinată înainte de a o activa</string>
+    <string name="settings_combined_activate_needs_enabled">Activați cel puțin o listă de redare în această sursă combinată înainte de a o activa</string>
+    <string name="settings_combined_activated">Sursa M3U combinată a fost activată</string>
+    <string name="settings_combined_activate_failed">Sursa combinată nu a putut fi activată</string>
+    <string name="settings_combined_remove_last_active">Ultima listă de redare activă nu poate fi eliminată din sursa live curentă</string>
+    <string name="settings_combined_disable_last_active">Ultima listă de redare activă nu poate fi dezactivată în sursa live curentă</string>
 </resources>

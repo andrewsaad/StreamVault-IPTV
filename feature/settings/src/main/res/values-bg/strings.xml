@@ -1062,4 +1062,17 @@
     <string name="channel_cleanup_confirm_button">Скрий</string>
     <string name="channel_cleanup_error_unsupported">Този тип доставчик не може да бъде сканиран</string>
     <string name="channel_cleanup_close">Затвори</string>
+    <string name="settings_history_clear_failed">Историята не можа да бъде изчистена</string>
+    <string name="settings_category_unhidden">%1$s вече не е скрит</string>
+    <string name="settings_xtream_text_decoding_changed">Декодирането на текста на Xtream е променено. Опреснете всеки доставчик на Xtream веднъж, за да импортирате отново заглавията.</string>
+    <string name="settings_provider_activate_not_found">Доставчикът не можа да бъде активиран: не е намерен</string>
+    <string name="settings_provider_activate_failed">Доставчикът не можа да бъде активиран</string>
+    <string name="settings_provider_connected">Свързване с %1$s</string>
+    <string name="settings_combined_activate_not_found">Комбинираният източник не можа да бъде активиран: не е намерен</string>
+    <string name="settings_combined_activate_needs_playlist">Добавете поне един плейлист към този комбиниран източник, преди да го активирате</string>
+    <string name="settings_combined_activate_needs_enabled">Включете поне един плейлист в този комбиниран източник, преди да го активирате</string>
+    <string name="settings_combined_activated">Комбинираният M3U източник е активиран</string>
+    <string name="settings_combined_activate_failed">Комбинираният източник не можа да бъде активиран</string>
+    <string name="settings_combined_remove_last_active">Последният активен плейлист не може да бъде премахнат от текущия източник на живо</string>
+    <string name="settings_combined_disable_last_active">Последният активен плейлист не може да бъде изключен в текущия източник на живо</string>
 </resources>

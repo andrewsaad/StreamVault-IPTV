@@ -2,6 +2,7 @@ package com.streamvault.feature.settings.presentation
 
 import android.content.Context
 import android.content.Intent
+import android.util.Log
 import androidx.activity.result.ActivityResultLauncher
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -918,7 +919,7 @@ class SettingsViewModel @Inject constructor(
                 categoryId = category.id,
                 hidden = false
             )
-            _uiState.update { it.copy(userMessage = "Unhid ${category.name}") }
+            _uiState.update { it.copy(userMessage = appContext.getString(R.string.settings_category_unhidden, category.name)) }
         }
     }
 
@@ -1368,7 +1369,7 @@ class SettingsViewModel @Inject constructor(
             preferencesRepository.setXtreamBase64TextCompatibility(!current)
             preferencesRepository.bumpXtreamTextImportGeneration()
             _uiState.update {
-                it.copy(userMessage = "Xtream text decoding changed. Refresh each Xtream provider once to re-import titles.")
+                it.copy(userMessage = appContext.getString(R.string.settings_xtream_text_decoding_changed))
             }
         }
     }
@@ -1397,13 +1398,14 @@ class SettingsViewModel @Inject constructor(
                     }
                 }
                 is Result.Error -> {
+                    Log.w("SettingsViewModel", "Failed to clear history: ${result.message}", result.exception)
                     _uiState.update {
                         it.copy(
                             isSyncing = false,
                             syncStartedAt = 0L,
                             syncSectionLabel = null,
                             syncCanCancel = false,
-                            userMessage = "Failed to clear history: ${result.message}"
+                            userMessage = appContext.getString(R.string.settings_history_clear_failed)
                         )
                     }
                 }

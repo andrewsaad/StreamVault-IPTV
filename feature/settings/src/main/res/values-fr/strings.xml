@@ -1064,4 +1064,17 @@
     <string name="channel_cleanup_confirm_button">Masquer</string>
     <string name="channel_cleanup_error_unsupported">Ce type de fournisseur ne peut pas être analysé</string>
     <string name="channel_cleanup_close">Fermer</string>
+    <string name="settings_history_clear_failed">Impossible d’effacer l’historique</string>
+    <string name="settings_category_unhidden">%1$s n’est plus masqué</string>
+    <string name="settings_xtream_text_decoding_changed">Le décodage du texte Xtream a changé. Actualisez chaque fournisseur Xtream une fois pour réimporter les titres.</string>
+    <string name="settings_provider_activate_not_found">Impossible d’activer le fournisseur : introuvable</string>
+    <string name="settings_provider_activate_failed">Impossible d’activer le fournisseur</string>
+    <string name="settings_provider_connected">Connecté à %1$s</string>
+    <string name="settings_combined_activate_not_found">Impossible d’activer la source combinée : introuvable</string>
+    <string name="settings_combined_activate_needs_playlist">Ajoutez au moins une playlist à cette source combinée avant de l’activer</string>
+    <string name="settings_combined_activate_needs_enabled">Activez au moins une playlist dans cette source combinée avant de l’activer</string>
+    <string name="settings_combined_activated">Source M3U combinée activée</string>
+    <string name="settings_combined_activate_failed">Impossible d’activer la source combinée</string>
+    <string name="settings_combined_remove_last_active">Impossible de retirer la dernière playlist active de la source en direct actuelle</string>
+    <string name="settings_combined_disable_last_active">Impossible de désactiver la dernière playlist active de la source en direct actuelle</string>
 </resources>

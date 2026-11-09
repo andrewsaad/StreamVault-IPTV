@@ -1064,4 +1064,17 @@
     <string name="channel_cleanup_confirm_button">Gizle</string>
     <string name="channel_cleanup_error_unsupported">Bu sağlayıcı türü taranamaz</string>
     <string name="channel_cleanup_close">Kapat</string>
+    <string name="settings_history_clear_failed">Geçmiş temizlenemedi</string>
+    <string name="settings_category_unhidden">%1$s artık gizli değil</string>
+    <string name="settings_xtream_text_decoding_changed">Xtream metin çözümlemesi değişti. Başlıkları yeniden içe aktarmak için her Xtream sağlayıcısını bir kez yenileyin.</string>
+    <string name="settings_provider_activate_not_found">Sağlayıcı etkinleştirilemedi: bulunamadı</string>
+    <string name="settings_provider_activate_failed">Sağlayıcı etkinleştirilemedi</string>
+    <string name="settings_provider_connected">%1$s sağlayıcısına bağlanıldı</string>
+    <string name="settings_combined_activate_not_found">Birleşik kaynak etkinleştirilemedi: bulunamadı</string>
+    <string name="settings_combined_activate_needs_playlist">Etkinleştirmeden önce bu birleşik kaynağa en az bir oynatma listesi ekleyin</string>
+    <string name="settings_combined_activate_needs_enabled">Etkinleştirmeden önce bu birleşik kaynakta en az bir oynatma listesini açın</string>
+    <string name="settings_combined_activated">Birleşik M3U kaynağı etkinleştirildi</string>
+    <string name="settings_combined_activate_failed">Birleşik kaynak etkinleştirilemedi</string>
+    <string name="settings_combined_remove_last_active">Son etkin oynatma listesi geçerli canlı kaynaktan kaldırılamaz</string>
+    <string name="settings_combined_disable_last_active">Son etkin oynatma listesi geçerli canlı kaynakta devre dışı bırakılamaz</string>
 </resources>

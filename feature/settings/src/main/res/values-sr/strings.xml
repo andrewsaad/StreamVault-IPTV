@@ -1065,4 +1065,17 @@
     <string name="channel_cleanup_confirm_button">Сакриј</string>
     <string name="channel_cleanup_error_unsupported">Ова врста провајдера не може да се скенира</string>
     <string name="channel_cleanup_close">Затвори</string>
+    <string name="settings_history_clear_failed">Историју није могуће обрисати</string>
+    <string name="settings_category_unhidden">%1$s више није сакривен</string>
+    <string name="settings_xtream_text_decoding_changed">Декодирање текста Xtream је промењено. Освежите сваког Xtream провајдера једном да би се наслови поново увезли.</string>
+    <string name="settings_provider_activate_not_found">Провајдера није могуће активирати: није пронађен</string>
+    <string name="settings_provider_activate_failed">Провајдера није могуће активирати</string>
+    <string name="settings_provider_connected">Повезано са %1$s</string>
+    <string name="settings_combined_activate_not_found">Комбиновани извор није могуће активирати: није пронађен</string>
+    <string name="settings_combined_activate_needs_playlist">Додајте бар једну плејлисту овом комбинованом извору пре активирања</string>
+    <string name="settings_combined_activate_needs_enabled">Омогућите бар једну плејлисту у овом комбинованом извору пре активирања</string>
+    <string name="settings_combined_activated">Комбиновани M3U извор је активиран</string>
+    <string name="settings_combined_activate_failed">Комбиновани извор није могуће активирати</string>
+    <string name="settings_combined_remove_last_active">Последњу активну плејлисту није могуће уклонити из тренутног извора уживо</string>
+    <string name="settings_combined_disable_last_active">Последњу активну плејлисту није могуће онемогућити у тренутном извору уживо</string>
 </resources>

@@ -1059,4 +1059,17 @@
     <string name="channel_cleanup_confirm_button">Sembunyi</string>
     <string name="channel_cleanup_error_unsupported">Jenis penyedia ini tidak boleh diimbas</string>
     <string name="channel_cleanup_close">Tutup</string>
+    <string name="settings_history_clear_failed">Tidak dapat mengosongkan sejarah</string>
+    <string name="settings_category_unhidden">%1$s tidak lagi disembunyikan</string>
+    <string name="settings_xtream_text_decoding_changed">Penyahkodan teks Xtream telah berubah. Segarkan setiap pembekal Xtream sekali untuk mengimport semula tajuk.</string>
+    <string name="settings_provider_activate_not_found">Tidak dapat mengaktifkan pembekal: tidak dijumpai</string>
+    <string name="settings_provider_activate_failed">Tidak dapat mengaktifkan pembekal</string>
+    <string name="settings_provider_connected">Disambungkan ke %1$s</string>
+    <string name="settings_combined_activate_not_found">Tidak dapat mengaktifkan sumber gabungan: tidak dijumpai</string>
+    <string name="settings_combined_activate_needs_playlist">Tambahkan sekurang-kurangnya satu senarai main pada sumber gabungan ini sebelum mengaktifkannya</string>
+    <string name="settings_combined_activate_needs_enabled">Dayakan sekurang-kurangnya satu senarai main dalam sumber gabungan ini sebelum mengaktifkannya</string>
+    <string name="settings_combined_activated">Sumber M3U gabungan diaktifkan</string>
+    <string name="settings_combined_activate_failed">Tidak dapat mengaktifkan sumber gabungan</string>
+    <string name="settings_combined_remove_last_active">Senarai main aktif terakhir tidak boleh dialih keluar daripada sumber langsung semasa</string>
+    <string name="settings_combined_disable_last_active">Senarai main aktif terakhir tidak boleh dinyahdayakan dalam sumber langsung semasa</string>
 </resources>

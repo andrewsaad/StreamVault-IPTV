@@ -1060,4 +1060,17 @@
     <string name="channel_cleanup_confirm_button">隐藏</string>
     <string name="channel_cleanup_error_unsupported">无法扫描此类型的提供商</string>
     <string name="channel_cleanup_close">关闭</string>
+    <string name="settings_history_clear_failed">无法清除历史记录</string>
+    <string name="settings_category_unhidden">%1$s 已取消隐藏</string>
+    <string name="settings_xtream_text_decoding_changed">Xtream 文本解码方式已更改。请将每个 Xtream 提供商刷新一次，以重新导入标题。</string>
+    <string name="settings_provider_activate_not_found">无法激活提供商：未找到</string>
+    <string name="settings_provider_activate_failed">无法激活提供商</string>
+    <string name="settings_provider_connected">已连接到 %1$s</string>
+    <string name="settings_combined_activate_not_found">无法激活组合源：未找到</string>
+    <string name="settings_combined_activate_needs_playlist">激活前，请至少向此组合源添加一个播放列表</string>
+    <string name="settings_combined_activate_needs_enabled">激活前，请至少在此组合源中启用一个播放列表</string>
+    <string name="settings_combined_activated">组合 M3U 源已激活</string>
+    <string name="settings_combined_activate_failed">无法激活组合源</string>
+    <string name="settings_combined_remove_last_active">无法从当前直播源中移除最后一个活动播放列表</string>
+    <string name="settings_combined_disable_last_active">无法在当前直播源中停用最后一个活动播放列表</string>
 </resources>

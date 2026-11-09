@@ -1064,4 +1064,17 @@
     <string name="channel_cleanup_confirm_button">Skjul</string>
     <string name="channel_cleanup_error_unsupported">Denne leverandørtypen kan ikke skannes</string>
     <string name="channel_cleanup_close">Lukk</string>
+    <string name="settings_history_clear_failed">Kunne ikke tømme historikken</string>
+    <string name="settings_category_unhidden">%1$s er ikke lenger skjult</string>
+    <string name="settings_xtream_text_decoding_changed">Xtream-tekstdekodingen er endret. Oppdater hver Xtream-leverandør én gang for å importere titlene på nytt.</string>
+    <string name="settings_provider_activate_not_found">Kunne ikke aktivere leverandøren: den ble ikke funnet</string>
+    <string name="settings_provider_activate_failed">Kunne ikke aktivere leverandøren</string>
+    <string name="settings_provider_connected">Koblet til %1$s</string>
+    <string name="settings_combined_activate_not_found">Kunne ikke aktivere den kombinerte kilden: den ble ikke funnet</string>
+    <string name="settings_combined_activate_needs_playlist">Legg til minst én spilleliste i denne kombinerte kilden før du aktiverer den</string>
+    <string name="settings_combined_activate_needs_enabled">Aktiver minst én spilleliste i denne kombinerte kilden før du aktiverer den</string>
+    <string name="settings_combined_activated">Kombinert M3U-kilde aktivert</string>
+    <string name="settings_combined_activate_failed">Kunne ikke aktivere den kombinerte kilden</string>
+    <string name="settings_combined_remove_last_active">Den siste aktive spillelisten kan ikke fjernes fra den gjeldende direktekilden</string>
+    <string name="settings_combined_disable_last_active">Den siste aktive spillelisten kan ikke deaktiveres i den gjeldende direktekilden</string>
 </resources>

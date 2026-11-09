@@ -1140,4 +1140,17 @@
     <string name="channel_cleanup_confirm_button">Hide</string>
     <string name="channel_cleanup_error_unsupported">This provider type cannot be scanned</string>
     <string name="channel_cleanup_close">Close</string>
+    <string name="settings_history_clear_failed">Could not clear the history</string>
+    <string name="settings_category_unhidden">%1$s is no longer hidden</string>
+    <string name="settings_xtream_text_decoding_changed">Xtream text decoding changed. Refresh each Xtream provider once to re-import titles.</string>
+    <string name="settings_provider_activate_not_found">Could not activate the provider: it was not found</string>
+    <string name="settings_provider_activate_failed">Could not activate the provider</string>
+    <string name="settings_provider_connected">Connected to %1$s</string>
+    <string name="settings_combined_activate_not_found">Could not activate the combined source: it was not found</string>
+    <string name="settings_combined_activate_needs_playlist">Add at least one playlist to this combined source before activating it</string>
+    <string name="settings_combined_activate_needs_enabled">Enable at least one playlist in this combined source before activating it</string>
+    <string name="settings_combined_activated">Combined M3U source activated</string>
+    <string name="settings_combined_activate_failed">Could not activate the combined source</string>
+    <string name="settings_combined_remove_last_active">Cannot remove the last active playlist from the current live source</string>
+    <string name="settings_combined_disable_last_active">Cannot disable the last active playlist in the current live source</string>
 </resources>

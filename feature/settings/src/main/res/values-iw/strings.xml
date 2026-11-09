@@ -1067,4 +1067,17 @@
     <string name="channel_cleanup_confirm_button">הסתר</string>
     <string name="channel_cleanup_error_unsupported">לא ניתן לסרוק סוג ספק זה</string>
     <string name="channel_cleanup_close">סגור</string>
+    <string name="settings_history_clear_failed">לא ניתן היה לנקות את ההיסטוריה</string>
+    <string name="settings_category_unhidden">%1$s כבר אינו מוסתר</string>
+    <string name="settings_xtream_text_decoding_changed">פענוח הטקסט של Xtream השתנה. רעננו כל ספק Xtream פעם אחת כדי לייבא מחדש את הכותרים.</string>
+    <string name="settings_provider_activate_not_found">לא ניתן היה להפעיל את הספק: הוא לא נמצא</string>
+    <string name="settings_provider_activate_failed">לא ניתן היה להפעיל את הספק</string>
+    <string name="settings_provider_connected">מחובר אל %1$s</string>
+    <string name="settings_combined_activate_not_found">לא ניתן היה להפעיל את המקור המשולב: הוא לא נמצא</string>
+    <string name="settings_combined_activate_needs_playlist">הוסיפו לפחות רשימת השמעה אחת למקור המשולב הזה לפני ההפעלה</string>
+    <string name="settings_combined_activate_needs_enabled">הפעילו לפחות רשימת השמעה אחת במקור המשולב הזה לפני ההפעלה</string>
+    <string name="settings_combined_activated">מקור M3U משולב הופעל</string>
+    <string name="settings_combined_activate_failed">לא ניתן היה להפעיל את המקור המשולב</string>
+    <string name="settings_combined_remove_last_active">לא ניתן להסיר את רשימת ההשמעה הפעילה האחרונה מהמקור החי הנוכחי</string>
+    <string name="settings_combined_disable_last_active">לא ניתן להשבית את רשימת ההשמעה הפעילה האחרונה במקור החי הנוכחי</string>
 </resources>
