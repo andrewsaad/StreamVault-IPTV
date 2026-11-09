@@ -182,13 +182,15 @@ class SettingsViewModel @Inject constructor(
         importBackup = importBackup,
         uiState = _uiState,
         stremioAddonSectionLabel = { appContext.getString(R.string.settings_backup_section_stremio_addons) },
-        loadRestoreProviders = { providerRepository.getProviders().first() }
+        loadRestoreProviders = { providerRepository.getProviders().first() },
+        text = { resId, args -> appContext.getString(resId, *args.toTypedArray()) }
     )
     private val driveBackupActions = SettingsDriveBackupActions(
         driveManager = driveBackupSyncManager,
         importBackup = importBackup,
         providerRepository = providerRepository,
-        uiState = _uiState
+        uiState = _uiState,
+        text = { resId, args -> appContext.getString(resId, *args.toTypedArray()) }
     )
     private val recordingActions = SettingsRecordingActions(
         appContext = application,
@@ -1321,7 +1323,10 @@ class SettingsViewModel @Inject constructor(
                     _uiState.update {
                         it.copy(
                             isRunningInternetSpeedTest = false,
-                            userMessage = appContext.getString(R.string.settings_speed_test_failed, result.message)
+                            userMessage = appContext.getString(
+                                R.string.settings_speed_test_failed,
+                                appContext.getString(result.reasonRes)
+                            )
                         )
                     }
                 }

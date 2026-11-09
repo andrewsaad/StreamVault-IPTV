@@ -8,6 +8,7 @@ import com.streamvault.domain.manager.DriveBackupSyncManager
 import com.streamvault.domain.manager.DriveSyncStatus
 import com.streamvault.domain.model.Result
 import com.streamvault.domain.repository.ProviderRepository
+import com.streamvault.feature.settings.R
 import com.streamvault.domain.usecase.ImportBackup
 import com.streamvault.domain.usecase.InspectBackupCommand
 import com.streamvault.domain.usecase.InspectBackupResult
@@ -30,7 +31,9 @@ class SettingsDriveBackupActions(
     private val driveManager: DriveBackupSyncManager,
     private val importBackup: ImportBackup,
     private val providerRepository: ProviderRepository,
-    private val uiState: MutableStateFlow<SettingsUiState>
+    private val uiState: MutableStateFlow<SettingsUiState>,
+    /** Localized text for a string resource and its format arguments; the view model reads it from the app resources. */
+    private val text: (Int, List<Any>) -> String = { resId, _ -> resId.toString() },
 ) {
 
     /**
@@ -71,23 +74,28 @@ class SettingsDriveBackupActions(
                         if (intent != null) {
                             runCatching { launcher.launch(intent) }
                                 .onFailure {
+                                    Log.w(TAG, "Drive sign-in could not be launched: ${it.message}", it)
                                     return@update state.copy(
                                         driveIsBusy = false,
-                                        userMessage = "Drive sign-in failed: ${it.message ?: "unable to launch"}"
+                                        userMessage = text(R.string.settings_drive_sign_in_failed, emptyList())
                                     )
                                 }
                             state.copy(driveIsBusy = false, drivePendingSignIn = result.data)
                         } else {
+                            Log.w(TAG, "Drive sign-in failed: the manager returned no sign-in intent")
                             state.copy(
                                 driveIsBusy = false,
-                                userMessage = "Drive sign-in failed: missing intent"
+                                userMessage = text(R.string.settings_drive_sign_in_failed, emptyList())
                             )
                         }
                     }
-                    is Result.Error -> state.copy(
-                        driveIsBusy = false,
-                        userMessage = "Drive sign-in failed: ${result.message}"
-                    )
+                    is Result.Error -> {
+                        Log.w(TAG, "Drive sign-in failed: ${result.message}", result.exception)
+                        state.copy(
+                            driveIsBusy = false,
+                            userMessage = text(R.string.settings_drive_sign_in_failed, emptyList())
+                        )
+                    }
                     is Result.Loading -> state.copy(driveIsBusy = false)
                 }
             }
@@ -103,14 +111,17 @@ class SettingsDriveBackupActions(
                     is Result.Success -> state.copy(
                         driveIsBusy = false,
                         drivePendingSignIn = null,
-                        userMessage = result.data.email?.let { "Signed in as $it" }
-                            ?: "Signed in to Google Drive"
+                        userMessage = result.data.email?.let { text(R.string.settings_drive_signed_in_as, listOf(it)) }
+                            ?: text(R.string.settings_drive_signed_in, emptyList())
                     )
-                    is Result.Error -> state.copy(
-                        driveIsBusy = false,
-                        drivePendingSignIn = null,
-                        userMessage = "Drive sign-in failed: ${result.message}"
-                    )
+                    is Result.Error -> {
+                        Log.w(TAG, "Drive sign-in failed: ${result.message}", result.exception)
+                        state.copy(
+                            driveIsBusy = false,
+                            drivePendingSignIn = null,
+                            userMessage = text(R.string.settings_drive_sign_in_failed, emptyList())
+                        )
+                    }
                     is Result.Loading -> state.copy(driveIsBusy = false)
                 }
             }
@@ -138,15 +149,18 @@ class SettingsDriveBackupActions(
                         driveBackupOptions = emptyList(),
                         driveBackupManagementOptions = emptyList(),
                         pendingDriveCredentials = null,
-                        userMessage = "Signed out of Google Drive"
+                        userMessage = text(R.string.settings_drive_signed_out, emptyList())
                     )
-                    is Result.Error -> state.copy(
-                        driveIsBusy = false,
-                        driveBackupOptions = emptyList(),
-                        driveBackupManagementOptions = emptyList(),
-                        pendingDriveCredentials = null,
-                        userMessage = "Drive sign-out failed: ${result.message}"
-                    )
+                    is Result.Error -> {
+                        Log.w(TAG, "Drive sign-out failed: ${result.message}", result.exception)
+                        state.copy(
+                            driveIsBusy = false,
+                            driveBackupOptions = emptyList(),
+                            driveBackupManagementOptions = emptyList(),
+                            pendingDriveCredentials = null,
+                            userMessage = text(R.string.settings_drive_sign_out_failed, emptyList())
+                        )
+                    }
                     is Result.Loading -> state.copy(
                         driveIsBusy = false,
                         driveBackupOptions = emptyList(),
@@ -161,7 +175,7 @@ class SettingsDriveBackupActions(
     fun pushBackup(scope: CoroutineScope, plan: com.streamvault.domain.manager.BackupExportPlan = com.streamvault.domain.manager.BackupExportPlan()) {
         scope.launch {
             if (uiState.value.driveAuthState !is DriveAuthState.SignedIn) {
-                uiState.update { it.copy(userMessage = "Sign in to Google Drive first") }
+                uiState.update { it.copy(userMessage = text(R.string.settings_drive_sign_in_required, emptyList())) }
                 return@launch
             }
             var started = false
@@ -183,20 +197,22 @@ class SettingsDriveBackupActions(
             val credentials = runCatching {
                 if (plan.exportProviders) providerRepository.getAllProviderCredentials() else emptyList()
             }.getOrElse { error ->
+                Log.w(TAG, "Drive push failed: credentials unavailable: ${error.message}", error)
                 uiState.update {
                     it.copy(
                         driveIsBusy = false,
-                        userMessage = "Drive push failed: ${error.message ?: "credentials unavailable"}"
+                        userMessage = text(R.string.settings_drive_push_failed, emptyList())
                     )
                 }
                 return@launch
             }
             val backupResult = driveManager.pushBackup(credentials, plan)
             if (backupResult is Result.Error) {
+                Log.w(TAG, "Drive push failed: ${backupResult.message}", backupResult.exception)
                 uiState.update {
                     it.copy(
                         driveIsBusy = false,
-                        userMessage = "Drive push failed: ${backupResult.message}"
+                        userMessage = text(R.string.settings_drive_push_failed, emptyList())
                     )
                 }
                 return@launch
@@ -204,7 +220,7 @@ class SettingsDriveBackupActions(
             uiState.update {
                 it.copy(
                     driveIsBusy = false,
-                    userMessage = "Backup uploaded to Google Drive"
+                    userMessage = text(R.string.settings_drive_push_done, emptyList())
                 )
             }
         }
@@ -213,7 +229,7 @@ class SettingsDriveBackupActions(
     fun pullBackup(scope: CoroutineScope) {
         scope.launch {
             if (uiState.value.driveAuthState !is DriveAuthState.SignedIn) {
-                uiState.update { it.copy(userMessage = "Sign in to Google Drive first") }
+                uiState.update { it.copy(userMessage = text(R.string.settings_drive_sign_in_required, emptyList())) }
                 return@launch
             }
             var started = false
@@ -232,12 +248,13 @@ class SettingsDriveBackupActions(
             if (!started) return@launch
             val listResult = driveManager.listBackups()
             if (listResult !is Result.Success) {
+                Log.w(TAG, "Drive pull failed: ${resultMessage(listResult)}", (listResult as? Result.Error)?.exception)
                 uiState.update {
                     it.copy(
                         driveIsBusy = false,
                         driveBackupOptions = emptyList(),
                         pendingDriveCredentials = null,
-                        userMessage = "Drive pull failed: ${resultMessage(listResult)}"
+                        userMessage = text(R.string.settings_drive_pull_failed, emptyList())
                     )
                 }
                 return@launch
@@ -249,7 +266,7 @@ class SettingsDriveBackupActions(
                         driveIsBusy = false,
                         driveBackupOptions = emptyList(),
                         pendingDriveCredentials = null,
-                        userMessage = "Drive pull failed: no backups found"
+                        userMessage = text(R.string.settings_drive_no_backups, emptyList())
                     )
                 }
                 return@launch
@@ -295,7 +312,7 @@ class SettingsDriveBackupActions(
     fun manageBackups(scope: CoroutineScope) {
         scope.launch {
             if (uiState.value.driveAuthState !is DriveAuthState.SignedIn) {
-                uiState.update { it.copy(userMessage = "Sign in to Google Drive first") }
+                uiState.update { it.copy(userMessage = text(R.string.settings_drive_sign_in_required, emptyList())) }
                 return@launch
             }
             var started = false
@@ -313,15 +330,18 @@ class SettingsDriveBackupActions(
                     it.copy(
                         driveIsBusy = false,
                         driveBackupManagementOptions = result.data,
-                        userMessage = if (result.data.isEmpty()) "No Google Drive backups found" else null,
+                        userMessage = if (result.data.isEmpty()) text(R.string.settings_drive_no_backups, emptyList()) else null,
                     )
                 }
-                is Result.Error -> uiState.update {
-                    it.copy(
-                        driveIsBusy = false,
-                        driveBackupManagementOptions = emptyList(),
-                        userMessage = "Drive backup management failed: ${result.message}",
-                    )
+                is Result.Error -> {
+                    Log.w(TAG, "Drive backup management failed: ${result.message}", result.exception)
+                    uiState.update {
+                        it.copy(
+                            driveIsBusy = false,
+                            driveBackupManagementOptions = emptyList(),
+                            userMessage = text(R.string.settings_drive_manage_failed, emptyList()),
+                        )
+                    }
                 }
                 is Result.Loading -> uiState.update { it.copy(driveIsBusy = false) }
             }
@@ -352,26 +372,29 @@ class SettingsDriveBackupActions(
                             is Result.Success -> it.copy(
                                 driveIsBusy = false,
                                 driveBackupManagementOptions = refreshed.data,
-                                userMessage = "Drive backup deleted",
+                                userMessage = text(R.string.settings_drive_backup_deleted, emptyList()),
                             )
                             is Result.Error -> it.copy(
                                 driveIsBusy = false,
                                 driveBackupManagementOptions = emptyList(),
-                                userMessage = "Drive backup deleted",
+                                userMessage = text(R.string.settings_drive_backup_deleted, emptyList()),
                             )
                             is Result.Loading -> it.copy(
                                 driveIsBusy = false,
                                 driveBackupManagementOptions = emptyList(),
-                                userMessage = "Drive backup deleted",
+                                userMessage = text(R.string.settings_drive_backup_deleted, emptyList()),
                             )
                         }
                     }
                 }
-                is Result.Error -> uiState.update {
-                    it.copy(
-                        driveIsBusy = false,
-                        userMessage = "Drive backup deletion failed: ${result.message}",
-                    )
+                is Result.Error -> {
+                    Log.w(TAG, "Drive backup deletion failed: ${result.message}", result.exception)
+                    uiState.update {
+                        it.copy(
+                            driveIsBusy = false,
+                            userMessage = text(R.string.settings_drive_delete_failed, emptyList()),
+                        )
+                    }
                 }
                 is Result.Loading -> uiState.update { it.copy(driveIsBusy = false) }
             }
@@ -381,12 +404,13 @@ class SettingsDriveBackupActions(
     private suspend fun pullSelectedBackup(snapshotId: String) {
         val pullResult = driveManager.pullBackup(snapshotId)
         if (pullResult is Result.Error) {
+            Log.w(TAG, "Drive pull failed: ${pullResult.message}", pullResult.exception)
             uiState.update {
                 it.copy(
                     driveIsBusy = false,
                     driveBackupOptions = emptyList(),
                     pendingDriveCredentials = null,
-                    userMessage = "Drive pull failed: ${pullResult.message}"
+                    userMessage = text(R.string.settings_drive_pull_failed, emptyList())
                 )
             }
             return
@@ -397,11 +421,14 @@ class SettingsDriveBackupActions(
             val pendingCredentials = artifact.credentials ?: run {
                 val credentialsResult = driveManager.pullCredentials()
                 if (credentialsResult is Result.Error) {
-                    Log.w("DriveSync", "pullCredentials failed (non-fatal): ${credentialsResult.message}")
+                    Log.w(TAG, "pullCredentials failed (non-fatal): ${credentialsResult.message}")
                 }
                 (credentialsResult as? Result.Success)?.data
             }
             val inspectResult = importBackup.inspect(InspectBackupCommand(artifact.localUriString))
+            if (inspectResult is InspectBackupResult.Error) {
+                Log.w(TAG, "Drive import failed: ${inspectResult.message}", inspectResult.exception)
+            }
             uiState.update { state ->
                 when (inspectResult) {
                     is InspectBackupResult.Success -> state.copy(
@@ -416,7 +443,7 @@ class SettingsDriveBackupActions(
                         driveIsBusy = false,
                         driveBackupOptions = emptyList(),
                         pendingDriveCredentials = null,
-                        userMessage = "Drive import failed: ${inspectResult.message}"
+                        userMessage = text(R.string.settings_drive_import_failed, emptyList())
                     )
                 }
             }
@@ -451,8 +478,12 @@ class SettingsDriveBackupActions(
                     applied++
                 }
             }
-            Log.d("DriveSync", "applyPendingCredentials: $applied / ${pending.size} matched")
+            Log.d(TAG, "applyPendingCredentials: $applied / ${pending.size} matched")
             uiState.update { it.copy(pendingDriveCredentials = null) }
         }
+    }
+
+    private companion object {
+        const val TAG = "DriveSync"
     }
 }

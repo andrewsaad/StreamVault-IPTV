@@ -76,7 +76,7 @@ internal fun observeProviderDiagnostics(
                                 seriesHealthySyncStreak = metadata?.seriesHealthySyncStreak ?: 0,
                                 capabilitySummary = buildCapabilitySummary(application, provider),
                                 sourceLabel = provider.sourceLabel(),
-                                expirySummary = provider.expirySummary(),
+                                expirySummary = provider.expirySummary(application),
                                 connectionSummary = "${provider.maxConnections} connection(s)",
                                 archiveSummary = provider.archiveSummary()
                             )
@@ -188,15 +188,15 @@ private fun Provider.sourceLabel(): String = when (type) {
     ProviderType.JELLYFIN -> "Jellyfin"
 }
 
-private fun Provider.expirySummary(): String {
+private fun Provider.expirySummary(application: Context): String {
     val expirationDate = expirationDate
     return when {
-        expirationDate == null -> "Expiry unknown"
-        expirationDate == Long.MAX_VALUE -> "No expiry reported"
-        expirationDate < System.currentTimeMillis() -> "Expired"
+        expirationDate == null -> application.getString(R.string.settings_provider_expiry_unknown)
+        expirationDate == Long.MAX_VALUE -> application.getString(R.string.settings_provider_expiry_none)
+        expirationDate < System.currentTimeMillis() -> application.getString(R.string.settings_provider_expiry_expired)
         else -> {
             val formatter = SimpleDateFormat("d MMM yyyy", Locale.getDefault())
-            "Active until ${formatter.format(Date(expirationDate))}"
+            application.getString(R.string.settings_provider_expiry_active_until, formatter.format(Date(expirationDate)))
         }
     }
 }
