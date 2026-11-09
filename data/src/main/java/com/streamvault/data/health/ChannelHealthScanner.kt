@@ -99,8 +99,8 @@ class ChannelHealthScanner internal constructor(
     }
 
     /**
-     * Probes the provider's live channels. Channels probed at or after [startedAt] are skipped, so a
-     * scan the system stopped and WorkManager restarted carries on instead of starting over.
+     * Probes the provider's live channels. When the same scan ([startedAt]) ran before, the channels it
+     * had settled are skipped, so a scan the system stopped and WorkManager restarted carries on.
      * Returns false when the scan could not run or gave up; the reason is never the login.
      */
     internal suspend fun run(providerId: Long, categoryIds: Set<Long>?, startedAt: Long): Boolean {
@@ -112,13 +112,16 @@ class ChannelHealthScanner internal constructor(
         val channels = channelDao.getByProviderSync(providerId)
             .filter { it.streamId > 0L && (categoryIds == null || it.categoryId in categoryIds) }
             .sortedBy { it.id }
-        val alreadyChecked = results.read(providerId).records
+        val resume = results.read(providerId).resume?.takeIf { it.startedAt == startedAt }
         val headers = requestHeaders(providerId, config)
         val pending = ArrayList<ChannelProbeOutcome>()
         // Non-OK answers since the last OK; kept back from the store until an OK shows they are isolated.
         val streak = ArrayList<ChannelProbeOutcome>()
         var scanned = 0
+        var lastProbedId = resume?.afterChannelId ?: 0L
         var finished = false
+        // Channels up to this id are settled; a held-back streak is not, so it is probed again after a restart.
+        fun resumePoint() = ChannelHealthResume(startedAt, streak.firstOrNull()?.let { it.channelId - 1 } ?: lastProbedId)
         setState(providerId) { ChannelHealthScanState(running = true, total = channels.size) }
         try {
             var account = readAccount(providerId, config, previous = null)
@@ -127,7 +130,7 @@ class ChannelHealthScanner internal constructor(
             var backoffsInARow = 0
             for (channel in channels) {
                 currentCoroutineContext().ensureActive()
-                if ((alreadyChecked[channel.id]?.checkedAt ?: -1L) >= startedAt) {
+                if (resume != null && channel.id <= resume.afterChannelId) {
                     scanned++
                     setState(providerId) { it.copy(scanned = scanned) }
                     continue
@@ -143,6 +146,7 @@ class ChannelHealthScanner internal constructor(
                 )
                 val status = probe.probe(url, headers)
                 val outcome = ChannelProbeOutcome(channel.id, status, results.now())
+                lastProbedId = channel.id
                 scanned++
                 setState(providerId) { it.copy(scanned = scanned) }
                 if (status == ChannelHealthStatus.OK) {
@@ -156,7 +160,7 @@ class ChannelHealthScanner internal constructor(
                     streak += outcome
                     if (status == ChannelHealthStatus.UNCLEAR) unclearInARow++ else unclearInARow = 0
                 }
-                if (pending.size >= timings.flushEvery) flush(providerId, pending)
+                if (pending.size >= timings.flushEvery) flush(providerId, pending, resumePoint())
                 if (streak.size >= timings.massFailureStreak) {
                     // Everything failing at once points at the provider or the account, not the channels.
                     streak.clear()
@@ -165,7 +169,7 @@ class ChannelHealthScanner internal constructor(
                     unclearInARow = 0
                     account = readAccount(providerId, config, previous = account)
                 } else if (unclearInARow >= timings.unclearInARowBeforeBackoff) {
-                    flush(providerId, pending)
+                    flush(providerId, pending, resumePoint())
                     if (++backoffsInARow >= timings.maxBackoffsInARow) return false
                     backOff(providerId)
                     unclearInARow = 0
@@ -181,7 +185,8 @@ class ChannelHealthScanner internal constructor(
         } finally {
             withContext(NonCancellable) {
                 pending += streak
-                flush(providerId, pending)
+                streak.clear()
+                flush(providerId, pending, resumePoint())
                 if (finished) results.markFinished(providerId)
                 setState(providerId) { it.copy(running = false, paused = null) }
             }
@@ -241,9 +246,13 @@ class ChannelHealthScanner internal constructor(
             previous ?: AccountLimits(maxConnections = 1, activeConnections = 0)
         }
 
-    private suspend fun flush(providerId: Long, pending: MutableList<ChannelProbeOutcome>) {
+    private suspend fun flush(
+        providerId: Long,
+        pending: MutableList<ChannelProbeOutcome>,
+        resume: ChannelHealthResume,
+    ) {
         if (pending.isEmpty()) return
-        results.record(providerId, pending.toList())
+        results.record(providerId, pending.toList(), resume)
         pending.clear()
     }
 

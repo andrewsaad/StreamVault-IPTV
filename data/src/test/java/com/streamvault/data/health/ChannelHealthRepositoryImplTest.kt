@@ -93,6 +93,31 @@ class ChannelHealthRepositoryImplTest {
     }
 
     @Test
+    fun `an OK probe removes the channel record and the next failure starts at one day`() = runTest {
+        failOnce(1L)
+        clock.nowMillis += DAY_MS
+        failOnce(1L)
+        assertThat(results.read(TEST_PROVIDER_ID).records.getValue(1L).failedDays).isEqualTo(2)
+
+        clock.nowMillis += DAY_MS
+        failOnce(1L, ChannelHealthStatus.OK)
+        assertThat(results.read(TEST_PROVIDER_ID).records).isEmpty()
+
+        clock.nowMillis += DAY_MS
+        failOnce(1L)
+        assertThat(results.read(TEST_PROVIDER_ID).records.getValue(1L).failedDays).isEqualTo(1)
+    }
+
+    @Test
+    fun `only the latest failed channels are stored, not working ones`() = runTest {
+        failOnce(1L, ChannelHealthStatus.OK)
+        failOnce(2L, ChannelHealthStatus.UNCLEAR)
+        failOnce(3L, ChannelHealthStatus.DEAD)
+
+        assertThat(results.read(TEST_PROVIDER_ID).records.keys).containsExactly(3L)
+    }
+
+    @Test
     fun `an UNCLEAR probe keeps the suggestion`() = runTest {
         stubChannels(channelEntity(1L))
         failOnce(1L)

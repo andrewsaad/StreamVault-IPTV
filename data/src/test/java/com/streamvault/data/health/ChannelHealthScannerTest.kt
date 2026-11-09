@@ -91,7 +91,8 @@ class ChannelHealthScannerTest {
         val records = results.read(TEST_PROVIDER_ID).records
         assertThat(records.getValue(1L).status).isEqualTo(ChannelHealthStatus.EMPTY)
         assertThat(records.getValue(1L).failedDays).isEqualTo(1)
-        assertThat(records.getValue(2L).status).isEqualTo(ChannelHealthStatus.OK)
+        // A channel that works has no record.
+        assertThat(records.keys).containsExactly(1L)
         val state = scanner.observeState(TEST_PROVIDER_ID).first()
         assertThat(state.running).isFalse()
         assertThat(state.scanned).isEqualTo(2)
@@ -115,24 +116,53 @@ class ChannelHealthScannerTest {
 
         scanner.run(TEST_PROVIDER_ID, categoryIds = setOf(200L), startedAt = 0L)
 
-        assertThat(results.read(TEST_PROVIDER_ID).records.keys).containsExactly(2L)
+        verify(probe).probe(any(), any())
         assertThat(scanner.observeState(TEST_PROVIDER_ID).first().total).isEqualTo(1)
     }
 
     @Test
-    fun `channels already probed since the scan began are not probed again`() = runTest {
+    fun `a scan that was restarted skips the channels it had already settled`() = runTest {
         givenChannels(channelEntity(1L), channelEntity(2L))
         givenAccount("1", "0")
         givenProbe(ChannelHealthStatus.OK)
-        results.record(
-            TEST_PROVIDER_ID,
-            listOf(ChannelProbeOutcome(1L, ChannelHealthStatus.OK, checkedAt = clock.nowMillis)),
-        )
+        results.record(TEST_PROVIDER_ID, emptyList(), ChannelHealthResume(startedAt = 500L, afterChannelId = 1L))
 
-        scanner.run(TEST_PROVIDER_ID, categoryIds = null, startedAt = clock.nowMillis - 1_000L)
+        scanner.run(TEST_PROVIDER_ID, categoryIds = null, startedAt = 500L)
 
         verify(probe).probe(any(), any())
         assertThat(scanner.observeState(TEST_PROVIDER_ID).first().scanned).isEqualTo(2)
+        assertThat(results.read(TEST_PROVIDER_ID).resume).isNull()
+    }
+
+    @Test
+    fun `a progress marker of an older scan is ignored`() = runTest {
+        givenChannels(channelEntity(1L), channelEntity(2L))
+        givenAccount("1", "0")
+        givenProbe(ChannelHealthStatus.OK)
+        results.record(TEST_PROVIDER_ID, emptyList(), ChannelHealthResume(startedAt = 100L, afterChannelId = 2L))
+
+        scanner.run(TEST_PROVIDER_ID, categoryIds = null, startedAt = 500L)
+
+        verify(probe, times(2)).probe(any(), any())
+    }
+
+    @Test
+    fun `a scan stopped part way carries on after the last probed channel`() = runTest {
+        givenChannels(*(1L..5L).map { channelEntity(it) }.toTypedArray())
+        givenAccount("1", "0")
+        givenProbe(ChannelHealthStatus.OK)
+        val job = backgroundScope.launch { scanner.run(TEST_PROVIDER_ID, null, 500L) }
+        // Probes at 0 s, 6 s and 12 s.
+        advanceTimeBy(12_000L)
+        runCurrent()
+        job.cancel()
+        advanceUntilIdle()
+        assertThat(results.read(TEST_PROVIDER_ID).resume).isEqualTo(ChannelHealthResume(500L, 3L))
+
+        scanner.run(TEST_PROVIDER_ID, null, 500L)
+
+        // Three probes before the stop and the two channels left afterwards.
+        verify(probe, times(5)).probe(any(), any())
     }
 
     @Test
