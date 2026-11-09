@@ -31,14 +31,25 @@ import kotlinx.coroutines.withContext
 internal data class ChannelHealthTimings(
     val pauseBetweenChannelsMs: Long = 6_000L,
     val backoffMs: Long = 5L * 60_000L,
+    /** First wait while the account has no free connection; doubles up to [maxPlaybackPollMs]. */
     val playbackPollMs: Long = 15_000L,
+    val maxPlaybackPollMs: Long = 5L * 60_000L,
+    /** Total wait for a free connection before the scan gives up. */
+    val maxPauseMs: Long = 60L * 60_000L,
     val unclearInARowBeforeBackoff: Int = 3,
-    /** Backoffs in a row with no usable answer in between before the scan gives up. */
+    /** Non-OK answers of any kind in a row that count as a provider problem, not as dead channels. */
+    val massFailureStreak: Int = 10,
+    /** Backoffs in a row with no OK answer in between before the scan gives up. */
     val maxBackoffsInARow: Int = 3,
     val flushEvery: Int = 20,
 )
 
-private data class AccountLimits(val maxConnections: Int, val activeConnections: Int) {
+private data class AccountLimits(
+    val maxConnections: Int,
+    val activeConnections: Int,
+    /** False only when the account lists its output formats and HLS (m3u8) is not among them. */
+    val allowsHls: Boolean = true,
+) {
     /** No free connection left for a probe. */
     val saturated: Boolean get() = activeConnections >= maxConnections
 }
@@ -73,6 +84,10 @@ class ChannelHealthScanner internal constructor(
         results.observe(providerId).map { it.lastFinishedAt }.distinctUntilChanged(),
     ) { state, lastFinishedAt -> state.copy(lastFinishedAt = lastFinishedAt) }
 
+    /** False when the account says it does not serve HLS (m3u8), which is the only format the probe uses. */
+    internal suspend fun allowsHls(providerId: Long, config: XtreamConfig): Boolean =
+        readAccount(providerId, config, previous = null).allowsHls
+
     /** Shows the scan as running as soon as it is queued, before the worker starts. */
     internal fun markQueued(providerId: Long) {
         setState(providerId) { ChannelHealthScanState(running = true) }
@@ -84,8 +99,8 @@ class ChannelHealthScanner internal constructor(
     }
 
     /**
-     * Probes the provider's live channels. Channels probed at or after [startedAt] are skipped, so a
-     * scan the system stopped and WorkManager restarted carries on instead of starting over.
+     * Probes the provider's live channels. When the same scan ([startedAt]) ran before, the channels it
+     * had settled are skipped, so a scan the system stopped and WorkManager restarted carries on.
      * Returns false when the scan could not run or gave up; the reason is never the login.
      */
     internal suspend fun run(providerId: Long, categoryIds: Set<Long>?, startedAt: Long): Boolean {
@@ -97,24 +112,30 @@ class ChannelHealthScanner internal constructor(
         val channels = channelDao.getByProviderSync(providerId)
             .filter { it.streamId > 0L && (categoryIds == null || it.categoryId in categoryIds) }
             .sortedBy { it.id }
-        val alreadyChecked = results.read(providerId).records
+        val resume = results.read(providerId).resume?.takeIf { it.startedAt == startedAt }
         val headers = requestHeaders(providerId, config)
         val pending = ArrayList<ChannelProbeOutcome>()
+        // Non-OK answers since the last OK; kept back from the store until an OK shows they are isolated.
+        val streak = ArrayList<ChannelProbeOutcome>()
         var scanned = 0
+        var lastProbedId = resume?.afterChannelId ?: 0L
         var finished = false
+        // Channels up to this id are settled; a held-back streak is not, so it is probed again after a restart.
+        fun resumePoint() = ChannelHealthResume(startedAt, streak.firstOrNull()?.let { it.channelId - 1 } ?: lastProbedId)
         setState(providerId) { ChannelHealthScanState(running = true, total = channels.size) }
         try {
             var account = readAccount(providerId, config, previous = null)
+            if (!account.allowsHls) return false
             var unclearInARow = 0
             var backoffsInARow = 0
             for (channel in channels) {
                 currentCoroutineContext().ensureActive()
-                if ((alreadyChecked[channel.id]?.checkedAt ?: -1L) >= startedAt) {
+                if (resume != null && channel.id <= resume.afterChannelId) {
                     scanned++
                     setState(providerId) { it.copy(scanned = scanned) }
                     continue
                 }
-                account = waitForFreeConnection(providerId, config, account)
+                account = waitForFreeConnection(providerId, config, account) ?: return false
                 val url = XtreamUrlFactory.buildPlaybackUrl(
                     serverUrl = config.serverUrl,
                     username = config.username,
@@ -124,20 +145,33 @@ class ChannelHealthScanner internal constructor(
                     containerExtension = "m3u8",
                 )
                 val status = probe.probe(url, headers)
-                pending += ChannelProbeOutcome(channel.id, status, results.now())
+                val outcome = ChannelProbeOutcome(channel.id, status, results.now())
+                lastProbedId = channel.id
                 scanned++
                 setState(providerId) { it.copy(scanned = scanned) }
-                if (pending.size >= timings.flushEvery) flush(providerId, pending)
-                if (status == ChannelHealthStatus.UNCLEAR) unclearInARow++ else {
+                if (status == ChannelHealthStatus.OK) {
+                    // A good answer shows the failures before it were the channels' own, so keep them.
+                    pending += streak
+                    pending += outcome
+                    streak.clear()
                     unclearInARow = 0
                     backoffsInARow = 0
+                } else {
+                    streak += outcome
+                    if (status == ChannelHealthStatus.UNCLEAR) unclearInARow++ else unclearInARow = 0
                 }
-                if (unclearInARow >= timings.unclearInARowBeforeBackoff) {
-                    flush(providerId, pending)
+                if (pending.size >= timings.flushEvery) flush(providerId, pending, resumePoint())
+                if (streak.size >= timings.massFailureStreak) {
+                    // Everything failing at once points at the provider or the account, not the channels.
+                    streak.clear()
                     if (++backoffsInARow >= timings.maxBackoffsInARow) return false
-                    setState(providerId) { it.copy(paused = ChannelHealthPauseReason.PROVIDER_BACKOFF) }
-                    delay(timings.backoffMs)
-                    setState(providerId) { it.copy(paused = null) }
+                    backOff(providerId)
+                    unclearInARow = 0
+                    account = readAccount(providerId, config, previous = account)
+                } else if (unclearInARow >= timings.unclearInARowBeforeBackoff) {
+                    flush(providerId, pending, resumePoint())
+                    if (++backoffsInARow >= timings.maxBackoffsInARow) return false
+                    backOff(providerId)
                     unclearInARow = 0
                     account = readAccount(providerId, config, previous = account)
                 } else if (scanned < channels.size) {
@@ -150,11 +184,19 @@ class ChannelHealthScanner internal constructor(
             throw cancelled
         } finally {
             withContext(NonCancellable) {
-                flush(providerId, pending)
+                pending += streak
+                streak.clear()
+                flush(providerId, pending, resumePoint())
                 if (finished) results.markFinished(providerId)
                 setState(providerId) { it.copy(running = false, paused = null) }
             }
         }
+    }
+
+    private suspend fun backOff(providerId: Long) {
+        setState(providerId) { it.copy(paused = ChannelHealthPauseReason.PROVIDER_BACKOFF) }
+        delay(timings.backoffMs)
+        setState(providerId) { it.copy(paused = null) }
     }
 
     /** Yields while the account has no free connection: local playback on a one-connection account, or others using it. */
@@ -162,16 +204,22 @@ class ChannelHealthScanner internal constructor(
         providerId: Long,
         config: XtreamConfig,
         current: AccountLimits,
-    ): AccountLimits {
+    ): AccountLimits? {
         var account = current
+        var poll = timings.playbackPollMs
+        var waited = 0L
         while (true) {
             val localPlayback = account.maxConnections <= 1 && AutomaticSyncActivity.hasPlayback
             if (!localPlayback && !account.saturated) {
                 setState(providerId) { if (it.paused == null) it else it.copy(paused = null) }
                 return account
             }
+            // Give up on a connection that never frees up instead of polling the provider for ever.
+            if (waited >= timings.maxPauseMs) return null
             setState(providerId) { it.copy(paused = ChannelHealthPauseReason.PLAYBACK_ACTIVE) }
-            delay(timings.playbackPollMs)
+            delay(poll)
+            waited += poll
+            poll = minOf(poll * 2, timings.maxPlaybackPollMs)
             // Look again once nothing of ours is playing, so a stale "in use" count does not stick.
             if (!AutomaticSyncActivity.hasPlayback) account = readAccount(providerId, config, previous = account)
         }
@@ -187,6 +235,8 @@ class ChannelHealthScanner internal constructor(
             AccountLimits(
                 maxConnections = info.maxConnections.trim().toIntOrNull()?.takeIf { it > 0 } ?: 1,
                 activeConnections = info.activeConnections.trim().toIntOrNull()?.takeIf { it >= 0 } ?: 0,
+                allowsHls = info.allowedOutputFormats.isEmpty() ||
+                    info.allowedOutputFormats.any { it.trim().equals("m3u8", ignoreCase = true) },
             )
         } catch (cancelled: CancellationException) {
             throw cancelled
@@ -196,9 +246,13 @@ class ChannelHealthScanner internal constructor(
             previous ?: AccountLimits(maxConnections = 1, activeConnections = 0)
         }
 
-    private suspend fun flush(providerId: Long, pending: MutableList<ChannelProbeOutcome>) {
+    private suspend fun flush(
+        providerId: Long,
+        pending: MutableList<ChannelProbeOutcome>,
+        resume: ChannelHealthResume,
+    ) {
         if (pending.isEmpty()) return
-        results.record(providerId, pending.toList())
+        results.record(providerId, pending.toList(), resume)
         pending.clear()
     }
 

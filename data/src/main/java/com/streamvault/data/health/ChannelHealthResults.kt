@@ -24,9 +24,14 @@ internal data class ChannelProbeOutcome(
     val checkedAt: Long,
 )
 
+/** Where a scan that started at [startedAt] got to: channels up to [afterChannelId] (ids ascending) are done. */
+internal data class ChannelHealthResume(val startedAt: Long, val afterChannelId: Long)
+
+/** Only channels whose latest answer was EMPTY or DEAD have a record; an OK answer removes it. */
 internal data class ChannelHealthDocument(
     val records: Map<Long, ChannelHealthRecord> = emptyMap(),
     val lastFinishedAt: Long? = null,
+    val resume: ChannelHealthResume? = null,
 )
 
 /** The failed-days rules; pure so the day counting can be tested with fixed times. */
@@ -73,15 +78,24 @@ class ChannelHealthResults internal constructor(
     internal fun now(): Long = clock.millis()
 
     internal fun observe(providerId: Long): Flow<ChannelHealthDocument> =
-        preferences.getChannelHealthResults(providerId).map(::decode).distinctUntilChanged()
+        preferences.getChannelHealthResults(providerId).distinctUntilChanged().map(::decode)
 
     internal suspend fun read(providerId: Long): ChannelHealthDocument = observe(providerId).first()
 
-    internal suspend fun record(providerId: Long, outcomes: List<ChannelProbeOutcome>) {
-        if (outcomes.isEmpty()) return
+    internal suspend fun record(
+        providerId: Long,
+        outcomes: List<ChannelProbeOutcome>,
+        resume: ChannelHealthResume? = null,
+    ) {
+        if (outcomes.isEmpty() && resume == null) return
         update(providerId) { document ->
             val records = document.records.toMutableMap()
             outcomes.forEach { outcome ->
+                if (outcome.status == ChannelHealthStatus.OK) {
+                    // Same as failedDays back to 0: a channel that works needs no record.
+                    records.remove(outcome.channelId)
+                    return@forEach
+                }
                 ChannelHealthTracker.apply(
                     previous = records[outcome.channelId],
                     channelId = outcome.channelId,
@@ -90,12 +104,12 @@ class ChannelHealthResults internal constructor(
                     zone = clock.zone,
                 )?.let { records[outcome.channelId] = it }
             }
-            document.copy(records = records)
+            document.copy(records = records, resume = resume ?: document.resume)
         }
     }
 
     internal suspend fun markFinished(providerId: Long) {
-        update(providerId) { it.copy(lastFinishedAt = clock.millis()) }
+        update(providerId) { it.copy(lastFinishedAt = clock.millis(), resume = null) }
     }
 
     internal suspend fun clear(providerId: Long) {
@@ -113,12 +127,19 @@ class ChannelHealthResults internal constructor(
     private class StoredRecord(val id: Long, val status: String, val checkedAt: Long, val failedDays: Int)
 
     @Serializable
-    private class StoredDocument(val lastFinishedAt: Long? = null, val records: List<StoredRecord> = emptyList())
+    private class StoredDocument(
+        val lastFinishedAt: Long? = null,
+        val records: List<StoredRecord> = emptyList(),
+        val resumeStartedAt: Long? = null,
+        val resumeAfterId: Long? = null,
+    )
 
     private fun encode(document: ChannelHealthDocument): String = json.encodeToString(
         StoredDocument.serializer(),
         StoredDocument(
             lastFinishedAt = document.lastFinishedAt,
+            resumeStartedAt = document.resume?.startedAt,
+            resumeAfterId = document.resume?.afterChannelId,
             records = document.records.values.map {
                 StoredRecord(it.channelId, statusToStored(it.status), it.checkedAt, it.failedDays)
             },
@@ -131,9 +152,15 @@ class ChannelHealthResults internal constructor(
             .getOrNull() ?: return ChannelHealthDocument()
         val records = document.records.mapNotNull { record ->
             val status = statusFromStored(record.status) ?: return@mapNotNull null
+            if (status == ChannelHealthStatus.OK) return@mapNotNull null // older builds stored these
             ChannelHealthRecord(record.id, status, record.checkedAt, record.failedDays)
         }.associateBy { it.channelId }
-        return ChannelHealthDocument(records, document.lastFinishedAt)
+        val resume = if (document.resumeStartedAt != null && document.resumeAfterId != null) {
+            ChannelHealthResume(document.resumeStartedAt, document.resumeAfterId)
+        } else {
+            null
+        }
+        return ChannelHealthDocument(records, document.lastFinishedAt, resume)
     }
 
     private fun statusToStored(status: ChannelHealthStatus): String = when (status) {

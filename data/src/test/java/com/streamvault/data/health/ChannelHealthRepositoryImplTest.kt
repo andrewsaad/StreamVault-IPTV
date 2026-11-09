@@ -2,10 +2,14 @@ package com.streamvault.data.health
 
 import com.google.common.truth.Truth.assertThat
 import com.streamvault.data.local.dao.ChannelDao
+import com.streamvault.data.remote.dto.XtreamAuthResponse
+import com.streamvault.data.remote.dto.XtreamServerInfo
+import com.streamvault.data.remote.dto.XtreamUserInfo
 import com.streamvault.data.remote.xtream.XtreamApiService
 import com.streamvault.domain.model.ChannelHealthStatus
 import com.streamvault.domain.model.Result
 import com.streamvault.domain.repository.ProviderSnapshotRepository
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
@@ -24,14 +28,17 @@ class ChannelHealthRepositoryImplTest {
     private val snapshots: ProviderSnapshotRepository = mock()
     private val channelDao: ChannelDao = mock()
     private val scheduler: ChannelHealthScanScheduler = mock()
+    private val xtreamApi: XtreamApiService = mock()
     private val results = ChannelHealthResults(storage.preferences, clock)
     private val scanner = ChannelHealthScanner(
         snapshots = snapshots,
         channelDao = channelDao,
-        xtreamApi = mock<XtreamApiService>(),
+        xtreamApi = xtreamApi,
         probe = mock<ChannelHealthProbe>(),
         results = results,
     )
+    // Whether WorkManager still has the provider's scan work queued, blocked or running.
+    private val workActive = MutableStateFlow(false)
     private val repository = ChannelHealthRepositoryImpl(
         snapshots = snapshots,
         channelDao = channelDao,
@@ -41,8 +48,21 @@ class ChannelHealthRepositoryImplTest {
         scheduler = scheduler,
     )
 
+    init {
+        whenever(scheduler.observeActive(any())).thenReturn(workActive)
+    }
+
     private suspend fun stubChannels(vararg channels: com.streamvault.data.local.entity.ChannelEntity) {
         whenever(channelDao.getByProviderSync(any())).thenReturn(channels.toList())
+    }
+
+    private suspend fun givenOutputFormats(vararg formats: String) {
+        whenever(xtreamApi.authenticate(any(), any())).thenReturn(
+            XtreamAuthResponse(
+                userInfo = XtreamUserInfo(auth = 1, allowedOutputFormats = formats.toList()),
+                serverInfo = XtreamServerInfo(),
+            )
+        )
     }
 
     private suspend fun failOnce(channelId: Long, status: ChannelHealthStatus = ChannelHealthStatus.EMPTY) {
@@ -77,6 +97,31 @@ class ChannelHealthRepositoryImplTest {
         failOnce(1L, ChannelHealthStatus.OK)
 
         assertThat(repository.observeSuggestions(TEST_PROVIDER_ID).first()).isEmpty()
+    }
+
+    @Test
+    fun `an OK probe removes the channel record and the next failure starts at one day`() = runTest {
+        failOnce(1L)
+        clock.nowMillis += DAY_MS
+        failOnce(1L)
+        assertThat(results.read(TEST_PROVIDER_ID).records.getValue(1L).failedDays).isEqualTo(2)
+
+        clock.nowMillis += DAY_MS
+        failOnce(1L, ChannelHealthStatus.OK)
+        assertThat(results.read(TEST_PROVIDER_ID).records).isEmpty()
+
+        clock.nowMillis += DAY_MS
+        failOnce(1L)
+        assertThat(results.read(TEST_PROVIDER_ID).records.getValue(1L).failedDays).isEqualTo(1)
+    }
+
+    @Test
+    fun `only the latest failed channels are stored, not working ones`() = runTest {
+        failOnce(1L, ChannelHealthStatus.OK)
+        failOnce(2L, ChannelHealthStatus.UNCLEAR)
+        failOnce(3L, ChannelHealthStatus.DEAD)
+
+        assertThat(results.read(TEST_PROVIDER_ID).records.keys).containsExactly(3L)
     }
 
     @Test
@@ -128,7 +173,9 @@ class ChannelHealthRepositoryImplTest {
 
         repository.hideChannels(TEST_PROVIDER_ID, setOf(7L, 8L))
 
-        verify(storage.preferences).setHiddenChannelIds(TEST_PROVIDER_ID, setOf(5L, 7L, 8L))
+        // One atomic union inside the store, not a read followed by a separate write.
+        verify(storage.preferences).addHiddenChannelIds(TEST_PROVIDER_ID, setOf(7L, 8L))
+        verify(storage.preferences, never()).setHiddenChannelIds(any(), any())
         assertThat(storage.hidden.value).containsExactly(5L, 7L, 8L)
     }
 
@@ -169,19 +216,63 @@ class ChannelHealthRepositoryImplTest {
     }
 
     @Test
+    fun `an account that lists its formats without m3u8 cannot be scanned`() = runTest {
+        whenever(snapshots.getSnapshot(TEST_PROVIDER_ID)).thenReturn(xtreamSnapshot())
+        givenOutputFormats("ts", "rtmp")
+
+        val result = repository.startScan(TEST_PROVIDER_ID)
+
+        assertThat(result).isInstanceOf(Result.Error::class.java)
+        assertThat((result as Result.Error).message).doesNotContain(TEST_PASSWORD)
+        verify(scheduler, never()).enqueue(any(), anyOrNull(), any())
+        assertThat(repository.observeScanState(TEST_PROVIDER_ID).first().scanned).isEqualTo(0)
+    }
+
+    @Test
+    fun `an account that lists no formats is still scanned`() = runTest {
+        whenever(snapshots.getSnapshot(TEST_PROVIDER_ID)).thenReturn(xtreamSnapshot())
+        givenOutputFormats()
+
+        assertThat(repository.startScan(TEST_PROVIDER_ID)).isEqualTo(Result.success(Unit))
+        verify(scheduler).enqueue(any(), anyOrNull(), any())
+    }
+
+    @Test
     fun `an Xtream scan is queued with its categories and shows as running`() = runTest {
         whenever(snapshots.getSnapshot(TEST_PROVIDER_ID)).thenReturn(xtreamSnapshot())
+        givenOutputFormats("ts", "m3u8")
 
         val result = repository.startScan(TEST_PROVIDER_ID, setOf(100L, 200L))
 
         assertThat(result).isEqualTo(Result.success(Unit))
         verify(scheduler).enqueue(eq(TEST_PROVIDER_ID), eq(setOf(100L, 200L)), eq(clock.nowMillis))
+        workActive.value = true
         assertThat(repository.observeScanState(TEST_PROVIDER_ID).first().running).isTrue()
+    }
+
+    @Test
+    fun `the scan stays running between WorkManager runs while its work is still queued`() = runTest {
+        // The scanner itself is idle here: the job was stopped and has not been resumed yet.
+        assertThat(scanner.observeState(TEST_PROVIDER_ID).first().running).isFalse()
+        workActive.value = true
+
+        assertThat(repository.observeScanState(TEST_PROVIDER_ID).first().running).isTrue()
+    }
+
+    @Test
+    fun `the scan is not running once its work is gone`() = runTest {
+        whenever(snapshots.getSnapshot(TEST_PROVIDER_ID)).thenReturn(xtreamSnapshot())
+        givenOutputFormats("m3u8")
+        repository.startScan(TEST_PROVIDER_ID)
+        workActive.value = false
+
+        assertThat(repository.observeScanState(TEST_PROVIDER_ID).first().running).isFalse()
     }
 
     @Test
     fun `cancelScan cancels the queued work and clears the running flag`() = runTest {
         whenever(snapshots.getSnapshot(TEST_PROVIDER_ID)).thenReturn(xtreamSnapshot())
+        givenOutputFormats("m3u8")
         repository.startScan(TEST_PROVIDER_ID)
 
         repository.cancelScan(TEST_PROVIDER_ID)

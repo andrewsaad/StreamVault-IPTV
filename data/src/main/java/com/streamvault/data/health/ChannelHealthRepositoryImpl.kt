@@ -14,7 +14,6 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
 @Singleton
@@ -27,8 +26,12 @@ class ChannelHealthRepositoryImpl @Inject constructor(
     private val scheduler: ChannelHealthScanScheduler,
 ) : ChannelHealthRepository {
 
+    // "Running" follows the queued work, not the scanner's own flag, so the state does not drop to
+    // idle in the gaps when WorkManager has stopped the job and is about to resume it.
     override fun observeScanState(providerId: Long): Flow<ChannelHealthScanState> =
-        scanner.observeState(providerId)
+        combine(scanner.observeState(providerId), scheduler.observeActive(providerId)) { state, active ->
+            state.copy(running = active)
+        }
 
     override fun observeSuggestions(providerId: Long): Flow<List<ChannelHealthSuggestion>> =
         combine(results.observe(providerId), preferences.getHiddenChannelIds(providerId)) { document, hidden ->
@@ -52,8 +55,10 @@ class ChannelHealthRepositoryImpl @Inject constructor(
     override suspend fun startScan(providerId: Long, categoryIds: Set<Long>?): Result<Unit> {
         val snapshot = snapshots.getSnapshot(providerId)
             ?: return Result.error("Provider not found")
-        if (snapshot.configuration !is XtreamConfig) {
-            return Result.error("Channel health scans only support Xtream Codes providers")
+        val config = snapshot.configuration as? XtreamConfig
+            ?: return Result.error("Channel health scans only support Xtream Codes providers")
+        if (!scanner.allowsHls(providerId, config)) {
+            return Result.error("The account does not offer HLS (m3u8) output, which the scan needs")
         }
         scanner.markQueued(providerId)
         scheduler.enqueue(providerId, categoryIds, results.now())
@@ -66,9 +71,7 @@ class ChannelHealthRepositoryImpl @Inject constructor(
     }
 
     override suspend fun hideChannels(providerId: Long, channelIds: Set<Long>) {
-        if (channelIds.isEmpty()) return
-        val hidden = preferences.getHiddenChannelIds(providerId).first()
-        preferences.setHiddenChannelIds(providerId, hidden + channelIds)
+        preferences.addHiddenChannelIds(providerId, channelIds)
     }
 
     override suspend fun clearResults(providerId: Long) {
