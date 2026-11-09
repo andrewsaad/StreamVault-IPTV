@@ -4,6 +4,9 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Checkbox
 import androidx.compose.runtime.Composable
@@ -14,6 +17,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -44,6 +48,8 @@ internal fun ChannelCleanupDialog(
     LaunchedEffect(providerId) { viewModel.bind(providerId) }
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val scanFocus = remember { FocusRequester() }
+    // The dialog body scrolls, so the lazy list needs a finite height of its own.
+    val listMaxHeight = (LocalConfiguration.current.screenHeightDp * 0.4f).dp
 
     PremiumDialog(
         title = stringResource(R.string.settings_channel_cleanup_title),
@@ -79,26 +85,33 @@ internal fun ChannelCleanupDialog(
                     checked = state.allSelected,
                     onClick = viewModel::toggleAll,
                 )
-                state.groups.forEach { group ->
-                    ChannelCleanupToggleRow(
-                        label = group.categoryName
-                            ?: stringResource(R.string.channel_cleanup_uncategorized),
-                        hint = stringResource(R.string.channel_cleanup_select_category),
-                        checked = state.isGroupSelected(group),
-                        onClick = { viewModel.toggleCategory(group) },
-                    )
-                    group.rows.forEach { row ->
-                        ChannelCleanupToggleRow(
-                            label = row.name,
-                            hint = stringResource(
-                                R.string.channel_cleanup_row_summary,
-                                stringResource(channelCleanupStatusLabelRes(row.status)),
-                                stringResource(R.string.channel_cleanup_failed_days, row.failedDays),
-                            ),
-                            checked = row.channelId in state.selectedIds,
-                            onClick = { viewModel.toggleChannel(row.channelId) },
-                            indent = 20,
-                        )
+                LazyColumn(
+                    modifier = Modifier.fillMaxWidth().heightIn(max = listMaxHeight),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    state.groups.forEach { group ->
+                        item(key = "group-${group.categoryName}") {
+                            ChannelCleanupToggleRow(
+                                label = group.categoryName
+                                    ?: stringResource(R.string.channel_cleanup_uncategorized),
+                                hint = stringResource(R.string.channel_cleanup_select_category),
+                                checked = state.isGroupSelected(group),
+                                onClick = { viewModel.toggleCategory(group) },
+                            )
+                        }
+                        items(group.rows, key = { row -> "channel-${row.channelId}" }) { row ->
+                            ChannelCleanupToggleRow(
+                                label = row.name,
+                                hint = stringResource(
+                                    R.string.channel_cleanup_row_summary,
+                                    stringResource(channelCleanupStatusLabelRes(row.status)),
+                                    stringResource(R.string.channel_cleanup_failed_days, row.failedDays),
+                                ),
+                                checked = row.channelId in state.selectedIds,
+                                onClick = { viewModel.toggleChannel(row.channelId) },
+                                indent = 20,
+                            )
+                        }
                     }
                 }
             }
@@ -164,12 +177,6 @@ private fun ChannelCleanupScanCard(
                     style = MaterialTheme.typography.bodyMedium,
                     color = OnSurface,
                 )
-                CompactSettingsActionChip(
-                    label = stringResource(R.string.channel_cleanup_scan_button),
-                    accent = Primary,
-                    onClick = onScan,
-                    modifier = Modifier.focusRequester(actionFocus),
-                )
             }
             is ChannelCleanupScanUi.Running -> {
                 Text(
@@ -177,7 +184,6 @@ private fun ChannelCleanupScanCard(
                     style = MaterialTheme.typography.bodyMedium,
                     color = OnSurface,
                 )
-                StopChip(onStop, actionFocus)
             }
             is ChannelCleanupScanUi.Paused -> {
                 Text(
@@ -190,9 +196,19 @@ private fun ChannelCleanupScanCard(
                     style = MaterialTheme.typography.bodyMedium,
                     color = Primary,
                 )
-                StopChip(onStop, actionFocus)
             }
         }
+        // One chip at one position for every scan state: Scan turns into Stop (and back) on the same
+        // focused node, so pressing it never drops D-pad focus and nothing has to steal it back.
+        val idle = scan is ChannelCleanupScanUi.Idle
+        CompactSettingsActionChip(
+            label = stringResource(
+                if (idle) R.string.channel_cleanup_scan_button else R.string.channel_cleanup_stop_button
+            ),
+            accent = if (idle) Primary else ErrorColor,
+            onClick = if (idle) onScan else onStop,
+            modifier = Modifier.focusRequester(actionFocus),
+        )
         errorRes?.let {
             Text(
                 text = stringResource(it),
@@ -206,16 +222,6 @@ private fun ChannelCleanupScanCard(
             color = OnSurfaceDim,
         )
     }
-}
-
-@Composable
-private fun StopChip(onStop: () -> Unit, focus: FocusRequester) {
-    CompactSettingsActionChip(
-        label = stringResource(R.string.channel_cleanup_stop_button),
-        accent = ErrorColor,
-        onClick = onStop,
-        modifier = Modifier.focusRequester(focus),
-    )
 }
 
 @Composable
