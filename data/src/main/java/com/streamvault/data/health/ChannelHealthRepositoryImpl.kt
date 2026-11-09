@@ -52,8 +52,10 @@ class ChannelHealthRepositoryImpl @Inject constructor(
     override suspend fun startScan(providerId: Long, categoryIds: Set<Long>?): Result<Unit> {
         val snapshot = snapshots.getSnapshot(providerId)
             ?: return Result.error("Provider not found")
-        if (snapshot.configuration !is XtreamConfig) {
-            return Result.error("Channel health scans only support Xtream Codes providers")
+        val config = snapshot.configuration as? XtreamConfig
+            ?: return Result.error("Channel health scans only support Xtream Codes providers")
+        if (!scanner.allowsHls(providerId, config)) {
+            return Result.error("The account does not offer HLS (m3u8) output, which the scan needs")
         }
         scanner.markQueued(providerId)
         scheduler.enqueue(providerId, categoryIds, results.now())

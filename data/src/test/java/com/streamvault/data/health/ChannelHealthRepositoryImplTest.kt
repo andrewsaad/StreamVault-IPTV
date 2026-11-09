@@ -2,6 +2,9 @@ package com.streamvault.data.health
 
 import com.google.common.truth.Truth.assertThat
 import com.streamvault.data.local.dao.ChannelDao
+import com.streamvault.data.remote.dto.XtreamAuthResponse
+import com.streamvault.data.remote.dto.XtreamServerInfo
+import com.streamvault.data.remote.dto.XtreamUserInfo
 import com.streamvault.data.remote.xtream.XtreamApiService
 import com.streamvault.domain.model.ChannelHealthStatus
 import com.streamvault.domain.model.Result
@@ -24,11 +27,12 @@ class ChannelHealthRepositoryImplTest {
     private val snapshots: ProviderSnapshotRepository = mock()
     private val channelDao: ChannelDao = mock()
     private val scheduler: ChannelHealthScanScheduler = mock()
+    private val xtreamApi: XtreamApiService = mock()
     private val results = ChannelHealthResults(storage.preferences, clock)
     private val scanner = ChannelHealthScanner(
         snapshots = snapshots,
         channelDao = channelDao,
-        xtreamApi = mock<XtreamApiService>(),
+        xtreamApi = xtreamApi,
         probe = mock<ChannelHealthProbe>(),
         results = results,
     )
@@ -43,6 +47,15 @@ class ChannelHealthRepositoryImplTest {
 
     private suspend fun stubChannels(vararg channels: com.streamvault.data.local.entity.ChannelEntity) {
         whenever(channelDao.getByProviderSync(any())).thenReturn(channels.toList())
+    }
+
+    private suspend fun givenOutputFormats(vararg formats: String) {
+        whenever(xtreamApi.authenticate(any(), any())).thenReturn(
+            XtreamAuthResponse(
+                userInfo = XtreamUserInfo(auth = 1, allowedOutputFormats = formats.toList()),
+                serverInfo = XtreamServerInfo(),
+            )
+        )
     }
 
     private suspend fun failOnce(channelId: Long, status: ChannelHealthStatus = ChannelHealthStatus.EMPTY) {
@@ -169,8 +182,31 @@ class ChannelHealthRepositoryImplTest {
     }
 
     @Test
+    fun `an account that lists its formats without m3u8 cannot be scanned`() = runTest {
+        whenever(snapshots.getSnapshot(TEST_PROVIDER_ID)).thenReturn(xtreamSnapshot())
+        givenOutputFormats("ts", "rtmp")
+
+        val result = repository.startScan(TEST_PROVIDER_ID)
+
+        assertThat(result).isInstanceOf(Result.Error::class.java)
+        assertThat((result as Result.Error).message).doesNotContain(TEST_PASSWORD)
+        verify(scheduler, never()).enqueue(any(), anyOrNull(), any())
+        assertThat(repository.observeScanState(TEST_PROVIDER_ID).first().scanned).isEqualTo(0)
+    }
+
+    @Test
+    fun `an account that lists no formats is still scanned`() = runTest {
+        whenever(snapshots.getSnapshot(TEST_PROVIDER_ID)).thenReturn(xtreamSnapshot())
+        givenOutputFormats()
+
+        assertThat(repository.startScan(TEST_PROVIDER_ID)).isEqualTo(Result.success(Unit))
+        verify(scheduler).enqueue(any(), anyOrNull(), any())
+    }
+
+    @Test
     fun `an Xtream scan is queued with its categories and shows as running`() = runTest {
         whenever(snapshots.getSnapshot(TEST_PROVIDER_ID)).thenReturn(xtreamSnapshot())
+        givenOutputFormats("ts", "m3u8")
 
         val result = repository.startScan(TEST_PROVIDER_ID, setOf(100L, 200L))
 
@@ -182,6 +218,7 @@ class ChannelHealthRepositoryImplTest {
     @Test
     fun `cancelScan cancels the queued work and clears the running flag`() = runTest {
         whenever(snapshots.getSnapshot(TEST_PROVIDER_ID)).thenReturn(xtreamSnapshot())
+        givenOutputFormats("m3u8")
         repository.startScan(TEST_PROVIDER_ID)
 
         repository.cancelScan(TEST_PROVIDER_ID)

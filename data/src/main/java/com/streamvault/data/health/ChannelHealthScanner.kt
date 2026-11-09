@@ -40,7 +40,12 @@ internal data class ChannelHealthTimings(
     val flushEvery: Int = 20,
 )
 
-private data class AccountLimits(val maxConnections: Int, val activeConnections: Int) {
+private data class AccountLimits(
+    val maxConnections: Int,
+    val activeConnections: Int,
+    /** False only when the account lists its output formats and HLS (m3u8) is not among them. */
+    val allowsHls: Boolean = true,
+) {
     /** No free connection left for a probe. */
     val saturated: Boolean get() = activeConnections >= maxConnections
 }
@@ -74,6 +79,10 @@ class ChannelHealthScanner internal constructor(
         runtime.map { it[providerId] ?: ChannelHealthScanState() }.distinctUntilChanged(),
         results.observe(providerId).map { it.lastFinishedAt }.distinctUntilChanged(),
     ) { state, lastFinishedAt -> state.copy(lastFinishedAt = lastFinishedAt) }
+
+    /** False when the account says it does not serve HLS (m3u8), which is the only format the probe uses. */
+    internal suspend fun allowsHls(providerId: Long, config: XtreamConfig): Boolean =
+        readAccount(providerId, config, previous = null).allowsHls
 
     /** Shows the scan as running as soon as it is queued, before the worker starts. */
     internal fun markQueued(providerId: Long) {
@@ -109,6 +118,7 @@ class ChannelHealthScanner internal constructor(
         setState(providerId) { ChannelHealthScanState(running = true, total = channels.size) }
         try {
             var account = readAccount(providerId, config, previous = null)
+            if (!account.allowsHls) return false
             var unclearInARow = 0
             var backoffsInARow = 0
             for (channel in channels) {
@@ -210,6 +220,8 @@ class ChannelHealthScanner internal constructor(
             AccountLimits(
                 maxConnections = info.maxConnections.trim().toIntOrNull()?.takeIf { it > 0 } ?: 1,
                 activeConnections = info.activeConnections.trim().toIntOrNull()?.takeIf { it >= 0 } ?: 0,
+                allowsHls = info.allowedOutputFormats.isEmpty() ||
+                    info.allowedOutputFormats.any { it.trim().equals("m3u8", ignoreCase = true) },
             )
         } catch (cancelled: CancellationException) {
             throw cancelled

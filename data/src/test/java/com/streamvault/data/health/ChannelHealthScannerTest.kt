@@ -325,6 +325,22 @@ class ChannelHealthScannerTest {
     }
 
     @Test
+    fun `a scan does not run when the account stopped offering m3u8`() = runTest {
+        givenChannels(channelEntity(1L))
+        whenever(xtreamApi.authenticate(any(), any())).thenReturn(
+            XtreamAuthResponse(
+                userInfo = XtreamUserInfo(auth = 1, allowedOutputFormats = listOf("ts")),
+                serverInfo = XtreamServerInfo(),
+            )
+        )
+
+        assertThat(scanner.run(TEST_PROVIDER_ID, null, 0L)).isFalse()
+
+        verifyNoInteractions(probe)
+        assertThat(scanner.observeState(TEST_PROVIDER_ID).first().lastFinishedAt).isNull()
+    }
+
+    @Test
     fun `a provider that is gone ends the scan without running`() = runTest {
         whenever(snapshots.getSnapshot(TEST_PROVIDER_ID)).thenReturn(null)
 
