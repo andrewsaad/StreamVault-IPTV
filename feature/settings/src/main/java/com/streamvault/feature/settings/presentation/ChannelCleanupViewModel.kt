@@ -19,6 +19,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -132,6 +133,11 @@ class ChannelCleanupViewModel @Inject constructor(
     }
     private val groups = providerId.flatMapLatest { id ->
         if (id == null) flowOf(emptyList()) else repository.observeSuggestions(id)
+    }.onEach { suggestions ->
+        // Drop ids that are no longer suggested from the stored selection too, so a channel that
+        // comes back later does not return already ticked.
+        val present = suggestions.mapTo(HashSet()) { it.channel.id }
+        selected.update { current -> if (present.containsAll(current)) current else current.filterTo(HashSet()) { it in present } }
     }
 
     val uiState: StateFlow<ChannelCleanupUiState> = combine(

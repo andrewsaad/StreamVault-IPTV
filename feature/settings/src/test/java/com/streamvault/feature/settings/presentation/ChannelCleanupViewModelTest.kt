@@ -187,6 +187,23 @@ class ChannelCleanupViewModelTest {
     }
 
     @Test
+    fun `a channel that disappears and comes back is not selected again`() {
+        val vm = viewModel(*sample)
+        vm.toggleChannel(2L)
+        vm.toggleChannel(4L)
+
+        repository.suggestions.value = repository.suggestions.value.filter { it.channel.id != 2L }
+        assertThat(vm.uiState.value.selectedIds).containsExactly(4L)
+
+        repository.suggestions.value = sample.toList()
+        assertThat(vm.uiState.value.selectedIds).containsExactly(4L)
+
+        vm.toggleChannel(4L)
+        vm.requestHide()
+        assertThat(vm.uiState.value.showConfirm).isFalse()
+    }
+
+    @Test
     fun `binding another provider clears the selection`() {
         val vm = viewModel(*sample)
         vm.toggleAll()
