@@ -28,6 +28,25 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.withContext
 
+/** Fewest OK answers in the retry pass that show the provider was serving while it refused other channels. */
+private const val MIN_RETRY_PASS_OK = 3
+
+/** OK answers in the main pass that make a healthy provider certain enough for a small retry queue. */
+private const val MIN_MAIN_PASS_OK = 50
+
+/**
+ * Whether channels the provider refused with a 5xx on both passes count as EMPTY. A 5xx says nothing about the
+ * channel while the provider itself is struggling, so it needs proof of a healthy provider: either the retry
+ * pass alone ([retryOk] at least 3 and fewer than half of its [retryAttempts] refused), or a main pass with at
+ * least 50 OK answers plus one OK answer in the retry pass. [refused] is the number of repeated 5xx answers.
+ */
+internal fun shouldStoreRefusals(mainOk: Int, retryOk: Int, retryAttempts: Int, refused: Int): Boolean {
+    if (refused <= 0) return false
+    val retryPassHealthy = retryOk >= MIN_RETRY_PASS_OK && refused.toLong() * 2 < retryAttempts
+    val mainPassHealthy = mainOk >= MIN_MAIN_PASS_OK && retryOk >= 1
+    return retryPassHealthy || mainPassHealthy
+}
+
 internal data class ChannelHealthTimings(
     val pauseBetweenChannelsMs: Long = 6_000L,
     val backoffMs: Long = 5L * 60_000L,
@@ -108,6 +127,8 @@ class ChannelHealthScanner internal constructor(
      * had settled are skipped, so a scan the system stopped and WorkManager restarted carries on.
      * Channels the provider could not answer for (UNCLEAR) are probed once more after the main pass,
      * following one provider backoff; the scan only counts as finished after that retry pass.
+     * Channels the provider refused with a 5xx on both passes are only stored as EMPTY when
+     * [shouldStoreRefusals] finds the provider healthy; otherwise they stay unchecked.
      * Returns false when the scan could not run or gave up; the reason is never the login. A scan that
      * gave up is flagged in its state ([ChannelHealthScanState.gaveUp]) so the user can be told.
      */
@@ -131,8 +152,15 @@ class ChannelHealthScanner internal constructor(
         // Of those, the ones whose answer was an HTTP 5xx (not a timeout or IO error).
         val serverErrorIds = sortedSetOf<Long>()
         resume?.serverErrorIds?.let { serverErrorIds.addAll(it) }
-        // Retried channels the provider refused with a 5xx again: they count as EMPTY once settled.
-        val refusedIds = HashSet<Long>()
+        // Retried channels the provider refused with a 5xx again, by channel id. They are held back until the
+        // retry pass is over and only count as EMPTY if [shouldStoreRefusals] says the provider was healthy.
+        val refused = LinkedHashMap<Long, ChannelProbeOutcome>()
+        // OK answers in the main pass, and OK answers, attempts and repeated 5xx answers in the retry pass.
+        // They only cover the part of the scan this run saw, so a restarted scan judges more strictly.
+        var mainOk = 0
+        var retryOk = 0
+        var retryAttempts = 0
+        var retryRefusals = 0
         var retrying = resume?.retryAfterChannelId != null
         var queue = if (retrying) channels.filter { it.id in retryIds } else channels
         // Ids up to this one are already done in the current pass (null: none).
@@ -145,7 +173,9 @@ class ChannelHealthScanner internal constructor(
         var gaveUp = false
         // Channels up to this id are settled; a held-back streak is not, so it is probed again after a restart.
         fun resumePoint(): ChannelHealthResume {
-            val heldBack = streak.firstOrNull()?.let { it.channelId - 1 }
+            // Held-back refusals are not stored yet either, so they are probed again after a restart.
+            val heldBack = listOfNotNull(streak.firstOrNull(), refused.values.firstOrNull())
+                .minOfOrNull { it.channelId }?.let { it - 1 }
             val retryAfter = retryAfterId
             if (retryAfter != null) {
                 return ChannelHealthResume(
@@ -164,10 +194,8 @@ class ChannelHealthScanner internal constructor(
                 serverErrorIds = serverErrorIds.filter { it <= point },
             )
         }
-        // A channel the provider refused with a 5xx on both passes counts as EMPTY; any other UNCLEAR stays unstored.
-        fun settled(outcomes: List<ChannelProbeOutcome>) = outcomes.map {
-            if (it.channelId in refusedIds) it.copy(status = ChannelHealthStatus.EMPTY) else it
-        }
+        // Refused channels are decided once, at the end of the retry pass; every other outcome is kept as it is.
+        fun settled(outcomes: List<ChannelProbeOutcome>) = outcomes.filterNot { it.channelId in refused }
         var saved = resume
         suspend fun flush() {
             val point = resumePoint()
@@ -217,10 +245,18 @@ class ChannelHealthScanner internal constructor(
                             if (result.serverError) serverErrorIds += channel.id
                         }
                     }
-                    if (retrying && status == ChannelHealthStatus.UNCLEAR && result.serverError &&
-                        channel.id in serverErrorIds
-                    ) {
-                        refusedIds += channel.id
+                    if (retrying) {
+                        retryAttempts++
+                        if (status == ChannelHealthStatus.OK) {
+                            retryOk++
+                        } else if (status == ChannelHealthStatus.UNCLEAR && result.serverError &&
+                            channel.id in serverErrorIds
+                        ) {
+                            refused[channel.id] = outcome
+                            retryRefusals++
+                        }
+                    } else if (status == ChannelHealthStatus.OK) {
+                        mainOk++
                     }
                     scanned++
                     setState(providerId) { it.copy(scanned = scanned) }
@@ -238,6 +274,7 @@ class ChannelHealthScanner internal constructor(
                     if (pending.size >= timings.flushEvery) flush()
                     if (streak.size >= timings.massFailureStreak) {
                         // Everything failing at once points at the provider or the account, not the channels.
+                        streak.forEach { refused.remove(it.channelId) }
                         streak.clear()
                         if (++backoffsInARow >= timings.maxBackoffsInARow) {
                             gaveUp = true
@@ -276,14 +313,17 @@ class ChannelHealthScanner internal constructor(
                 total = channels.size + queue.size
                 setState(providerId) { it.copy(total = total) }
             }
+            if (shouldStoreRefusals(mainOk, retryOk, retryAttempts, retryRefusals)) {
+                pending += refused.values.map { it.copy(status = ChannelHealthStatus.EMPTY) }
+            }
             finished = true
             return true
         } catch (cancelled: CancellationException) {
             throw cancelled
         } finally {
             withContext(NonCancellable) {
-                // A scan that gave up saw a provider in trouble, so its 5xx answers say nothing about the channels.
-                pending += if (gaveUp) streak.filterNot { it.channelId in refusedIds } else settled(streak)
+                // A scan that gave up saw a provider in trouble, so its 5xx answers are never stored.
+                pending += settled(streak)
                 streak.clear()
                 flush()
                 if (finished) results.markFinished(providerId)
