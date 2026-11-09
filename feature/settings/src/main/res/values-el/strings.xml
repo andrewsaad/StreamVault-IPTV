@@ -1064,4 +1064,17 @@
     <string name="channel_cleanup_confirm_button">Απόκρυψη</string>
     <string name="channel_cleanup_error_unsupported">Αυτός ο τύπος παρόχου δεν μπορεί να σαρωθεί</string>
     <string name="channel_cleanup_close">Κλείσιμο</string>
+    <string name="settings_history_clear_failed">Δεν ήταν δυνατή η εκκαθάριση του ιστορικού</string>
+    <string name="settings_category_unhidden">Το στοιχείο %1$s δεν είναι πλέον κρυφό</string>
+    <string name="settings_xtream_text_decoding_changed">Η αποκωδικοποίηση κειμένου Xtream άλλαξε. Ανανεώστε κάθε πάροχο Xtream μία φορά για να εισαχθούν ξανά οι τίτλοι.</string>
+    <string name="settings_provider_activate_not_found">Δεν ήταν δυνατή η ενεργοποίηση του παρόχου: δεν βρέθηκε</string>
+    <string name="settings_provider_activate_failed">Δεν ήταν δυνατή η ενεργοποίηση του παρόχου</string>
+    <string name="settings_provider_connected">Συνδεθήκατε στον πάροχο %1$s</string>
+    <string name="settings_combined_activate_not_found">Δεν ήταν δυνατή η ενεργοποίηση της συνδυασμένης πηγής: δεν βρέθηκε</string>
+    <string name="settings_combined_activate_needs_playlist">Προσθέστε τουλάχιστον μία λίστα αναπαραγωγής σε αυτή τη συνδυασμένη πηγή πριν την ενεργοποιήσετε</string>
+    <string name="settings_combined_activate_needs_enabled">Ενεργοποιήστε τουλάχιστον μία λίστα αναπαραγωγής σε αυτή τη συνδυασμένη πηγή πριν την ενεργοποιήσετε</string>
+    <string name="settings_combined_activated">Η συνδυασμένη πηγή M3U ενεργοποιήθηκε</string>
+    <string name="settings_combined_activate_failed">Δεν ήταν δυνατή η ενεργοποίηση της συνδυασμένης πηγής</string>
+    <string name="settings_combined_remove_last_active">Δεν είναι δυνατή η αφαίρεση της τελευταίας ενεργής λίστας αναπαραγωγής από την τρέχουσα ζωντανή πηγή</string>
+    <string name="settings_combined_disable_last_active">Δεν είναι δυνατή η απενεργοποίηση της τελευταίας ενεργής λίστας αναπαραγωγής στην τρέχουσα ζωντανή πηγή</string>
 </resources>

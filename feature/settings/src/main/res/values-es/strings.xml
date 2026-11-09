@@ -1060,4 +1060,17 @@
     <string name="channel_cleanup_confirm_button">Ocultar</string>
     <string name="channel_cleanup_error_unsupported">Este tipo de proveedor no se puede analizar</string>
     <string name="channel_cleanup_close">Cerrar</string>
+    <string name="settings_history_clear_failed">No se pudo borrar el historial</string>
+    <string name="settings_category_unhidden">%1$s ya no está oculto</string>
+    <string name="settings_xtream_text_decoding_changed">Ha cambiado la decodificación de texto de Xtream. Actualiza cada proveedor Xtream una vez para volver a importar los títulos.</string>
+    <string name="settings_provider_activate_not_found">No se pudo activar el proveedor: no se encontró</string>
+    <string name="settings_provider_activate_failed">No se pudo activar el proveedor</string>
+    <string name="settings_provider_connected">Conectado a %1$s</string>
+    <string name="settings_combined_activate_not_found">No se pudo activar la fuente combinada: no se encontró</string>
+    <string name="settings_combined_activate_needs_playlist">Añade al menos una lista de reproducción a esta fuente combinada antes de activarla</string>
+    <string name="settings_combined_activate_needs_enabled">Activa al menos una lista de reproducción en esta fuente combinada antes de activarla</string>
+    <string name="settings_combined_activated">Fuente M3U combinada activada</string>
+    <string name="settings_combined_activate_failed">No se pudo activar la fuente combinada</string>
+    <string name="settings_combined_remove_last_active">No se puede quitar la última lista de reproducción activa de la fuente en directo actual</string>
+    <string name="settings_combined_disable_last_active">No se puede desactivar la última lista de reproducción activa de la fuente en directo actual</string>
 </resources>

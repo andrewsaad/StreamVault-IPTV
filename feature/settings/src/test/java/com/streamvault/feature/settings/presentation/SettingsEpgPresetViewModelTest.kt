@@ -416,7 +416,7 @@ class SettingsEpgPresetViewModelTest {
     }
 
     @Test
-    fun `an unexpected guide failure with a message still shows that message`() = runTest {
+    fun `an unexpected guide failure with a message shows only the localized text`() = runTest {
         val repository: EpgSourceRepository = mock()
         whenever(repository.getProviderIdsForSource(7L)).thenThrow(RuntimeException("disk full"))
         val uiState = MutableStateFlow(SettingsUiState())
@@ -427,7 +427,8 @@ class SettingsEpgPresetViewModelTest {
         actions.deleteEpgSource(this, 7L)
         advanceUntilIdle()
 
-        assertThat(uiState.value.userMessage).isEqualTo("disk full")
+        assertThat(uiState.value.userMessage)
+            .isEqualTo("notice:${com.streamvault.feature.settings.R.string.epg_error_delete_source_failed}")
     }
 
     @Test

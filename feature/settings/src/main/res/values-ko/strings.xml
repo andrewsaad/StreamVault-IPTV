@@ -1060,4 +1060,17 @@
     <string name="channel_cleanup_confirm_button">숨기기</string>
     <string name="channel_cleanup_error_unsupported">이 제공업체 유형은 검사할 수 없습니다</string>
     <string name="channel_cleanup_close">닫기</string>
+    <string name="settings_history_clear_failed">기록을 지울 수 없습니다</string>
+    <string name="settings_category_unhidden">%1$s 숨김이 해제되었습니다</string>
+    <string name="settings_xtream_text_decoding_changed">Xtream 텍스트 디코딩이 변경되었습니다. 제목을 다시 가져오려면 각 Xtream 제공자를 한 번 새로고침하세요.</string>
+    <string name="settings_provider_activate_not_found">제공자를 활성화할 수 없습니다: 찾을 수 없습니다</string>
+    <string name="settings_provider_activate_failed">제공자를 활성화할 수 없습니다</string>
+    <string name="settings_provider_connected">%1$s에 연결되었습니다</string>
+    <string name="settings_combined_activate_not_found">통합 소스를 활성화할 수 없습니다: 찾을 수 없습니다</string>
+    <string name="settings_combined_activate_needs_playlist">활성화하기 전에 이 통합 소스에 재생목록을 하나 이상 추가하세요</string>
+    <string name="settings_combined_activate_needs_enabled">활성화하기 전에 이 통합 소스에서 재생목록을 하나 이상 사용 설정하세요</string>
+    <string name="settings_combined_activated">통합 M3U 소스가 활성화되었습니다</string>
+    <string name="settings_combined_activate_failed">통합 소스를 활성화할 수 없습니다</string>
+    <string name="settings_combined_remove_last_active">현재 라이브 소스에서 마지막 활성 재생목록을 제거할 수 없습니다</string>
+    <string name="settings_combined_disable_last_active">현재 라이브 소스의 마지막 활성 재생목록을 사용 중지할 수 없습니다</string>
 </resources>

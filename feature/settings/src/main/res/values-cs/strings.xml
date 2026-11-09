@@ -1070,4 +1070,17 @@
     <string name="channel_cleanup_confirm_button">Skrýt</string>
     <string name="channel_cleanup_error_unsupported">Tento typ poskytovatele nelze zkontrolovat</string>
     <string name="channel_cleanup_close">Zavřít</string>
+    <string name="settings_history_clear_failed">Historii se nepodařilo vymazat</string>
+    <string name="settings_category_unhidden">Položka %1$s už není skrytá</string>
+    <string name="settings_xtream_text_decoding_changed">Dekódování textu Xtream se změnilo. Aktualizujte každého poskytovatele Xtream jednou, aby se názvy znovu naimportovaly.</string>
+    <string name="settings_provider_activate_not_found">Poskytovatele se nepodařilo aktivovat: nebyl nalezen</string>
+    <string name="settings_provider_activate_failed">Poskytovatele se nepodařilo aktivovat</string>
+    <string name="settings_provider_connected">Připojeno k poskytovateli %1$s</string>
+    <string name="settings_combined_activate_not_found">Kombinovaný zdroj se nepodařilo aktivovat: nebyl nalezen</string>
+    <string name="settings_combined_activate_needs_playlist">Před aktivací přidejte do tohoto kombinovaného zdroje alespoň jeden playlist</string>
+    <string name="settings_combined_activate_needs_enabled">Před aktivací povolte v tomto kombinovaném zdroji alespoň jeden playlist</string>
+    <string name="settings_combined_activated">Kombinovaný zdroj M3U byl aktivován</string>
+    <string name="settings_combined_activate_failed">Kombinovaný zdroj se nepodařilo aktivovat</string>
+    <string name="settings_combined_remove_last_active">Poslední aktivní playlist nelze odebrat z aktuálního živého zdroje</string>
+    <string name="settings_combined_disable_last_active">Poslední aktivní playlist nelze v aktuálním živém zdroji zakázat</string>
 </resources>

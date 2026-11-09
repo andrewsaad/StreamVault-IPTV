@@ -1060,4 +1060,17 @@
     <string name="channel_cleanup_confirm_button">Ausblenden</string>
     <string name="channel_cleanup_error_unsupported">Dieser Anbietertyp kann nicht gescannt werden</string>
     <string name="channel_cleanup_close">Schließen</string>
+    <string name="settings_history_clear_failed">Der Verlauf konnte nicht gelöscht werden</string>
+    <string name="settings_category_unhidden">%1$s ist nicht mehr ausgeblendet</string>
+    <string name="settings_xtream_text_decoding_changed">Die Xtream-Textdecodierung wurde geändert. Aktualisieren Sie jeden Xtream-Anbieter einmal, um die Titel neu zu importieren.</string>
+    <string name="settings_provider_activate_not_found">Der Anbieter konnte nicht aktiviert werden: Er wurde nicht gefunden</string>
+    <string name="settings_provider_activate_failed">Der Anbieter konnte nicht aktiviert werden</string>
+    <string name="settings_provider_connected">Mit %1$s verbunden</string>
+    <string name="settings_combined_activate_not_found">Die kombinierte Quelle konnte nicht aktiviert werden: Sie wurde nicht gefunden</string>
+    <string name="settings_combined_activate_needs_playlist">Fügen Sie dieser kombinierten Quelle mindestens eine Playlist hinzu, bevor Sie sie aktivieren</string>
+    <string name="settings_combined_activate_needs_enabled">Aktivieren Sie mindestens eine Playlist in dieser kombinierten Quelle, bevor Sie sie aktivieren</string>
+    <string name="settings_combined_activated">Kombinierte M3U-Quelle aktiviert</string>
+    <string name="settings_combined_activate_failed">Die kombinierte Quelle konnte nicht aktiviert werden</string>
+    <string name="settings_combined_remove_last_active">Die letzte aktive Playlist kann nicht aus der aktuellen Live-Quelle entfernt werden</string>
+    <string name="settings_combined_disable_last_active">Die letzte aktive Playlist in der aktuellen Live-Quelle kann nicht deaktiviert werden</string>
 </resources>

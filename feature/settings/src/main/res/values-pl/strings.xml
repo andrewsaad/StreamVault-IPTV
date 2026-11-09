@@ -1070,4 +1070,17 @@
     <string name="channel_cleanup_confirm_button">Ukryj</string>
     <string name="channel_cleanup_error_unsupported">Tego typu dostawcy nie można skanować</string>
     <string name="channel_cleanup_close">Zamknij</string>
+    <string name="settings_history_clear_failed">Nie udało się wyczyścić historii</string>
+    <string name="settings_category_unhidden">Element %1$s nie jest już ukryty</string>
+    <string name="settings_xtream_text_decoding_changed">Zmieniło się dekodowanie tekstu Xtream. Odśwież każdego dostawcę Xtream raz, aby ponownie zaimportować tytuły.</string>
+    <string name="settings_provider_activate_not_found">Nie udało się aktywować dostawcy: nie znaleziono go</string>
+    <string name="settings_provider_activate_failed">Nie udało się aktywować dostawcy</string>
+    <string name="settings_provider_connected">Połączono z dostawcą %1$s</string>
+    <string name="settings_combined_activate_not_found">Nie udało się aktywować połączonego źródła: nie znaleziono go</string>
+    <string name="settings_combined_activate_needs_playlist">Dodaj co najmniej jedną playlistę do tego połączonego źródła przed jego aktywacją</string>
+    <string name="settings_combined_activate_needs_enabled">Włącz co najmniej jedną playlistę w tym połączonym źródle przed jego aktywacją</string>
+    <string name="settings_combined_activated">Połączone źródło M3U zostało aktywowane</string>
+    <string name="settings_combined_activate_failed">Nie udało się aktywować połączonego źródła</string>
+    <string name="settings_combined_remove_last_active">Nie można usunąć ostatniej aktywnej playlisty z bieżącego źródła na żywo</string>
+    <string name="settings_combined_disable_last_active">Nie można wyłączyć ostatniej aktywnej playlisty w bieżącym źródle na żywo</string>
 </resources>

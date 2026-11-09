@@ -1062,4 +1062,17 @@
     <string name="channel_cleanup_confirm_button">پنهان کردن</string>
     <string name="channel_cleanup_error_unsupported">این نوع ارائه‌دهنده قابل اسکن نیست</string>
     <string name="channel_cleanup_close">بستن</string>
+    <string name="settings_history_clear_failed">پاک کردن سابقه ممکن نشد</string>
+    <string name="settings_category_unhidden">%1$s دیگر پنهان نیست</string>
+    <string name="settings_xtream_text_decoding_changed">رمزگشایی متن Xtream تغییر کرد. برای وارد کردن دوباره عنوان‌ها، هر ارائه‌دهنده Xtream را یک بار تازه‌سازی کنید.</string>
+    <string name="settings_provider_activate_not_found">فعال‌سازی ارائه‌دهنده ممکن نشد: پیدا نشد</string>
+    <string name="settings_provider_activate_failed">فعال‌سازی ارائه‌دهنده ممکن نشد</string>
+    <string name="settings_provider_connected">به %1$s متصل شد</string>
+    <string name="settings_combined_activate_not_found">فعال‌سازی منبع ترکیبی ممکن نشد: پیدا نشد</string>
+    <string name="settings_combined_activate_needs_playlist">پیش از فعال‌سازی، دست‌کم یک فهرست پخش به این منبع ترکیبی اضافه کنید</string>
+    <string name="settings_combined_activate_needs_enabled">پیش از فعال‌سازی، دست‌کم یک فهرست پخش را در این منبع ترکیبی فعال کنید</string>
+    <string name="settings_combined_activated">منبع ترکیبی M3U فعال شد</string>
+    <string name="settings_combined_activate_failed">فعال‌سازی منبع ترکیبی ممکن نشد</string>
+    <string name="settings_combined_remove_last_active">آخرین فهرست پخش فعال را نمی‌توان از منبع زنده فعلی حذف کرد</string>
+    <string name="settings_combined_disable_last_active">آخرین فهرست پخش فعال را در منبع زنده فعلی نمی‌توان غیرفعال کرد</string>
 </resources>

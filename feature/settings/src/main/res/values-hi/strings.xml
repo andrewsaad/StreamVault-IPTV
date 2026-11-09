@@ -1062,4 +1062,17 @@
     <string name="channel_cleanup_confirm_button">छिपाएँ</string>
     <string name="channel_cleanup_error_unsupported">इस प्रकार के प्रदाता को स्कैन नहीं किया जा सकता</string>
     <string name="channel_cleanup_close">बंद करें</string>
+    <string name="settings_history_clear_failed">इतिहास साफ़ नहीं किया जा सका</string>
+    <string name="settings_category_unhidden">%1$s अब छिपा हुआ नहीं है</string>
+    <string name="settings_xtream_text_decoding_changed">Xtream टेक्स्ट डिकोडिंग बदल गई है। शीर्षक दोबारा आयात करने के लिए हर Xtream प्रदाता को एक बार रीफ़्रेश करें।</string>
+    <string name="settings_provider_activate_not_found">प्रदाता सक्रिय नहीं किया जा सका: वह नहीं मिला</string>
+    <string name="settings_provider_activate_failed">प्रदाता सक्रिय नहीं किया जा सका</string>
+    <string name="settings_provider_connected">%1$s से कनेक्ट हो गया</string>
+    <string name="settings_combined_activate_not_found">संयुक्त स्रोत सक्रिय नहीं किया जा सका: वह नहीं मिला</string>
+    <string name="settings_combined_activate_needs_playlist">सक्रिय करने से पहले इस संयुक्त स्रोत में कम से कम एक प्लेलिस्ट जोड़ें</string>
+    <string name="settings_combined_activate_needs_enabled">सक्रिय करने से पहले इस संयुक्त स्रोत में कम से कम एक प्लेलिस्ट चालू करें</string>
+    <string name="settings_combined_activated">संयुक्त M3U स्रोत सक्रिय किया गया</string>
+    <string name="settings_combined_activate_failed">संयुक्त स्रोत सक्रिय नहीं किया जा सका</string>
+    <string name="settings_combined_remove_last_active">मौजूदा लाइव स्रोत से अंतिम सक्रिय प्लेलिस्ट नहीं हटाई जा सकती</string>
+    <string name="settings_combined_disable_last_active">मौजूदा लाइव स्रोत में अंतिम सक्रिय प्लेलिस्ट बंद नहीं की जा सकती</string>
 </resources>

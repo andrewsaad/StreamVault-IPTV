@@ -1061,4 +1061,17 @@
     <string name="channel_cleanup_confirm_button">Ẩn</string>
     <string name="channel_cleanup_error_unsupported">Không thể quét loại nhà cung cấp này</string>
     <string name="channel_cleanup_close">Đóng</string>
+    <string name="settings_history_clear_failed">Không thể xóa lịch sử</string>
+    <string name="settings_category_unhidden">%1$s không còn bị ẩn</string>
+    <string name="settings_xtream_text_decoding_changed">Cách giải mã văn bản Xtream đã thay đổi. Hãy làm mới từng nhà cung cấp Xtream một lần để nhập lại tiêu đề.</string>
+    <string name="settings_provider_activate_not_found">Không thể kích hoạt nhà cung cấp: không tìm thấy</string>
+    <string name="settings_provider_activate_failed">Không thể kích hoạt nhà cung cấp</string>
+    <string name="settings_provider_connected">Đã kết nối với %1$s</string>
+    <string name="settings_combined_activate_not_found">Không thể kích hoạt nguồn kết hợp: không tìm thấy</string>
+    <string name="settings_combined_activate_needs_playlist">Hãy thêm ít nhất một danh sách phát vào nguồn kết hợp này trước khi kích hoạt</string>
+    <string name="settings_combined_activate_needs_enabled">Hãy bật ít nhất một danh sách phát trong nguồn kết hợp này trước khi kích hoạt</string>
+    <string name="settings_combined_activated">Đã kích hoạt nguồn M3U kết hợp</string>
+    <string name="settings_combined_activate_failed">Không thể kích hoạt nguồn kết hợp</string>
+    <string name="settings_combined_remove_last_active">Không thể gỡ danh sách phát đang hoạt động cuối cùng khỏi nguồn trực tiếp hiện tại</string>
+    <string name="settings_combined_disable_last_active">Không thể tắt danh sách phát đang hoạt động cuối cùng trong nguồn trực tiếp hiện tại</string>
 </resources>

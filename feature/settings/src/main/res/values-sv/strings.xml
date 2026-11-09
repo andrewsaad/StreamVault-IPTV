@@ -1064,4 +1064,17 @@
     <string name="channel_cleanup_confirm_button">Dölj</string>
     <string name="channel_cleanup_error_unsupported">Den här leverantörstypen kan inte skannas</string>
     <string name="channel_cleanup_close">Stäng</string>
+    <string name="settings_history_clear_failed">Det gick inte att rensa historiken</string>
+    <string name="settings_category_unhidden">%1$s är inte längre dold</string>
+    <string name="settings_xtream_text_decoding_changed">Xtream-textavkodningen har ändrats. Uppdatera varje Xtream-leverantör en gång för att importera titlarna igen.</string>
+    <string name="settings_provider_activate_not_found">Det gick inte att aktivera leverantören: den hittades inte</string>
+    <string name="settings_provider_activate_failed">Det gick inte att aktivera leverantören</string>
+    <string name="settings_provider_connected">Ansluten till %1$s</string>
+    <string name="settings_combined_activate_not_found">Det gick inte att aktivera den kombinerade källan: den hittades inte</string>
+    <string name="settings_combined_activate_needs_playlist">Lägg till minst en spellista i den här kombinerade källan innan du aktiverar den</string>
+    <string name="settings_combined_activate_needs_enabled">Aktivera minst en spellista i den här kombinerade källan innan du aktiverar den</string>
+    <string name="settings_combined_activated">Kombinerad M3U-källa aktiverad</string>
+    <string name="settings_combined_activate_failed">Det gick inte att aktivera den kombinerade källan</string>
+    <string name="settings_combined_remove_last_active">Den sista aktiva spellistan kan inte tas bort från den aktuella livekällan</string>
+    <string name="settings_combined_disable_last_active">Den sista aktiva spellistan kan inte inaktiveras i den aktuella livekällan</string>
 </resources>

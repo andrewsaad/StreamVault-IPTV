@@ -1065,4 +1065,17 @@
     <string name="channel_cleanup_confirm_button">Sakrij</string>
     <string name="channel_cleanup_error_unsupported">Ova vrsta pružatelja ne može se skenirati</string>
     <string name="channel_cleanup_close">Zatvori</string>
+    <string name="settings_history_clear_failed">Povijest nije moguće izbrisati</string>
+    <string name="settings_category_unhidden">%1$s više nije skriven</string>
+    <string name="settings_xtream_text_decoding_changed">Dekodiranje teksta Xtream promijenjeno je. Osvježite svakog Xtream pružatelja jednom kako bi se naslovi ponovno uvezli.</string>
+    <string name="settings_provider_activate_not_found">Pružatelja nije moguće aktivirati: nije pronađen</string>
+    <string name="settings_provider_activate_failed">Pružatelja nije moguće aktivirati</string>
+    <string name="settings_provider_connected">Povezano s pružateljem %1$s</string>
+    <string name="settings_combined_activate_not_found">Kombinirani izvor nije moguće aktivirati: nije pronađen</string>
+    <string name="settings_combined_activate_needs_playlist">Dodajte barem jedan popis za reprodukciju ovom kombiniranom izvoru prije aktiviranja</string>
+    <string name="settings_combined_activate_needs_enabled">Omogućite barem jedan popis za reprodukciju u ovom kombiniranom izvoru prije aktiviranja</string>
+    <string name="settings_combined_activated">Kombinirani M3U izvor je aktiviran</string>
+    <string name="settings_combined_activate_failed">Kombinirani izvor nije moguće aktivirati</string>
+    <string name="settings_combined_remove_last_active">Posljednji aktivni popis za reprodukciju nije moguće ukloniti iz trenutačnog izvora uživo</string>
+    <string name="settings_combined_disable_last_active">Posljednji aktivni popis za reprodukciju nije moguće onemogućiti u trenutačnom izvoru uživo</string>
 </resources>

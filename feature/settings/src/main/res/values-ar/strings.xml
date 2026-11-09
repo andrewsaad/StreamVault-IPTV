@@ -1076,4 +1076,17 @@
     <string name="channel_cleanup_confirm_button">إخفاء</string>
     <string name="channel_cleanup_error_unsupported">لا يمكن فحص هذا النوع من المزوّدين</string>
     <string name="channel_cleanup_close">إغلاق</string>
+    <string name="settings_history_clear_failed">تعذّر مسح السجل</string>
+    <string name="settings_category_unhidden">لم يعد %1$s مخفيًا</string>
+    <string name="settings_xtream_text_decoding_changed">تغيّر فك ترميز نص Xtream. حدّث كل مزوّد Xtream مرة واحدة لإعادة استيراد العناوين.</string>
+    <string name="settings_provider_activate_not_found">تعذّر تفعيل المزوّد: لم يتم العثور عليه</string>
+    <string name="settings_provider_activate_failed">تعذّر تفعيل المزوّد</string>
+    <string name="settings_provider_connected">تم الاتصال بـ %1$s</string>
+    <string name="settings_combined_activate_not_found">تعذّر تفعيل المصدر المدمج: لم يتم العثور عليه</string>
+    <string name="settings_combined_activate_needs_playlist">أضف قائمة تشغيل واحدة على الأقل إلى هذا المصدر المدمج قبل تفعيله</string>
+    <string name="settings_combined_activate_needs_enabled">فعّل قائمة تشغيل واحدة على الأقل في هذا المصدر المدمج قبل تفعيله</string>
+    <string name="settings_combined_activated">تم تفعيل مصدر M3U المدمج</string>
+    <string name="settings_combined_activate_failed">تعذّر تفعيل المصدر المدمج</string>
+    <string name="settings_combined_remove_last_active">لا يمكن إزالة آخر قائمة تشغيل نشطة من المصدر المباشر الحالي</string>
+    <string name="settings_combined_disable_last_active">لا يمكن تعطيل آخر قائمة تشغيل نشطة في المصدر المباشر الحالي</string>
 </resources>

@@ -1062,4 +1062,17 @@
     <string name="channel_cleanup_confirm_button">非表示にする</string>
     <string name="channel_cleanup_error_unsupported">この種類のプロバイダーはスキャンできません</string>
     <string name="channel_cleanup_close">閉じる</string>
+    <string name="settings_history_clear_failed">履歴を消去できませんでした</string>
+    <string name="settings_category_unhidden">%1$s の非表示を解除しました</string>
+    <string name="settings_xtream_text_decoding_changed">Xtream のテキストデコードが変更されました。タイトルを再インポートするには、各 Xtream プロバイダーを一度更新してください。</string>
+    <string name="settings_provider_activate_not_found">プロバイダーを有効にできませんでした: 見つかりません</string>
+    <string name="settings_provider_activate_failed">プロバイダーを有効にできませんでした</string>
+    <string name="settings_provider_connected">%1$s に接続しました</string>
+    <string name="settings_combined_activate_not_found">結合ソースを有効にできませんでした: 見つかりません</string>
+    <string name="settings_combined_activate_needs_playlist">有効にする前に、この結合ソースに再生リストを 1 つ以上追加してください</string>
+    <string name="settings_combined_activate_needs_enabled">有効にする前に、この結合ソースで再生リストを 1 つ以上オンにしてください</string>
+    <string name="settings_combined_activated">結合 M3U ソースを有効にしました</string>
+    <string name="settings_combined_activate_failed">結合ソースを有効にできませんでした</string>
+    <string name="settings_combined_remove_last_active">現在のライブソースから最後の有効な再生リストを削除することはできません</string>
+    <string name="settings_combined_disable_last_active">現在のライブソースの最後の有効な再生リストを無効にすることはできません</string>
 </resources>

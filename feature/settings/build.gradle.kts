@@ -38,6 +38,11 @@ android {
     buildFeatures {
         compose = true
     }
+
+    testOptions {
+        // Production code logs through android.util.Log; plain JVM tests need its stubs to return defaults.
+        unitTests.isReturnDefaultValues = true
+    }
 }
 
 kotlin {

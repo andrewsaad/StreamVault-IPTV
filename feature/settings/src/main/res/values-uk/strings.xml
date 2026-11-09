@@ -1070,4 +1070,17 @@
     <string name="channel_cleanup_confirm_button">Приховати</string>
     <string name="channel_cleanup_error_unsupported">Цей тип провайдера не можна перевірити</string>
     <string name="channel_cleanup_close">Закрити</string>
+    <string name="settings_history_clear_failed">Не вдалося очистити історію</string>
+    <string name="settings_category_unhidden">%1$s більше не приховано</string>
+    <string name="settings_xtream_text_decoding_changed">Декодування тексту Xtream змінилося. Оновіть кожного постачальника Xtream один раз, щоб повторно імпортувати назви.</string>
+    <string name="settings_provider_activate_not_found">Не вдалося активувати постачальника: його не знайдено</string>
+    <string name="settings_provider_activate_failed">Не вдалося активувати постачальника</string>
+    <string name="settings_provider_connected">Підключено до %1$s</string>
+    <string name="settings_combined_activate_not_found">Не вдалося активувати об’єднане джерело: його не знайдено</string>
+    <string name="settings_combined_activate_needs_playlist">Додайте принаймні один плейлист до цього об’єднаного джерела перед активацією</string>
+    <string name="settings_combined_activate_needs_enabled">Увімкніть принаймні один плейлист в цьому об’єднаному джерелі перед активацією</string>
+    <string name="settings_combined_activated">Об’єднане джерело M3U активовано</string>
+    <string name="settings_combined_activate_failed">Не вдалося активувати об’єднане джерело</string>
+    <string name="settings_combined_remove_last_active">Не можна видалити останній активний плейлист із поточного джерела прямого ефіру</string>
+    <string name="settings_combined_disable_last_active">Не можна вимкнути останній активний плейлист у поточному джерелі прямого ефіру</string>
 </resources>

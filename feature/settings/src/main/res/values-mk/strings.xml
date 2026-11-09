@@ -1062,4 +1062,17 @@
     <string name="channel_cleanup_confirm_button">Скриј</string>
     <string name="channel_cleanup_error_unsupported">Овој тип провајдер не може да се скенира</string>
     <string name="channel_cleanup_close">Затвори</string>
+    <string name="settings_history_clear_failed">Историјата не можеше да се избрише</string>
+    <string name="settings_category_unhidden">%1$s повеќе не е скриен</string>
+    <string name="settings_xtream_text_decoding_changed">Декодирањето на текстот на Xtream е променето. Освежете го секој Xtream провајдер еднаш за повторно да се увезат насловите.</string>
+    <string name="settings_provider_activate_not_found">Провајдерот не можеше да се активира: не е пронајден</string>
+    <string name="settings_provider_activate_failed">Провајдерот не можеше да се активира</string>
+    <string name="settings_provider_connected">Поврзано со %1$s</string>
+    <string name="settings_combined_activate_not_found">Комбинираниот извор не можеше да се активира: не е пронајден</string>
+    <string name="settings_combined_activate_needs_playlist">Додајте барем една плејлиста во овој комбиниран извор пред да го активирате</string>
+    <string name="settings_combined_activate_needs_enabled">Овозможете барем една плејлиста во овој комбиниран извор пред да го активирате</string>
+    <string name="settings_combined_activated">Комбинираниот M3U извор е активиран</string>
+    <string name="settings_combined_activate_failed">Комбинираниот извор не можеше да се активира</string>
+    <string name="settings_combined_remove_last_active">Последната активна плејлиста не може да се отстрани од тековниот извор во живо</string>
+    <string name="settings_combined_disable_last_active">Последната активна плејлиста не може да се оневозможи во тековниот извор во живо</string>
 </resources>

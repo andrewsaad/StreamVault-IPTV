@@ -1,5 +1,6 @@
 package com.streamvault.feature.settings.presentation
 
+import android.util.Log
 import androidx.annotation.StringRes
 import com.streamvault.domain.model.Result
 import com.streamvault.domain.model.XmltvTimezonePolicy
@@ -433,8 +434,8 @@ class SettingsEpgActions(
     }
 
     private fun showUnexpectedError(error: Exception, @StringRes fallbackRes: Int) {
-        uiState.update {
-            it.copy(userMessage = error.message?.takeIf(String::isNotBlank) ?: epgNotice(fallbackRes, emptyList()))
-        }
+        // The exception text is raw English from lower layers; the user only ever sees the localized sentence.
+        Log.w("SettingsEpgActions", "Unexpected guide failure: ${error.message}", error)
+        uiState.update { it.copy(userMessage = epgNotice(fallbackRes, emptyList())) }
     }
 }

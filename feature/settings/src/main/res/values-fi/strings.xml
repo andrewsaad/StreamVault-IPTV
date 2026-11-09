@@ -1064,4 +1064,17 @@
     <string name="channel_cleanup_confirm_button">Piilota</string>
     <string name="channel_cleanup_error_unsupported">Tämän tyyppistä palveluntarjoajaa ei voi skannata</string>
     <string name="channel_cleanup_close">Sulje</string>
+    <string name="settings_history_clear_failed">Historiaa ei voitu tyhjentää</string>
+    <string name="settings_category_unhidden">%1$s ei ole enää piilotettu</string>
+    <string name="settings_xtream_text_decoding_changed">Xtream-tekstin dekoodaus muuttui. Päivitä jokainen Xtream-palveluntarjoaja kerran, jotta nimikkeet tuodaan uudelleen.</string>
+    <string name="settings_provider_activate_not_found">Palveluntarjoajaa ei voitu ottaa käyttöön: sitä ei löytynyt</string>
+    <string name="settings_provider_activate_failed">Palveluntarjoajaa ei voitu ottaa käyttöön</string>
+    <string name="settings_provider_connected">Yhdistetty palveluun %1$s</string>
+    <string name="settings_combined_activate_not_found">Yhdistettyä lähdettä ei voitu ottaa käyttöön: sitä ei löytynyt</string>
+    <string name="settings_combined_activate_needs_playlist">Lisää tähän yhdistettyyn lähteeseen vähintään yksi soittolista ennen käyttöönottoa</string>
+    <string name="settings_combined_activate_needs_enabled">Ota tässä yhdistetyssä lähteessä käyttöön vähintään yksi soittolista ennen käyttöönottoa</string>
+    <string name="settings_combined_activated">Yhdistetty M3U-lähde otettu käyttöön</string>
+    <string name="settings_combined_activate_failed">Yhdistettyä lähdettä ei voitu ottaa käyttöön</string>
+    <string name="settings_combined_remove_last_active">Viimeistä aktiivista soittolistaa ei voi poistaa nykyisestä live-lähteestä</string>
+    <string name="settings_combined_disable_last_active">Viimeistä aktiivista soittolistaa ei voi poistaa käytöstä nykyisessä live-lähteessä</string>
 </resources>
