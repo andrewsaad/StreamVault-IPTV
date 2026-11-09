@@ -12,8 +12,11 @@ import android.provider.BaseColumns
 import com.google.common.truth.Truth.assertThat
 import com.streamvault.app.R
 import com.streamvault.app.navigation.ExternalNavigationRequestParser
+import com.streamvault.app.navigation.PlayerRequestIntentExtras
 import com.streamvault.app.navigation.toPlayerNavigationRequest
 import com.streamvault.core.navigation.ExternalNavigationRequest
+import com.streamvault.data.remote.xtream.XtreamStreamKind
+import com.streamvault.data.remote.xtream.XtreamUrlFactory
 import com.streamvault.domain.model.ContentType
 import com.streamvault.domain.model.PlaybackHistory
 import com.streamvault.domain.repository.PlaybackHistoryRepository
@@ -101,8 +104,7 @@ class WatchNextManagerTest {
         assertThat(uriCaptor.firstValue.lastPathSegment).isEqualTo("101")
     }
 
-    @Test
-    fun `launcher intent uri carries a player request that the parser rebuilds`() = runTest {
+    private suspend fun launchIntentUriFor(history: PlaybackHistory): String {
         val context = mock<Context>()
         val resolver = mock<ContentResolver>()
         val packageManager = mock<PackageManager>()
@@ -126,17 +128,36 @@ class WatchNextManagerTest {
             playbackHistoryRepository = mock<PlaybackHistoryRepository>(),
             providerRepository = mock<ProviderRepository>()
         )
-        val history = history(contentId = 10L, providerId = 5L, lastWatchedAt = 2_000L)
-
         manager.updateWatchNextProgress(history)
 
         val valuesCaptor = argumentCaptor<ContentValues>()
         verify(resolver).update(any(), valuesCaptor.capture(), anyOrNull(), anyOrNull())
-        val intentUri = valuesCaptor.firstValue.getAsString("intent_uri")
-        val launchIntent = Intent.parseUri(intentUri, Intent.URI_INTENT_SCHEME)
+        return valuesCaptor.firstValue.getAsString("intent_uri")
+    }
+
+    @Test
+    fun `launcher intent uri carries an internal provider request that the parser rebuilds`() = runTest {
+        val history = history(
+            contentId = 10L,
+            providerId = 5L,
+            lastWatchedAt = 2_000L,
+            streamUrl = XtreamUrlFactory.buildInternalStreamUrl(5L, XtreamStreamKind.SERIES, 10L, "mkv")
+        )
+
+        val launchIntent = Intent.parseUri(launchIntentUriFor(history), Intent.URI_INTENT_SCHEME)
         val parsed = ExternalNavigationRequestParser(RuntimeEnvironment.getApplication()).parse(launchIntent)
 
         assertThat(parsed).isEqualTo(ExternalNavigationRequest.Player(history.toPlayerNavigationRequest()))
+    }
+
+    @Test
+    fun `launcher intent uri never carries plain extras for a non internal stream url`() = runTest {
+        val history = history(contentId = 10L, providerId = 5L, lastWatchedAt = 2_000L)
+
+        val launchIntent = Intent.parseUri(launchIntentUriFor(history), Intent.URI_INTENT_SCHEME)
+
+        assertThat(launchIntent.hasExtra(PlayerRequestIntentExtras.STREAM_URL)).isFalse()
+        assertThat(launchIntent.extras?.keySet().orEmpty().none { it.startsWith("com.streamvault.app.extra.PLAYER_REQUEST_") }).isTrue()
     }
 
     @Test
@@ -184,12 +205,17 @@ class WatchNextManagerTest {
         verify(resolver, never()).insert(any(), any())
     }
 
-    private fun history(contentId: Long, providerId: Long, lastWatchedAt: Long): PlaybackHistory = PlaybackHistory(
+    private fun history(
+        contentId: Long,
+        providerId: Long,
+        lastWatchedAt: Long,
+        streamUrl: String = "https://example.com/$contentId.m3u8"
+    ): PlaybackHistory = PlaybackHistory(
         contentId = contentId,
         contentType = ContentType.SERIES_EPISODE,
         providerId = providerId,
         title = "Episode $contentId",
-        streamUrl = "https://example.com/$contentId.m3u8",
+        streamUrl = streamUrl,
         resumePositionMs = 1_000L,
         totalDurationMs = 10_000L,
         lastWatchedAt = lastWatchedAt

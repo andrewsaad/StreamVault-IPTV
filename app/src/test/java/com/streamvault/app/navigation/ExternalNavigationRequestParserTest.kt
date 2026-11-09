@@ -11,6 +11,10 @@ import com.streamvault.app.MainActivity
 import com.streamvault.core.navigation.AppDestination
 import com.streamvault.core.navigation.ExternalNavigationRequest
 import com.streamvault.core.navigation.PlayerNavigationRequest
+import com.streamvault.data.remote.stalker.StalkerStreamKind
+import com.streamvault.data.remote.stalker.StalkerUrlFactory
+import com.streamvault.data.remote.xtream.XtreamStreamKind
+import com.streamvault.data.remote.xtream.XtreamUrlFactory
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -159,10 +163,16 @@ class ExternalNavigationRequestParserTest {
         return parser.parse(parsed)
     }
 
+    private fun xtreamUrl(kind: XtreamStreamKind, id: Long, providerId: Long = 2L) =
+        XtreamUrlFactory.buildInternalStreamUrl(providerId, kind, id, containerExtension = "mp4")
+
+    private fun stalkerUrl(kind: StalkerStreamKind, id: Long, providerId: Long = 2L, cmd: String = "/media/$id.mpg") =
+        StalkerUrlFactory.buildInternalStreamUrl(providerId, kind, id, cmd)
+
     @Test
     fun plainExtrasRoundTripLiveRequestThroughIntentUri() {
         val request = PlayerNavigationRequest(
-            streamUrl = "https://example.com/live/1.m3u8",
+            streamUrl = xtreamUrl(XtreamStreamKind.LIVE, 7L),
             title = "News",
             channelId = "news.1",
             internalId = 7L,
@@ -177,7 +187,7 @@ class ExternalNavigationRequestParserTest {
     @Test
     fun plainExtrasRoundTripMovieRequestThroughIntentUri() {
         val request = PlayerNavigationRequest(
-            streamUrl = "https://example.com/movie/9.mp4?token=a&b=c",
+            streamUrl = xtreamUrl(XtreamStreamKind.MOVIE, 9L),
             title = "Movie & Co",
             internalId = 9L,
             providerId = 2L,
@@ -192,7 +202,7 @@ class ExternalNavigationRequestParserTest {
     @Test
     fun plainExtrasRoundTripEpisodeRequestThroughIntentUri() {
         val request = PlayerNavigationRequest(
-            streamUrl = "https://example.com/series/10.mkv",
+            streamUrl = xtreamUrl(XtreamStreamKind.SERIES, 10L, providerId = 5L),
             title = "Episode 10",
             internalId = 10L,
             providerId = 5L,
@@ -211,7 +221,7 @@ class ExternalNavigationRequestParserTest {
     @Test
     fun serializableExtraWinsOverPlainExtras() {
         val serialized = PlayerNavigationRequest(streamUrl = "https://example.com/a.m3u8", title = "A")
-        val plain = PlayerNavigationRequest(streamUrl = "https://example.com/b.m3u8", title = "B")
+        val plain = PlayerNavigationRequest(streamUrl = xtreamUrl(XtreamStreamKind.LIVE, 1L), title = "B")
         val intent = PlayerRequestIntentExtras.write(Intent(Intent.ACTION_VIEW), plain)
             .putExtra(MainActivity.EXTRA_PLAYER_REQUEST, serialized)
 
@@ -221,7 +231,7 @@ class ExternalNavigationRequestParserTest {
     private fun validPlainIntent(): Intent = PlayerRequestIntentExtras.write(
         Intent(Intent.ACTION_VIEW),
         PlayerNavigationRequest(
-            streamUrl = "https://example.com/a.m3u8",
+            streamUrl = xtreamUrl(XtreamStreamKind.MOVIE, 1L, providerId = 1L),
             title = "A",
             providerId = 1L,
             contentType = "MOVIE"
@@ -255,10 +265,76 @@ class ExternalNavigationRequestParserTest {
     }
 
     @Test
-    fun plainExtrasWithDisallowedStreamSchemeAreRejected() {
-        listOf("file:///sdcard/a.mp4", "content://example/a", "javascript:alert(1)", "no-scheme").forEach { url ->
+    fun plainExtrasRoundTripStalkerRequestsThroughIntentUri() {
+        listOf(
+            PlayerNavigationRequest(
+                streamUrl = stalkerUrl(StalkerStreamKind.LIVE, 7L),
+                title = "News",
+                internalId = 7L,
+                providerId = 2L,
+                contentType = "LIVE"
+            ),
+            PlayerNavigationRequest(
+                streamUrl = stalkerUrl(StalkerStreamKind.MOVIE, 9L),
+                title = "Movie & Co",
+                internalId = 9L,
+                providerId = 2L,
+                contentType = "MOVIE"
+            ),
+            PlayerNavigationRequest(
+                streamUrl = stalkerUrl(StalkerStreamKind.EPISODE, 10L),
+                title = "Episode 10",
+                internalId = 10L,
+                providerId = 2L,
+                contentType = "SERIES_EPISODE",
+                seriesId = 77L,
+                seasonNumber = 2,
+                episodeNumber = 4
+            )
+        ).forEach { request ->
+            assertThat(roundTrip(request)).isEqualTo(ExternalNavigationRequest.Player(request))
+        }
+    }
+
+    @Test
+    fun plainExtrasWithNonInternalStreamUrlAreRejected() {
+        listOf(
+            "http://example.com/a.m3u8",
+            "https://example.com/a.m3u8",
+            "rtsp://example.com/a",
+            "rtmp://example.com/a",
+            "udp://@239.0.0.1:1234",
+            "file:///sdcard/a.mp4",
+            "content://example/a",
+            "javascript:alert(1)",
+            "no-scheme",
+            "",
+            "xtream://notanumber/live/1",
+            "xtream://2/unknownkind/1",
+            "stalker://2/live/abc"
+        ).forEach { url ->
             assertFallsBackHome(validPlainIntent().putExtra(PlayerRequestIntentExtras.STREAM_URL, url))
         }
+    }
+
+    @Test
+    fun plainExtrasCannotSmuggleForeignUrlsThroughInternalSchemes() {
+        val xtreamDirectSource = XtreamUrlFactory.buildInternalStreamUrl(
+            providerId = 1L,
+            kind = XtreamStreamKind.MOVIE,
+            streamId = 1L,
+            directSource = "https://evil.example/a.mp4"
+        )
+        val stalkerDirectCmd = stalkerUrl(StalkerStreamKind.LIVE, 1L, providerId = 1L, cmd = "ffmpeg http://evil.example/a.ts")
+        listOf(xtreamDirectSource, stalkerDirectCmd).forEach { url ->
+            assertFallsBackHome(validPlainIntent().putExtra(PlayerRequestIntentExtras.STREAM_URL, url))
+        }
+    }
+
+    @Test
+    fun plainExtrasWithOversizedStreamUrlAreRejected() {
+        val url = xtreamUrl(XtreamStreamKind.MOVIE, 1L) + "&pad=" + "x".repeat(5_000)
+        assertFallsBackHome(validPlainIntent().putExtra(PlayerRequestIntentExtras.STREAM_URL, url))
     }
 
     @Test
