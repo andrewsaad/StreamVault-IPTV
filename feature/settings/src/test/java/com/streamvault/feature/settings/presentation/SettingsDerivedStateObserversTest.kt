@@ -24,7 +24,7 @@ class SettingsDerivedStateObserversTest {
     private val movieRepository: MovieRepository = mock()
     private val seriesRepository: SeriesRepository = mock()
     private val settingsOperations: SettingsOperations = mock()
-    private val application: Context = mock()
+    private val application: Context = fakeTextContext()
 
     @Test
     fun `observeProviderDiagnostics uses live movie and series library counts over metadata counts`() = runTest {
@@ -63,5 +63,45 @@ class SettingsDerivedStateObserversTest {
         assertThat(diagnostics.getValue(7L).movieCount).isEqualTo(140_484)
         assertThat(diagnostics.getValue(7L).seriesCount).isEqualTo(32_037)
         assertThat(diagnostics.getValue(7L).movieCatalogStale).isTrue()
+    }
+
+    private suspend fun expirySummaryFor(expirationDate: Long?): String {
+        val provider = Provider(
+            id = 8L,
+            name = "Premium",
+            type = ProviderType.XTREAM_CODES,
+            serverUrl = "https://example.com",
+            expirationDate = expirationDate
+        )
+        whenever(providerRepository.getProviders()).thenReturn(flowOf(listOf(provider)))
+        whenever(syncMetadataRepository.observeMetadata(8L)).thenReturn(flowOf(SyncMetadata(providerId = 8L)))
+        whenever(movieRepository.getLibraryCount(8L)).thenReturn(flowOf(0))
+        whenever(seriesRepository.getLibraryCount(8L)).thenReturn(flowOf(0))
+        whenever(settingsOperations.observeProgramCount(8L)).thenReturn(flowOf(0))
+        return observeProviderDiagnostics(
+            providerRepository = providerRepository,
+            syncMetadataRepository = syncMetadataRepository,
+            movieRepository = movieRepository,
+            seriesRepository = seriesRepository,
+            settingsOperations = settingsOperations,
+            application = application
+        ).first().getValue(8L).expirySummary
+    }
+
+    @Test
+    fun `expiry summary is localized for unknown, unlimited and expired providers`() = runTest {
+        assertThat(expirySummaryFor(null)).isEqualTo(resText(R.string.settings_provider_expiry_unknown))
+        assertThat(expirySummaryFor(Long.MAX_VALUE)).isEqualTo(resText(R.string.settings_provider_expiry_none))
+        assertThat(expirySummaryFor(1L)).isEqualTo(resText(R.string.settings_provider_expiry_expired))
+    }
+
+    @Test
+    fun `an active provider names its expiry date through the localized template`() = runTest {
+        val expiresAt = System.currentTimeMillis() + 90L * 24 * 60 * 60 * 1000
+        val formatted = java.text.SimpleDateFormat("d MMM yyyy", java.util.Locale.getDefault())
+            .format(java.util.Date(expiresAt))
+
+        assertThat(expirySummaryFor(expiresAt))
+            .isEqualTo(resText(R.string.settings_provider_expiry_active_until, formatted))
     }
 }

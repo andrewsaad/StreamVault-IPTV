@@ -12,6 +12,7 @@ import com.streamvault.domain.usecase.ExportBackup
 import com.streamvault.domain.usecase.ImportBackup
 import com.streamvault.domain.usecase.ImportBackupResult
 import com.streamvault.domain.usecase.InspectBackupResult
+import com.streamvault.feature.settings.R
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -154,14 +155,15 @@ class SettingsBackupActionsTest {
         ))
         whenever(importBackup.confirm(org.mockito.kotlin.any())).thenReturn(ImportBackupResult.Error("unavailable"))
         var followedUp = false
-        SettingsBackupActions(exportBackup, importBackup, ui).confirmBackupImport(this) { followedUp = true }
+        SettingsBackupActions(exportBackup, importBackup, ui, text = fakeText).confirmBackupImport(this) { followedUp = true }
         advanceUntilIdle()
         assertThat(ui.value.pendingBackupUri).isEqualTo("content://backup")
         assertThat(ui.value.backupImportPlan).isEqualTo(plan)
         assertThat(ui.value.pendingDriveCredentials).isEqualTo(credentials)
         assertThat(ui.value.isImportingBackup).isFalse()
         assertThat(ui.value.isSyncing).isFalse()
-        assertThat(ui.value.userMessage).contains("unavailable")
+        assertThat(ui.value.userMessage).isEqualTo(resText(R.string.settings_backup_import_failed))
+        assertThat(ui.value.userMessage).doesNotContain("unavailable")
         assertThat(followedUp).isFalse()
     }
 
@@ -182,14 +184,53 @@ class SettingsBackupActionsTest {
         )
         var succeeded = false
         var finished: Boolean? = null
-        SettingsBackupActions(exportBackup, importBackup, ui).exportConfig(
+        SettingsBackupActions(exportBackup, importBackup, ui, text = fakeText).exportConfig(
             this, "content://export", onSuccess = { succeeded = true }, onFinished = { finished = it }
         )
         advanceUntilIdle()
         assertThat(ui.value.isSyncing).isFalse()
-        assertThat(ui.value.userMessage).contains("storage unavailable")
+        assertThat(ui.value.userMessage).isEqualTo(resText(R.string.settings_backup_export_failed))
+        assertThat(ui.value.userMessage).doesNotContain("storage unavailable")
         assertThat(succeeded).isFalse()
         assertThat(finished).isFalse()
+    }
+
+    @Test
+    fun exportSuccess_showsTheLocalizedSuccessText() = runTest(StandardTestDispatcher()) {
+        val ui = MutableStateFlow(SettingsUiState())
+        whenever(exportBackup(org.mockito.kotlin.any())).thenReturn(
+            com.streamvault.domain.usecase.ExportBackupResult.Success
+        )
+        SettingsBackupActions(exportBackup, importBackup, ui, text = fakeText).exportConfig(this, "content://export")
+        advanceUntilIdle()
+        assertThat(ui.value.userMessage).isEqualTo(resText(R.string.settings_backup_exported))
+    }
+
+    @Test
+    fun inspectError_showsLocalizedTextNotTheRawError() = runTest(StandardTestDispatcher()) {
+        val ui = MutableStateFlow(SettingsUiState())
+        whenever(importBackup.inspect(org.mockito.kotlin.any())).thenReturn(InspectBackupResult.Error("raw parse failure"))
+        SettingsBackupActions(exportBackup, importBackup, ui, text = fakeText).inspectBackup(this, "content://backup")
+        advanceUntilIdle()
+        assertThat(ui.value.userMessage).isEqualTo(resText(R.string.settings_backup_import_failed))
+        assertThat(ui.value.userMessage).doesNotContain("raw parse failure")
+        assertThat(ui.value.isSyncing).isFalse()
+    }
+
+    @Test
+    fun importWithNoSectionSelected_asksForOneWithLocalizedText() = runTest(StandardTestDispatcher()) {
+        val ui = MutableStateFlow(SettingsUiState(
+            pendingBackupUri = "content://backup",
+            backupImportPlan = BackupImportPlan(
+                importPreferences = false, importProviders = false, importSavedLibrary = false,
+                importPlaybackHistory = false, importMultiViewPresets = false,
+                importRecordingSchedules = false, importStremioAddons = false
+            )
+        ))
+        SettingsBackupActions(exportBackup, importBackup, ui, text = fakeText).confirmBackupImport(this)
+        advanceUntilIdle()
+        assertThat(ui.value.userMessage).isEqualTo(resText(R.string.settings_backup_select_section))
+        org.mockito.kotlin.verifyNoInteractions(importBackup)
     }
 
     @Test

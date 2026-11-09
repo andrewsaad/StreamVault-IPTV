@@ -99,7 +99,62 @@ class SettingsStringsLocaleParityTest {
         "settings_combined_disable_last_active"
     )
 
-    private val localizedKeys = epgPresetKeys + channelCleanupKeys + userMessageKeys
+    /** Actions and diagnostics that used to show English text: Drive, backup, update, combined source, provider, guide. */
+    private val actionMessageKeys = listOf(
+        "settings_drive_sign_in_failed",
+        "settings_drive_signed_in_as",
+        "settings_drive_signed_in",
+        "settings_drive_signed_out",
+        "settings_drive_sign_out_failed",
+        "settings_drive_sign_in_required",
+        "settings_drive_push_failed",
+        "settings_drive_push_done",
+        "settings_drive_pull_failed",
+        "settings_drive_no_backups",
+        "settings_drive_manage_failed",
+        "settings_drive_backup_deleted",
+        "settings_drive_delete_failed",
+        "settings_drive_import_failed",
+        "settings_backup_export_failed",
+        "settings_backup_exported",
+        "settings_backup_import_failed",
+        "settings_backup_select_section",
+        "settings_backup_imported",
+        "settings_update_check_failed",
+        "settings_update_download_failed",
+        "settings_update_install_failed",
+        "settings_combined_created",
+        "settings_combined_deleted",
+        "settings_combined_renamed",
+        "settings_combined_playlist_added",
+        "settings_combined_playlist_removed",
+        "settings_combined_order_updated",
+        "settings_combined_playlist_enabled",
+        "settings_combined_playlist_disabled",
+        "settings_combined_update_failed",
+        "settings_provider_setting_save_failed",
+        "settings_provider_m3u_vod_enabled",
+        "settings_provider_m3u_vod_disabled",
+        "settings_provider_guide_source_save_failed",
+        "settings_provider_guide_source_updated",
+        "settings_provider_logo_source_save_failed",
+        "settings_provider_logo_source_updated",
+        "settings_provider_delete_preparing",
+        "settings_provider_delete_cleanup_pending",
+        "settings_provider_deleted",
+        "settings_provider_delete_failed",
+        "settings_epg_preset_failed",
+        "settings_provider_expiry_unknown",
+        "settings_provider_expiry_none",
+        "settings_provider_expiry_expired",
+        "settings_provider_expiry_active_until",
+        "settings_speed_test_error_network_service",
+        "settings_speed_test_error_no_network",
+        "settings_speed_test_error_inspect_network",
+        "settings_speed_test_error_generic"
+    )
+
+    private val localizedKeys = epgPresetKeys + channelCleanupKeys + userMessageKeys + actionMessageKeys
 
     @Test
     fun everyAdvertisedLocaleHasValuesFolder() {
