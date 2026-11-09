@@ -470,7 +470,7 @@ class SettingsEpgPresetViewModelTest {
     @Test
     fun `a refused assignment shows the localized notice and never the raw error`() = runTest {
         val repository: EpgSourceRepository = mock()
-        whenever(repository.assignSourceToProvider(any(), any(), any())).thenReturn(Result.error("Provider not found"))
+        whenever(repository.assignSourceToProvider(any(), any(), any(), any())).thenReturn(Result.error("Provider not found"))
         val uiState = MutableStateFlow(SettingsUiState())
         val actions = SettingsEpgActions(
             repository, FakeEpgPresetManager(), uiState, epgNotice = { resId, _ -> "notice:$resId" },

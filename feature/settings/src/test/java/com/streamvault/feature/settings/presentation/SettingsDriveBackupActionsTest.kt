@@ -274,7 +274,7 @@ class SettingsDriveBackupActionsTest {
     @Test
     fun completeSignIn_namesTheAccountThroughTheLocalizedTemplate() = runTest(StandardTestDispatcher()) {
         whenever(driveManager.completeSignIn(anyOrNull()))
-            .thenReturn(Result.Success(DriveAccount("id", "user@example.com")))
+            .thenReturn(Result.Success(DriveAccount("user@example.com", "id")))
         val uiState = MutableStateFlow(SettingsUiState())
 
         actionsFor(uiState).completeSignIn(this, null)
