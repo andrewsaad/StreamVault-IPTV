@@ -46,8 +46,10 @@ class ChannelHealthRepositoryImpl @Inject constructor(
                     .filter { it.id in suggested }
                     .map { ChannelHealthSuggestion(it.toDomain(), suggested.getValue(it.id)) }
                     .sortedWith(
-                        compareBy<ChannelHealthSuggestion>(String.CASE_INSENSITIVE_ORDER) { it.channel.categoryName.orEmpty() }
-                            .thenBy(String.CASE_INSENSITIVE_ORDER) { it.channel.name }
+                        compareBy<ChannelHealthSuggestion>(
+                            { it.channel.categoryName.orEmpty().lowercase() },
+                            { it.channel.name.lowercase() },
+                        )
                     )
             }
         }
