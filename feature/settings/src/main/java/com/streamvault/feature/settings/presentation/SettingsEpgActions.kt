@@ -1,5 +1,6 @@
 package com.streamvault.feature.settings.presentation
 
+import androidx.annotation.StringRes
 import com.streamvault.domain.model.Result
 import com.streamvault.domain.model.XmltvTimezonePolicy
 import com.streamvault.domain.repository.EpgPresetManager
@@ -431,7 +432,9 @@ class SettingsEpgActions(
         }
     }
 
-    private fun showUnexpectedError(error: Exception, fallbackMessage: String) {
-        uiState.update { it.copy(userMessage = error.message?.takeIf(String::isNotBlank) ?: fallbackMessage) }
+    private fun showUnexpectedError(error: Exception, @StringRes fallbackRes: Int) {
+        uiState.update {
+            it.copy(userMessage = error.message?.takeIf(String::isNotBlank) ?: epgNotice(fallbackRes, emptyList()))
+        }
     }
 }

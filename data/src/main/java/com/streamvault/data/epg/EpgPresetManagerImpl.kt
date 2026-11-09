@@ -189,7 +189,7 @@ class EpgPresetManagerImpl internal constructor(
             rankInCatalogOrder(records, newlyAssigned)
             store.update { it.copy(sources = records) }
             val unfinished = records.values.map { it.sourceId }.distinct()
-                .filter { it !in fresh && it !in importBatches && neverFinished(it) }
+                .filter { it !in fresh && !importBatches.containsKey(it) && neverFinished(it) }
             unfinished.forEach { store.clearRefreshAttempt(it) }
             fresh + unfinished
         }
