@@ -2826,6 +2826,23 @@ class PreferencesRepository @Inject constructor(
         }
     }
 
+    /** Adds [channelIds] to the hidden channels in one DataStore edit, so a concurrent change is not lost. */
+    suspend fun addHiddenChannelIds(
+        providerId: Long,
+        channelIds: Set<Long>
+    ) {
+        if (channelIds.isEmpty()) return
+        val key = stringPreferencesKey(hiddenChannelsKey(providerId))
+        context.dataStore.edit { preferences ->
+            val current = preferences[key]
+                ?.split(',')
+                ?.mapNotNull { token -> token.toLongOrNull() }
+                ?.toSet()
+                .orEmpty()
+            preferences[key] = (current + channelIds).sorted().joinToString(",")
+        }
+    }
+
     /** Channel health probe results of one provider, as the JSON owned by `data.health`. */
     fun getChannelHealthResults(providerId: Long): Flow<String?> {
         val key = stringPreferencesKey(channelHealthKey(providerId))

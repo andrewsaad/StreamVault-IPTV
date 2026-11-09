@@ -42,6 +42,10 @@ internal class InMemoryHealthPreferences(initialHidden: Set<Long> = emptySet()) 
             health.value = it.getArgument<String?>(1)
             Unit
         }
+        onBlocking { addHiddenChannelIds(any(), any()) } doAnswer {
+            hidden.value = hidden.value + it.getArgument<Set<Long>>(1)
+            Unit
+        }
         onBlocking { setHiddenChannelIds(any(), any()) } doAnswer {
             hidden.value = it.getArgument<Set<Long>>(1)
             Unit

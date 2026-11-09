@@ -173,7 +173,9 @@ class ChannelHealthRepositoryImplTest {
 
         repository.hideChannels(TEST_PROVIDER_ID, setOf(7L, 8L))
 
-        verify(storage.preferences).setHiddenChannelIds(TEST_PROVIDER_ID, setOf(5L, 7L, 8L))
+        // One atomic union inside the store, not a read followed by a separate write.
+        verify(storage.preferences).addHiddenChannelIds(TEST_PROVIDER_ID, setOf(7L, 8L))
+        verify(storage.preferences, never()).setHiddenChannelIds(any(), any())
         assertThat(storage.hidden.value).containsExactly(5L, 7L, 8L)
     }
 

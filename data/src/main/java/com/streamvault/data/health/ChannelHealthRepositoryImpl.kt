@@ -14,7 +14,6 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
 @Singleton
@@ -72,9 +71,7 @@ class ChannelHealthRepositoryImpl @Inject constructor(
     }
 
     override suspend fun hideChannels(providerId: Long, channelIds: Set<Long>) {
-        if (channelIds.isEmpty()) return
-        val hidden = preferences.getHiddenChannelIds(providerId).first()
-        preferences.setHiddenChannelIds(providerId, hidden + channelIds)
+        preferences.addHiddenChannelIds(providerId, channelIds)
     }
 
     override suspend fun clearResults(providerId: Long) {
