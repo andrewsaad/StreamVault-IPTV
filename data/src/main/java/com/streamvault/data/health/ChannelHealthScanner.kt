@@ -31,7 +31,11 @@ import kotlinx.coroutines.withContext
 internal data class ChannelHealthTimings(
     val pauseBetweenChannelsMs: Long = 6_000L,
     val backoffMs: Long = 5L * 60_000L,
+    /** First wait while the account has no free connection; doubles up to [maxPlaybackPollMs]. */
     val playbackPollMs: Long = 15_000L,
+    val maxPlaybackPollMs: Long = 5L * 60_000L,
+    /** Total wait for a free connection before the scan gives up. */
+    val maxPauseMs: Long = 60L * 60_000L,
     val unclearInARowBeforeBackoff: Int = 3,
     /** Non-OK answers of any kind in a row that count as a provider problem, not as dead channels. */
     val massFailureStreak: Int = 10,
@@ -128,7 +132,7 @@ class ChannelHealthScanner internal constructor(
                     setState(providerId) { it.copy(scanned = scanned) }
                     continue
                 }
-                account = waitForFreeConnection(providerId, config, account)
+                account = waitForFreeConnection(providerId, config, account) ?: return false
                 val url = XtreamUrlFactory.buildPlaybackUrl(
                     serverUrl = config.serverUrl,
                     username = config.username,
@@ -195,16 +199,22 @@ class ChannelHealthScanner internal constructor(
         providerId: Long,
         config: XtreamConfig,
         current: AccountLimits,
-    ): AccountLimits {
+    ): AccountLimits? {
         var account = current
+        var poll = timings.playbackPollMs
+        var waited = 0L
         while (true) {
             val localPlayback = account.maxConnections <= 1 && AutomaticSyncActivity.hasPlayback
             if (!localPlayback && !account.saturated) {
                 setState(providerId) { if (it.paused == null) it else it.copy(paused = null) }
                 return account
             }
+            // Give up on a connection that never frees up instead of polling the provider for ever.
+            if (waited >= timings.maxPauseMs) return null
             setState(providerId) { it.copy(paused = ChannelHealthPauseReason.PLAYBACK_ACTIVE) }
-            delay(timings.playbackPollMs)
+            delay(poll)
+            waited += poll
+            poll = minOf(poll * 2, timings.maxPlaybackPollMs)
             // Look again once nothing of ours is playing, so a stale "in use" count does not stick.
             if (!AutomaticSyncActivity.hasPlayback) account = readAccount(providerId, config, previous = account)
         }

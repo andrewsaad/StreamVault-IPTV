@@ -288,6 +288,52 @@ class ChannelHealthScannerTest {
     }
 
     @Test
+    fun `a scan gives up after an hour of playback and does not count as finished`() = runTest {
+        givenChannels(channelEntity(1L))
+        givenAccount("1", "0")
+        givenProbe(ChannelHealthStatus.OK)
+        val player = Any()
+        AutomaticSyncActivity.started(player, TEST_PROVIDER_ID)
+        try {
+            val finished = scanner.run(TEST_PROVIDER_ID, null, 0L)
+
+            assertThat(finished).isFalse()
+            assertThat(testScheduler.currentTime).isAtLeast(60L * 60_000L)
+            assertThat(testScheduler.currentTime).isAtMost(65L * 60_000L)
+            verifyNoInteractions(probe)
+            val state = scanner.observeState(TEST_PROVIDER_ID).first()
+            assertThat(state.running).isFalse()
+            assertThat(state.paused).isNull()
+            assertThat(state.lastFinishedAt).isNull()
+        } finally {
+            AutomaticSyncActivity.stopped(player)
+        }
+    }
+
+    @Test
+    fun `polling a saturated account backs off from 15 seconds to 5 minutes and stops after an hour`() = runTest {
+        givenChannels(channelEntity(1L))
+        givenProbe(ChannelHealthStatus.OK)
+        val calledAt = mutableListOf<Long>()
+        whenever(xtreamApi.authenticate(any(), any())).thenAnswer {
+            calledAt += testScheduler.currentTime
+            XtreamAuthResponse(
+                userInfo = XtreamUserInfo(auth = 1, maxConnections = "1", activeConnections = "1"),
+                serverInfo = XtreamServerInfo(),
+            )
+        }
+
+        val finished = scanner.run(TEST_PROVIDER_ID, null, 0L)
+
+        assertThat(finished).isFalse()
+        val gaps = calledAt.zipWithNext { a, b -> b - a }
+        assertThat(gaps.take(5)).containsExactly(15_000L, 30_000L, 60_000L, 120_000L, 240_000L).inOrder()
+        assertThat(gaps.drop(5).distinct()).containsExactly(300_000L)
+        assertThat(calledAt.size).isAtMost(25)
+        verifyNoInteractions(probe)
+    }
+
+    @Test
     fun `an account with several connections keeps scanning during playback`() = runTest {
         givenChannels(channelEntity(1L))
         givenAccount("3", "0")
