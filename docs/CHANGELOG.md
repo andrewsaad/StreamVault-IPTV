@@ -11,6 +11,16 @@ All notable product changes are recorded in this document.
 - Added recognition of Brazilian Portuguese sports listings, including matchups, broadcast notes, and Brazilian and South American competitions.
 - Added optional guide presets in Settings (beIN Sports Arabic, Egypt, and US sports and networks) that fill the guide for channels without provider guide data. Presets are off by default, are turned on per device, update at most twice a day, and have an editable address. Channels with no exact guide match are now matched loosely by name, ignoring region tags, quality labels and separators while keeping time-shift labels such as +1; exact and manual matches always win. See `docs/EPG_PRESETS.md`.
 - Added event-only channels (for example MLS LIVE) as candidates for matches of their league in the Sports tab.
+- Added Channel clean-up in Settings > Providers: scan a provider's live channels in the background, review the ones that keep failing (only after they failed on two separate days) and hide them in one step. Hiding is reversible from Live TV and never deletes anything; the scan uses the provider's own login and yields to playback.
+
+### Fixed
+- Changing channels no longer drops the TV out of the matched refresh rate for several seconds (two blank screen switches per channel change).
+- A rebroadcast of a match that the guide lists with the plain match title is no longer shown as LIVE in the Sports tab.
+- Pressing Home while a stream is still buffering now pauses it, and leaving the player no longer keeps automatic sync waiting.
+- Launcher (Watch Next) cards for Xtream and Stalker content open the item instead of the Home screen.
+- Release builds now fail instead of publishing an unsigned APK when signing secrets are missing.
+- Guide preset refreshes that are skipped inside the minimum wait now say so instead of reporting success; turning a preset off stops its running import; matching passes run once per provider after a preset change.
+- More Settings messages (backup, Google Drive, providers, app update, speed test, guide) are shown in the app language, and raw error text is no longer shown.
 
 ### Changed
 - Improved M3U catch-up playback by preserving playlist replay modes and time corrections, supporting additional replay URL formats, and adding a configurable fallback query format. Eligible past guide programmes can now play when replay is advertised but the archive window is unspecified.
