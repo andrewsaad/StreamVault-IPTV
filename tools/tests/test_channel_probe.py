@@ -84,9 +84,37 @@ class ChannelProbeTest(unittest.TestCase):
         result, _, _ = self.probe({})
         self.assertEqual(result, (PROBE.DEAD, "http404"))
 
-    def test_http_403_is_unclear_not_dead(self):
-        result, _, _ = self.probe({"/c.m3u8": (403, b"")})
-        self.assertEqual(result, (PROBE.UNCLEAR, "http403"))
+    def test_repeated_403_is_unclear_not_dead_after_three_attempts(self):
+        result, hits, sleeps = self.probe({"/c.m3u8": (403, b"")})
+        self.assertEqual(result, (PROBE.UNCLEAR, "repeated-403"))
+        self.assertEqual(hits.count("/c.m3u8"), PROBE.MAX_403_ATTEMPTS)
+        self.assertEqual(sleeps, [PROBE.RETRY_403_DELAY_SECONDS] * (PROBE.MAX_403_ATTEMPTS - 1))
+
+    def test_403_is_retried_and_a_freed_connection_gives_ok(self):
+        calls = []
+
+        def busy_twice():
+            calls.append(1)
+            return (403, b"") if len(calls) <= 2 else (200, b"#EXTM3U\nseg.ts\n")
+
+        result, _, sleeps = self.probe({"/c.m3u8": busy_twice, "/seg.ts": (200, TS_SEGMENT)})
+        self.assertEqual(result, (PROBE.OK, "ok"))
+        self.assertEqual(len(sleeps), 2)
+
+    def test_pause_after_five_busy_channels_in_a_row(self):
+        routes = {"/player_api.php": lambda: (200, json.dumps(
+            [{"stream_id": i, "name": "Chan %d" % i} for i in range(1, 6)]).encode())}
+        for i in range(1, 6):
+            routes["/live/%s/%s/%d.m3u8" % (USER, PASSWORD, i)] = (403, b"")
+        base, _ = self.serve(routes)
+        with tempfile.TemporaryDirectory() as tmp:
+            secret = Path(tmp) / "secret.md"
+            secret.write_text("SERVER=%s\nUSERNAME=%s\nPASSWORD=%s\n" % (base, USER, PASSWORD), encoding="utf-8")
+            sleeps, logged = [], []
+            PROBE.run(secret, Path(tmp) / "scan.csv", sleep=sleeps.append, log=logged.append)
+        self.assertEqual(sleeps.count(PROBE.BUSY_PAUSE_SECONDS), 1)
+        self.assertTrue(any("busy" in line for line in logged))
+        self.assertNotIn(PASSWORD, "\n".join(logged))
 
     def test_blank_playlist_is_empty(self):
         result, _, _ = self.probe({"/c.m3u8": (200, b"   \n")})
