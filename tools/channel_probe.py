@@ -31,11 +31,11 @@ MAX_SEGMENT_BYTES = 64 * 1024
 MIN_SEGMENT_BYTES = 4096
 MPEG_TS_SYNC_BYTE = 0x47
 RETRY_503_DELAY_SECONDS = 5.0
-# Xtream answers 403 while another device holds the single connection (or the account is blocked).
-RETRY_403_DELAY_SECONDS = 10.0
-MAX_403_ATTEMPTS = 3
-BUSY_CHANNELS_BEFORE_PAUSE = 5
-BUSY_PAUSE_SECONDS = 120.0
+# Xtream answers 403 for a restricted channel, and also while another device holds the single
+# connection. Retry once, then ask the account whether it is really busy before waiting.
+RETRY_403_DELAY_SECONDS = 5.0
+BUSY_WAIT_SECONDS = 30.0
+MAX_BUSY_WAITS = 10
 
 OK, DEAD, EMPTY, UNCLEAR = "OK", "DEAD", "EMPTY", "UNCLEAR"
 
@@ -126,14 +126,17 @@ def _classify_once(playlist_url: str):
     return OK, "ok"
 
 
-def probe(playlist_url: str, sleep=time.sleep):
+def probe(playlist_url: str, sleep=time.sleep, busy_check=None):
     """Returns (status, detail).
 
-    One retry after a 503 (a second one is reported as repeated-503). A 403 means the connection
-    is busy, so it is retried with a delay, up to MAX_403_ATTEMPTS, then reported as repeated-403.
+    One retry after a 503 (a second one is reported as repeated-503). A 403 is retried once; if it
+    persists, busy_check() says whether the account is at its connection limit. Busy: wait and
+    retry (up to MAX_BUSY_WAITS, then account-busy). Not busy: the channel is restricted, so
+    provider-403.
     """
     retried_503 = False
-    attempts_403 = 0
+    retried_403 = False
+    busy_waits = 0
     while True:
         try:
             status, detail = _classify_once(playlist_url)
@@ -147,12 +150,29 @@ def probe(playlist_url: str, sleep=time.sleep):
             sleep(RETRY_503_DELAY_SECONDS)
             continue
         if detail.endswith("http403"):
-            attempts_403 += 1
-            if attempts_403 >= MAX_403_ATTEMPTS:
-                return status, "repeated-403"
-            sleep(RETRY_403_DELAY_SECONDS)
-            continue
+            if not retried_403:
+                retried_403 = True
+                sleep(RETRY_403_DELAY_SECONDS)
+                continue
+            if busy_check is not None and busy_check():
+                if busy_waits >= MAX_BUSY_WAITS:
+                    return status, "account-busy"
+                busy_waits += 1
+                sleep(BUSY_WAIT_SECONDS)
+                continue
+            return status, "provider-403"
         return status, detail
+
+
+def account_busy(server: str, username: str, password: str) -> bool:
+    """True when the account is at its connection limit. Any failure counts as not busy."""
+    query = urllib.parse.urlencode({"username": username, "password": password})
+    try:
+        with _open(server + "/player_api.php?" + query) as response:
+            info = json.loads(response.read().decode("utf-8", "replace")).get("user_info", {})
+        return int(info["active_cons"]) >= int(info["max_connections"])
+    except Exception:
+        return False
 
 
 def fetch_channels(server: str, username: str, password: str):
@@ -193,21 +213,20 @@ def run(secret_path: Path, out_path: Path, limit=None, sleep=time.sleep, log=pri
     log("channels: %d total, %d already scanned, %d to scan now" % (len(channels), len(already), len(todo)))
     new_file = not out_path.exists() or out_path.stat().st_size == 0
     counts = {OK: 0, DEAD: 0, EMPTY: 0, UNCLEAR: 0}
-    busy_in_a_row = 0
+    def busy_check():
+        return account_busy(server, username, password)
+
     with out_path.open("a", newline="", encoding="utf-8") as handle:
         writer = csv.writer(handle)
         if new_file:
             writer.writerow(["id", "name", "status", "detail"])
         for index, (cid, name) in enumerate(todo, 1):
-            status, detail = probe(playlist_url(server, username, password, cid), sleep=sleep)
+            status, detail = probe(
+                playlist_url(server, username, password, cid), sleep=sleep, busy_check=busy_check
+            )
             writer.writerow([cid, name, status, detail])
             handle.flush()
             counts[status] += 1
-            busy_in_a_row = busy_in_a_row + 1 if detail == "repeated-403" else 0
-            if busy_in_a_row >= BUSY_CHANNELS_BEFORE_PAUSE:
-                log("account looks busy (repeated 403): pausing %d s" % BUSY_PAUSE_SECONDS)
-                sleep(BUSY_PAUSE_SECONDS)
-                busy_in_a_row = 0
             if index % 50 == 0:
                 log("scanned %d/%d  %s" % (index, len(todo), counts))
     log("done: %s" % counts)

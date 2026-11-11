@@ -58,10 +58,10 @@ class ChannelProbeTest(unittest.TestCase):
         self.addCleanup(server.shutdown)
         return "http://127.0.0.1:%d" % server.server_address[1], hits
 
-    def probe(self, routes, path="/c.m3u8"):
+    def probe(self, routes, path="/c.m3u8", busy_check=None):
         base, hits = self.serve(routes)
         sleeps = []
-        result = PROBE.probe(base + path, sleep=sleeps.append)
+        result = PROBE.probe(base + path, sleep=sleeps.append, busy_check=busy_check)
         return result, hits, sleeps
 
     def test_working_channel_is_ok(self):
@@ -84,37 +84,55 @@ class ChannelProbeTest(unittest.TestCase):
         result, _, _ = self.probe({})
         self.assertEqual(result, (PROBE.DEAD, "http404"))
 
-    def test_repeated_403_is_unclear_not_dead_after_three_attempts(self):
-        result, hits, sleeps = self.probe({"/c.m3u8": (403, b"")})
-        self.assertEqual(result, (PROBE.UNCLEAR, "repeated-403"))
-        self.assertEqual(hits.count("/c.m3u8"), PROBE.MAX_403_ATTEMPTS)
-        self.assertEqual(sleeps, [PROBE.RETRY_403_DELAY_SECONDS] * (PROBE.MAX_403_ATTEMPTS - 1))
-
-    def test_403_is_retried_and_a_freed_connection_gives_ok(self):
+    def test_403_then_ok_after_one_retry(self):
         calls = []
 
-        def busy_twice():
+        def once_forbidden():
             calls.append(1)
-            return (403, b"") if len(calls) <= 2 else (200, b"#EXTM3U\nseg.ts\n")
+            return (403, b"") if len(calls) == 1 else (200, b"#EXTM3U\nseg.ts\n")
 
-        result, _, sleeps = self.probe({"/c.m3u8": busy_twice, "/seg.ts": (200, TS_SEGMENT)})
+        result, _, sleeps = self.probe({"/c.m3u8": once_forbidden, "/seg.ts": (200, TS_SEGMENT)})
         self.assertEqual(result, (PROBE.OK, "ok"))
-        self.assertEqual(len(sleeps), 2)
+        self.assertEqual(sleeps, [PROBE.RETRY_403_DELAY_SECONDS])
 
-    def test_pause_after_five_busy_channels_in_a_row(self):
-        routes = {"/player_api.php": lambda: (200, json.dumps(
-            [{"stream_id": i, "name": "Chan %d" % i} for i in range(1, 6)]).encode())}
-        for i in range(1, 6):
-            routes["/live/%s/%s/%d.m3u8" % (USER, PASSWORD, i)] = (403, b"")
-        base, _ = self.serve(routes)
-        with tempfile.TemporaryDirectory() as tmp:
-            secret = Path(tmp) / "secret.md"
-            secret.write_text("SERVER=%s\nUSERNAME=%s\nPASSWORD=%s\n" % (base, USER, PASSWORD), encoding="utf-8")
-            sleeps, logged = [], []
-            PROBE.run(secret, Path(tmp) / "scan.csv", sleep=sleeps.append, log=logged.append)
-        self.assertEqual(sleeps.count(PROBE.BUSY_PAUSE_SECONDS), 1)
-        self.assertTrue(any("busy" in line for line in logged))
-        self.assertNotIn(PASSWORD, "\n".join(logged))
+    def test_persistent_403_on_a_free_account_is_provider_403_without_waiting(self):
+        result, hits, sleeps = self.probe({"/c.m3u8": (403, b"")}, busy_check=lambda: False)
+        self.assertEqual(result, (PROBE.UNCLEAR, "provider-403"))
+        self.assertEqual(hits.count("/c.m3u8"), 2)
+        self.assertEqual(sleeps, [PROBE.RETRY_403_DELAY_SECONDS])
+
+    def test_persistent_403_without_a_busy_check_is_provider_403(self):
+        result, _, _ = self.probe({"/c.m3u8": (403, b"")})
+        self.assertEqual(result, (PROBE.UNCLEAR, "provider-403"))
+
+    def test_403_on_a_busy_account_waits_then_succeeds(self):
+        calls = []
+
+        def busy_until_third_try():
+            calls.append(1)
+            return (403, b"") if len(calls) <= 3 else (200, b"#EXTM3U\nseg.ts\n")
+
+        result, _, sleeps = self.probe(
+            {"/c.m3u8": busy_until_third_try, "/seg.ts": (200, TS_SEGMENT)}, busy_check=lambda: True
+        )
+        self.assertEqual(result, (PROBE.OK, "ok"))
+        self.assertEqual(sleeps, [PROBE.RETRY_403_DELAY_SECONDS, PROBE.BUSY_WAIT_SECONDS, PROBE.BUSY_WAIT_SECONDS])
+
+    def test_403_on_an_account_that_stays_busy_gives_account_busy(self):
+        result, _, sleeps = self.probe({"/c.m3u8": (403, b"")}, busy_check=lambda: True)
+        self.assertEqual(result, (PROBE.UNCLEAR, "account-busy"))
+        self.assertEqual(sleeps.count(PROBE.BUSY_WAIT_SECONDS), PROBE.MAX_BUSY_WAITS)
+
+    def test_account_busy_reads_active_and_max_connections(self):
+        def info(active):
+            return lambda: (200, json.dumps(
+                {"user_info": {"active_cons": str(active), "max_connections": "1"}}).encode())
+
+        base, _ = self.serve({"/player_api.php": info(1)})
+        self.assertTrue(PROBE.account_busy(base, USER, PASSWORD))
+        base, _ = self.serve({"/player_api.php": info(0)})
+        self.assertFalse(PROBE.account_busy(base, USER, PASSWORD))
+        self.assertFalse(PROBE.account_busy("http://127.0.0.1:1", USER, PASSWORD))  # failure = not busy
 
     def test_blank_playlist_is_empty(self):
         result, _, _ = self.probe({"/c.m3u8": (200, b"   \n")})
