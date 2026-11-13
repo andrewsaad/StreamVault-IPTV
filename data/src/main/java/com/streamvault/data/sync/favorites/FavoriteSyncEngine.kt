@@ -157,6 +157,7 @@ class FavoriteSyncEngine @Inject constructor(
         FavoriteSyncMerger.maxTimestamp(remote)?.let(clock::observe)
         // The apply shares the commit's transaction: if it fails, the replica, etag and join mode
         // roll back together, so the next sync re-fetches instead of treating the copy as applied.
+        // Accepted cost: the database write lock is held while every provider is applied.
         transactionRunner.inTransaction {
             if (rejoin) {
                 state.resetReplica()

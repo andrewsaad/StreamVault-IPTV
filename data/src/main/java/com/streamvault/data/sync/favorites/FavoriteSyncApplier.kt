@@ -9,7 +9,9 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * Writes the merged document into the local favorites tables, one transaction per provider.
+ * Writes the merged document into the local favorites tables. Each provider is applied in its own
+ * transaction; on the sync path the engine wraps all of them in its integrate transaction, so
+ * they commit or roll back together with the replica. The catalog-commit path applies per provider.
  *
  * Items whose content is not in this TV's catalog yet stay in the document and are counted as
  * unmatched; the catalog-commit hook re-runs the apply so they appear once the catalog has them.
