@@ -14,12 +14,13 @@ Every schema change must satisfy this checklist before the database version is a
 
 ## Current verification requirements
 
-- Current schema: v86.
-- Exported historical origins: v1 and v3-v85; v2 has no committed Room schema export.
-- Required migration coverage: `StreamVaultDatabaseMigrationTest` must validate exported origins through v86 plus populated direct/multi-hop preservation fixtures and the legacy Stremio schema fixture described below.
+- Current schema: v92 (`STREAM_VAULT_DATABASE_VERSION` in `StreamVaultDatabase.kt`).
+- Exported historical origins: v1 and v3-v92; v2 has no committed Room schema export.
+- Required migration coverage: `StreamVaultDatabaseMigrationTest` must validate exported origins through v92 plus populated direct/multi-hop preservation fixtures and the legacy Stremio schema fixture described below.
 - Migration 78 → 79 scopes episode uniqueness to the owning series and expires hydrated series detail timestamps.
 - Migration 79 → 80 adds the four Xtream live receipt columns; migration 80 → 81 creates the durable Stalker live-category retry table and its provider index.
-- Migration 82 → 83 stores playback-quality preferences. Migration 83 → 84 repairs legacy Stremio schema variants and adds the recording network profile. Migration 84 → 85 adds Stremio add-on/history tables and download request metadata. Migration 85 → 86 normalizes databases upgraded from either branch lineage.
+- Migration 81 → 82 adds encrypted SMB credentials to the recording destination and each created recording. Migration 82 → 83 stores playback-quality preferences. Migration 83 → 84 repairs legacy Stremio schema variants and adds the recording network profile. Migration 84 → 85 adds Stremio add-on/history tables and download request metadata. Migration 85 → 86 normalizes databases upgraded from either branch lineage.
+- Migration 86 → 87 stores the last successful Stremio add-on manifest refresh time. Migrations 87 → 88 and 88 → 89 rebuild the catalog FTS indexes (diacritic folding, then a tokenizer option supported by the minimum Android SQLite). Migration 89 → 90 persists M3U catch-up mode and the per-channel archive time correction. Migration 90 → 91 adds guide/live-catalog payload hashes (`sync_content_hashes`, `epg_sources.content_sha256`). Migration 91 → 92 adds favorites sync storage (`virtual_groups.sync_uuid` and the `favorite_sync_state` table).
 - The pre-merge Stremio branch independently exported schema v80 with the same version number but no Xtream receipt columns, the old `(provider_id, episode_id)` episode index, and Stremio add-on/history tables. The migration path repairs that variant, preserving Stremio rows and invalidating affected hydrated-series cache timestamps; keep its populated migration fixture.
 ## Validation (2026-10-10)
 
