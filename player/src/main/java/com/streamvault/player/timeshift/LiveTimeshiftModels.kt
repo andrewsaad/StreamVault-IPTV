@@ -34,7 +34,8 @@ data class TimeshiftConfig(
 
 /**
  * Drops the oldest items until both the duration limit and the optional byte limit hold, and
- * returns the remaining duration. [canPrune] false stops pruning (items that must be kept).
+ * returns the remaining duration. Items for which [canPrune] is false (such as a DASH init
+ * segment) stay in place, still count toward the byte limit, and pruning continues past them.
  */
 internal fun <T> pruneOldestToLimits(
     items: ArrayDeque<T>,
@@ -48,14 +49,36 @@ internal fun <T> pruneOldestToLimits(
 ): Long {
     var durationMs = runningDurationMs
     var bytes = if (maxBytes != null) items.sumOf(bytesOf) else 0L
-    while (items.isNotEmpty() && (durationMs > maxDurationMs || (maxBytes != null && bytes > maxBytes))) {
-        if (!canPrune(items.first())) break
-        val removed = items.removeFirst()
+    var index = 0
+    while (index < items.size && (durationMs > maxDurationMs || (maxBytes != null && bytes > maxBytes))) {
+        if (!canPrune(items[index])) {
+            index++
+            continue
+        }
+        val removed = items.removeAt(index)
         durationMs -= durationOf(removed)
         bytes -= bytesOf(removed)
         onRemoved(removed)
     }
     return durationMs
+}
+
+/** A DASH init segment is stored with no duration and must be kept for every later media segment. */
+internal fun isDashMediaSegment(durationMs: Long): Boolean = durationMs > 0L
+
+/** Seen-set key for a DASH init segment, kept apart from media segment addresses. */
+internal const val DASH_INIT_SEEN_KEY_PREFIX = "__init__:"
+
+/**
+ * Keeps only the seen keys the latest manifest still lists (init keys are always kept). A segment
+ * dropped by pruning stays "seen" while it is still advertised, so it is not downloaded again and
+ * appended out of order, and the set cannot grow without bound. An empty list (a manifest that
+ * could not be resolved) changes nothing, so buffered segments are not fetched a second time.
+ */
+internal fun retainAdvertisedDashSegments(seen: MutableSet<String>, advertisedUris: Collection<String>) {
+    if (advertisedUris.isEmpty()) return
+    val advertised = advertisedUris.toHashSet()
+    seen.retainAll { it.startsWith(DASH_INIT_SEEN_KEY_PREFIX) || it in advertised }
 }
 
 enum class LiveTimeshiftBackend {

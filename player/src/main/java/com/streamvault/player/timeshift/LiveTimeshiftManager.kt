@@ -927,7 +927,7 @@ internal class DefaultLiveTimeshiftManager @Inject constructor(
 
                     // Download init segment once (identified by URL; seenSegments deduplicates it).
                     parsed.initSegmentUrl?.let { initUrl ->
-                        if (seenSegments.add("__init__:$initUrl")) {
+                        if (seenSegments.add("$DASH_INIT_SEEN_KEY_PREFIX$initUrl")) {
                             if (backend == LiveTimeshiftBackend.DISK) checkDiskAndBudget()
                             val retained = retainSegment(RemoteHlsSegment(initUrl, 0L), isInit = true)
                             segmentMutex.withLock { segments += retained }
@@ -947,6 +947,7 @@ internal class DefaultLiveTimeshiftManager @Inject constructor(
                         }
                         updateWindow(windowDuration)
                     }
+                    retainAdvertisedDashSegments(seenSegments, parsed.mediaSegments.map { it.uri })
 
                     if (!parsed.isDynamic) break  // VOD / static — no need to re-poll
                     delay(parsed.minimumUpdatePeriodMs.coerceAtLeast(1_000L))
@@ -1014,14 +1015,17 @@ internal class DefaultLiveTimeshiftManager @Inject constructor(
         }
 
         private fun pruneSegmentsLocked() {
-            while (runningSegmentDurationMs > effectiveDepthMs && segments.isNotEmpty()) {
-                val candidate = segments.first()
-                if (candidate.durationMs == 0L) break  // never prune the init segment
-                val removed = segments.removeFirst()
-                seenSegments.remove(removed.remoteUrl)
-                removed.file?.delete()
-                runningSegmentDurationMs -= removed.durationMs
-            }
+            // The init segment sits at the head of the deque; it is kept and pruning continues past it.
+            runningSegmentDurationMs = pruneOldestToLimits(
+                items = segments,
+                runningDurationMs = runningSegmentDurationMs,
+                maxDurationMs = effectiveDepthMs,
+                maxBytes = effectiveMaxBytes,
+                durationOf = { it.durationMs },
+                bytesOf = { it.payload?.size?.toLong() ?: 0L },
+                canPrune = { isDashMediaSegment(it.durationMs) },
+                onRemoved = { it.file?.delete() }
+            )
         }
 
         private fun streamSegmentToDisk(url: String, target: File) {
