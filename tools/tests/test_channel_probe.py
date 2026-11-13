@@ -5,7 +5,9 @@ import sys
 import tempfile
 import threading
 import unittest
+import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from unittest import mock
 from pathlib import Path
 
 
@@ -22,6 +24,13 @@ PROBE = load("channel_probe", Path(__file__).parents[1] / "channel_probe.py")
 USER = "fixtureuser"
 PASSWORD = "fixture-pass-Zq9"
 TS_SEGMENT = bytes([0x47]) + bytes(8000)
+# Playlist lines that must never be opened. The file path does not exist, so an open attempt
+# would fail with an error the test would catch.
+NON_HTTP_URLS = (
+    b"file:///no-such-dir/channel_probe_fixture.ts",
+    b"ftp://ftp.example.test/fixture.ts",
+    b"data:video/mp2t;base64,R0c=",
+)
 
 
 def make_handler(routes, hits):
@@ -41,6 +50,9 @@ def make_handler(routes, hits):
                 return
             code, body = route
             self.send_response(code)
+            if code in (301, 302, 307):
+                self.send_header("Location", body.decode())
+                body = b""
             self.send_header("Content-Length", str(len(body)))
             self.end_headers()
             self.wfile.write(body)
@@ -180,6 +192,45 @@ class ChannelProbeTest(unittest.TestCase):
         self.assertNotIn(PASSWORD, result[1])
         self.assertNotIn("127.0.0.1", result[1])
 
+    def opened_urls(self, routes):
+        """Runs probe() against the local server and records every URL that _open was asked to fetch."""
+        opened = []
+        real_open = PROBE._open
+
+        def recording_open(url, headers=None):
+            opened.append(url)
+            return real_open(url, headers)
+
+        with mock.patch.object(PROBE, "_open", recording_open):
+            result, _, _ = self.probe(routes)
+        return result, opened
+
+    def test_non_http_variant_url_is_never_opened(self):
+        for entry in NON_HTTP_URLS:
+            with self.subTest(entry=entry):
+                result, opened = self.opened_urls({
+                    "/c.m3u8": (200, b"#EXTM3U\n#EXT-X-STREAM-INF:BANDWIDTH=1\n" + entry + b"\n"),
+                })
+                self.assertEqual(result, (PROBE.DEAD, "no-variant"))
+                self.assertEqual(len(opened), 1)  # only the playlist itself, over http
+                self.assertTrue(opened[0].startswith("http://127.0.0.1:"))
+
+    def test_non_http_segment_url_is_never_opened(self):
+        for entry in NON_HTTP_URLS:
+            with self.subTest(entry=entry):
+                result, opened = self.opened_urls({"/c.m3u8": (200, b"#EXTM3U\n" + entry + b"\n")})
+                self.assertEqual(result, (PROBE.DEAD, "no-segment"))
+                self.assertEqual(len(opened), 1)
+                self.assertTrue(opened[0].startswith("http://127.0.0.1:"))
+
+    def test_redirect_to_a_non_http_url_is_never_followed(self):
+        for target in ("ftp://127.0.0.1:1/x.ts", "file:///no-such-dir/x.ts"):
+            with self.subTest(target=target):
+                with mock.patch.object(urllib.request.FTPHandler, "ftp_open", side_effect=AssertionError) as ftp,                         mock.patch.object(urllib.request.FileHandler, "file_open", side_effect=AssertionError) as file:
+                    result, _, _ = self.probe({"/c.m3u8": (302, target.encode())})
+                self.assertEqual(ftp.call_count + file.call_count, 0)
+                self.assertNotEqual(result[0], PROBE.OK)
+
     def test_parse_secret_requires_all_three_values(self):
         text = "# note\nSERVER= example.test:8080/\nUSERNAME=u\nPASSWORD=p\n"
         self.assertEqual(
@@ -220,6 +271,60 @@ class ChannelProbeTest(unittest.TestCase):
             self.assertNotIn(PASSWORD, everything)
             self.assertNotIn(USER, everything)
             self.assertNotIn("127.0.0.1", everything)
+
+    def test_done_ids_skips_only_final_statuses_and_later_row_wins(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp) / "scan.csv"
+            out.write_text(
+                "id,name,status,detail\n"
+                "1,A,OK,ok\n2,B,DEAD,http404\n3,C,EMPTY,empty-playlist\n"
+                "4,D,UNCLEAR,account-busy\n5,E,UNCLEAR,error-TimeoutError\n"
+                "6,F,OK,ok\n6,F,UNCLEAR,provider-403\n"
+                "7,G,UNCLEAR,repeated-503\n7,G,DEAD,http404\n",
+                encoding="utf-8",
+            )
+            self.assertEqual(PROBE.done_ids(out), {1, 2, 3, 7})
+
+    def test_run_rescans_unclear_channels_and_skips_final_ones(self):
+        routes = {}
+
+        def api():
+            rows = [{"stream_id": i, "name": "Chan %d" % i} for i in (1, 2, 3, 4)]
+            return 200, json.dumps(rows).encode()
+
+        routes["/player_api.php"] = api
+        for i in (1, 2, 3, 4):
+            routes["/live/%s/%s/%d.m3u8" % (USER, PASSWORD, i)] = (200, b"#EXTM3U\nseg%d.ts\n" % i)
+            routes["/live/%s/%s/seg%d.ts" % (USER, PASSWORD, i)] = (200, TS_SEGMENT)
+        base, hits = self.serve(routes)
+        with tempfile.TemporaryDirectory() as tmp:
+            secret = Path(tmp) / "secret.md"
+            secret.write_text("SERVER=%s\nUSERNAME=%s\nPASSWORD=%s\n" % (base, USER, PASSWORD), encoding="utf-8")
+            out = Path(tmp) / "scan.csv"
+            out.write_text(
+                "id,name,status,detail\n"
+                "1,Chan 1,OK,ok\n"
+                "2,Chan 2,UNCLEAR,account-busy\n"
+                "3,Chan 3,DEAD,http404\n"
+                "4,Chan 4,EMPTY,empty-playlist\n",
+                encoding="utf-8",
+            )
+            logged = []
+            counts = PROBE.run(secret, out, sleep=lambda _: None, log=logged.append)
+            # Only the UNCLEAR channel is probed again; OK, DEAD and EMPTY channels are not touched.
+            self.assertEqual(counts, {PROBE.OK: 1, PROBE.DEAD: 0, PROBE.EMPTY: 0, PROBE.UNCLEAR: 0})
+            self.assertIn("/live/%s/%s/2.m3u8" % (USER, PASSWORD), hits)
+            for skipped in (1, 3, 4):
+                self.assertNotIn("/live/%s/%s/%d.m3u8" % (USER, PASSWORD, skipped), hits)
+            self.assertIn("channels: 4 total, 3 already scanned, 1 to scan now", logged)
+            with out.open(newline="", encoding="utf-8") as handle:
+                rows = list(csv.DictReader(handle))
+            # Append-only: the re-probed channel has a new row after its UNCLEAR row.
+            self.assertEqual([(r["id"], r["status"]) for r in rows if r["id"] == "2"],
+                             [("2", "UNCLEAR"), ("2", "OK")])
+            self.assertEqual(PROBE.done_ids(out), {1, 2, 3, 4})
+            # A second run has nothing left to scan.
+            self.assertEqual(sum(PROBE.run(secret, out, sleep=lambda _: None, log=logged.append).values()), 0)
 
 
 if __name__ == "__main__":

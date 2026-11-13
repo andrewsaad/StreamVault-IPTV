@@ -6,8 +6,8 @@ then read the first bytes of the first segment. One connection at a time, becaus
 provider allows only one: never run it while the in-app scan or playback is active.
 
 The tool never prints or writes the provider login or any stream URL. The report is a CSV
-with channel id, name, status and a fixed-vocabulary detail only. Re-running resumes: ids
-already in the CSV are skipped.
+with channel id, name, status and a fixed-vocabulary detail only. Re-running resumes: a channel
+whose latest CSV row is OK, DEAD or EMPTY is skipped; UNCLEAR channels are scanned again.
 
     python tools/channel_probe.py --secret secret.md --out channel_scan.csv
     python tools/channel_probe.py --secret secret.md --out channel_scan.csv --limit 50
@@ -38,6 +38,10 @@ BUSY_WAIT_SECONDS = 30.0
 MAX_BUSY_WAITS = 10
 
 OK, DEAD, EMPTY, UNCLEAR = "OK", "DEAD", "EMPTY", "UNCLEAR"
+# A channel whose latest row has one of these statuses is done. UNCLEAR is retried on a re-run.
+FINAL_STATUSES = (OK, DEAD, EMPTY)
+# Playlist lines can name any scheme (file:, ftp:, data:). Only these are ever opened.
+ALLOWED_URL_SCHEMES = ("http", "https")
 
 
 def parse_secret(text: str) -> dict:
@@ -73,9 +77,27 @@ def _first_entry(text: str):
     return None
 
 
+def _is_http_url(url: str) -> bool:
+    return urllib.parse.urlsplit(url).scheme.lower() in ALLOWED_URL_SCHEMES
+
+
+# Only http and https: the default opener also speaks ftp, file and data, and follows a redirect to them,
+# which would bypass the scheme check on playlist lines. The app's OkHttp probe only follows http(s) too.
+_OPENER = urllib.request.OpenerDirector()
+for _handler in (
+    urllib.request.HTTPHandler,
+    urllib.request.HTTPSHandler,
+    urllib.request.HTTPRedirectHandler,
+    urllib.request.HTTPDefaultErrorHandler,
+    urllib.request.HTTPErrorProcessor,
+    urllib.request.UnknownHandler,
+):
+    _OPENER.add_handler(_handler())
+
+
 def _open(url: str, headers=None):
     request = urllib.request.Request(url, headers=headers or {})
-    return urllib.request.urlopen(request, timeout=TIMEOUT_SECONDS)
+    return _OPENER.open(request, timeout=TIMEOUT_SECONDS)
 
 
 def _fetch(url: str, max_bytes: int, headers=None):
@@ -102,6 +124,8 @@ def _classify_once(playlist_url: str):
         if entry is None:
             return DEAD, "no-variant"
         variant_url = urllib.parse.urljoin(final_url, entry)
+        if not _is_http_url(variant_url):  # treated like an unusable line: no-variant
+            return DEAD, "no-variant"
         code, final_url, body = _fetch(variant_url, MAX_PLAYLIST_BYTES)
         verdict = status_for_http_code(code)
         if verdict:
@@ -115,6 +139,8 @@ def _classify_once(playlist_url: str):
     if entry is None:
         return DEAD, "no-segment"
     segment_url = urllib.parse.urljoin(final_url, entry)
+    if not _is_http_url(segment_url):  # treated like an unusable line: no-segment
+        return DEAD, "no-segment"
     code, _, data = _fetch(segment_url, MAX_SEGMENT_BYTES, {"Range": "bytes=0-%d" % (MAX_SEGMENT_BYTES - 1)})
     verdict = status_for_http_code(code)
     if verdict:
@@ -196,10 +222,19 @@ def playlist_url(server: str, username: str, password: str, stream_id: int) -> s
 
 
 def done_ids(out_path: Path) -> set:
+    """Ids whose latest row has a final status (OK, DEAD, EMPTY).
+
+    The CSV is append-only: a re-probed channel gets a new row and the later row wins. So an
+    UNCLEAR channel re-probed to OK is done, and an OK channel re-probed to UNCLEAR is scanned again.
+    """
     if not out_path.exists():
         return set()
+    latest = {}
     with out_path.open(newline="", encoding="utf-8") as handle:
-        return {int(row["id"]) for row in csv.DictReader(handle) if row.get("id", "").isdigit()}
+        for row in csv.DictReader(handle):
+            if row.get("id", "").isdigit():
+                latest[int(row["id"])] = row.get("status", "")
+    return {cid for cid, status in latest.items() if status in FINAL_STATUSES}
 
 
 def run(secret_path: Path, out_path: Path, limit=None, sleep=time.sleep, log=print):
