@@ -10,7 +10,8 @@ import kotlinx.coroutines.sync.withLock
  * The DASH capture's bookkeeping, kept free of Android and HTTP so tests run the same code the
  * session does: which advertised segments to fetch, the buffered segments, and pruning to the
  * duration limit and, for the memory backend, the byte limit (oldest media segments first). Init
- * segments are stored with no duration and are never pruned.
+ * segments are stored with no duration and are never pruned. A stream restart drops everything
+ * buffered, so old and new timelines are never mixed in one rewind window.
  */
 internal class DashCaptureBuffer<T : Any>(
     private val maxDurationMs: Long,
@@ -43,13 +44,24 @@ internal class DashCaptureBuffer<T : Any>(
         fetch: suspend (uri: String, durationMs: Long, isInit: Boolean) -> T,
         onWindow: (Long) -> Unit
     ) {
+        if (cursor.onManifest(advertised)) {
+            // The stream restarted: the buffered media belongs to the old timeline and would play
+            // before the new segments with a time jump and repeated content. Start over, init included.
+            mutex.withLock {
+                segments.forEach(onRemoved)
+                segments.clear()
+                runningDurationMs = 0L
+            }
+            seenInitUrls.clear()
+            onWindow(0L)
+        }
+
         // Download each init segment once (identified by URL).
         if (initUrl != null && seenInitUrls.add(initUrl)) {
             val init = fetch(initUrl, 0L, true)
             mutex.withLock { segments += init }
         }
 
-        cursor.onManifest(advertised)
         for (segment in advertised) {
             currentCoroutineContext().ensureActive()
             if (!cursor.take(segment)) continue
@@ -106,15 +118,16 @@ internal class DashSegmentCursor(private val restartGapMs: Long = DASH_RESTART_G
     /**
      * Call once per manifest, before [take]. When every advertised segment starts more than
      * [restartGapMs] before the mark, the stream restarted or began a new period: the mark is
-     * cleared so the new segments are captured. A manifest only slightly behind is a lagging copy
-     * and is ignored.
+     * cleared so the new segments are captured, and this returns true so the caller can drop what
+     * it buffered from the old timeline. A manifest only slightly behind is a lagging copy and is
+     * ignored.
      */
-    fun onManifest(advertised: List<DashMediaSegmentRef>) {
-        val mark = lastStartMs ?: return
-        val newest = advertised.maxByOrNull { it.startMs } ?: return
-        if (mark - newest.startMs > restartGapMs) {
-            lastStartMs = null
-        }
+    fun onManifest(advertised: List<DashMediaSegmentRef>): Boolean {
+        val mark = lastStartMs ?: return false
+        val newest = advertised.maxByOrNull { it.startMs } ?: return false
+        if (mark - newest.startMs <= restartGapMs) return false
+        lastStartMs = null
+        return true
     }
 
     /**
@@ -143,6 +156,12 @@ internal data class DashSnapshotPlaylistSegment(
     val isInit: Boolean
 )
 
+/**
+ * Builds the static HLS playlist for a DASH snapshot. Each media segment plays against the init
+ * segment captured most recently before it: the first init becomes the opening `EXT-X-MAP`, and a
+ * later init (a new representation or period) starts a new `EXT-X-MAP` behind an
+ * `EXT-X-DISCONTINUITY`, so no segment is decoded with another init's codec setup or timestamps.
+ */
 internal fun buildDashSnapshotPlaylist(
     targetDurationSeconds: Int,
     segments: List<DashSnapshotPlaylistSegment>
@@ -151,12 +170,21 @@ internal fun buildDashSnapshotPlaylist(
     appendLine("#EXT-X-VERSION:7")
     appendLine("#EXT-X-TARGETDURATION:$targetDurationSeconds")
     appendLine("#EXT-X-MEDIA-SEQUENCE:0")
-    segments.firstOrNull { it.isInit }?.let { initSegment ->
-        appendLine("#EXT-X-MAP:URI=\"${initSegment.fileName}\"")
-    }
-    segments.filterNot(DashSnapshotPlaylistSegment::isInit).forEach { segment ->
+    var pendingInit: String? = null
+    var mediaWritten = false
+    for (segment in segments) {
+        if (segment.isInit) {
+            pendingInit = segment.fileName
+            continue
+        }
+        pendingInit?.let { initFileName ->
+            if (mediaWritten) appendLine("#EXT-X-DISCONTINUITY")
+            appendLine("#EXT-X-MAP:URI=\"$initFileName\"")
+            pendingInit = null
+        }
         appendLine("#EXTINF:${"%.3f".format(Locale.US, segment.durationMs / 1000.0)},")
         appendLine(segment.fileName)
+        mediaWritten = true
     }
     appendLine("#EXT-X-ENDLIST")
 }
