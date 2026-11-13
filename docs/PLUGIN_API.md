@@ -34,7 +34,7 @@ declare an exported service:
 
 Plugins can be installed from:
 
-- A direct HTTP/HTTPS APK URL.
+- A direct HTTPS APK URL (plain HTTP is refused, and downloads stop at 256 MB).
 - A local APK selected with the system file picker.
 - Any manual Android package install. StreamVault detects it after refreshing the
   Plugins screen.
