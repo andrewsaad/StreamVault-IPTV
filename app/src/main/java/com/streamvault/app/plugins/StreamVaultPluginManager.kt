@@ -112,6 +112,13 @@ class StreamVaultPluginManager @Inject constructor(
     private val packageChangeReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             invalidateDiscovery()
+            if (!shouldReconcileForPackageBroadcast(
+                    intent.action,
+                    intent.getBooleanExtra(Intent.EXTRA_REPLACING, false)
+                )
+            ) {
+                return
+            }
             // Package broadcasts are the authoritative lifecycle signal. Reconcile immediately
             // instead of waiting for the next process start, especially after external uninstall.
             val pendingResult = goAsync()
@@ -227,7 +234,9 @@ class StreamVaultPluginManager @Inject constructor(
      */
     suspend fun reconcilePluginProviders() = withContext(Dispatchers.IO) {
         pluginMutationMutex.withLock {
-            val installedComponents = queryPluginServices().mapNotNull { resolveInfo ->
+            // Disabled components still count as installed: disabling a plugin (or the whole app) in Android
+            // settings must not delete the provider and its saved data. Only an uninstall orphans it.
+            val installedComponents = queryPluginServices(includeDisabledComponents = true).mapNotNull { resolveInfo ->
                 componentOf(resolveInfo)
             }.toSet()
             orphanedPluginOwnerships(pluginProviderOwnershipDao.getAll(), installedComponents)
@@ -1011,17 +1020,18 @@ class StreamVaultPluginManager @Inject constructor(
         )
     }
 
-    private fun queryPluginServices(): List<ResolveInfo> {
+    private fun queryPluginServices(includeDisabledComponents: Boolean = false): List<ResolveInfo> {
         val intent = Intent(StreamVaultPluginContract.ACTION_PLUGIN_SERVICE)
         val packageManager = context.packageManager
+        val flags = pluginServiceQueryFlags(includeDisabledComponents)
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             packageManager.queryIntentServices(
                 intent,
-                PackageManager.ResolveInfoFlags.of(PackageManager.GET_META_DATA.toLong())
+                PackageManager.ResolveInfoFlags.of(flags.toLong())
             )
         } else {
             @Suppress("DEPRECATION")
-            packageManager.queryIntentServices(intent, PackageManager.GET_META_DATA)
+            packageManager.queryIntentServices(intent, flags)
         }
     }
 
@@ -1211,6 +1221,18 @@ private fun String.isSafeHttpHeaderName(): Boolean =
     isNotBlank() && all { char ->
         char.isLetterOrDigit() || char in setOf('!', '#', '$', '%', '&', '\'', '*', '+', '.', '^', '_', '`', '|', '~', '-')
     }
+
+/** Discovery lists only usable services; the orphan check also needs disabled ones. */
+internal fun pluginServiceQueryFlags(includeDisabledComponents: Boolean): Int =
+    PackageManager.GET_META_DATA or
+        if (includeDisabledComponents) PackageManager.MATCH_DISABLED_COMPONENTS else 0
+
+/**
+ * An app update sends PACKAGE_REMOVED with EXTRA_REPLACING before PACKAGE_ADDED/REPLACED. Reconciling on that first
+ * broadcast could see the plugin service as missing and delete its provider, so wait for the follow-up broadcast.
+ */
+internal fun shouldReconcileForPackageBroadcast(action: String?, replacing: Boolean): Boolean =
+    !(action == Intent.ACTION_PACKAGE_REMOVED && replacing)
 
 internal fun orphanedPluginOwnerships(
     ownerships: List<PluginProviderOwnershipEntity>,
