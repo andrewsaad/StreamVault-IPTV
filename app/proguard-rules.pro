@@ -73,6 +73,20 @@
 -keep class com.streamvault.domain.manager.ProviderCredentials { *; }
 -keep class com.streamvault.domain.settings.VodTrackPreference { *; }
 -keep class com.streamvault.domain.settings.VodTrackPreferences { *; }
+# Settings and staging records written to DataStore, backups or the database as Gson
+# JSON. Renamed fields or enum constants would make an upgraded release read them as
+# empty and fall back to defaults.
+-keep class com.streamvault.domain.settings.PlaybackQualityPreferences { *; }
+-keep class com.streamvault.domain.settings.PlaybackQualityLimit { *; }
+-keep class com.streamvault.domain.settings.PlaybackQualityProfile { *; }
+-keep class com.streamvault.domain.sync.AutomaticSyncSettings { *; }
+-keep class com.streamvault.domain.sync.AutomaticSyncConfiguration { *; }
+-keep class com.streamvault.domain.sync.AutomaticSyncStatus { *; }
+-keep class com.streamvault.domain.sync.AutomaticSyncOutcome { *; }
+-keep class com.streamvault.domain.sync.RefreshSection { *; }
+-keep class com.streamvault.data.provider.ProviderConfigRevisionEnvelope { *; }
+-keep class com.streamvault.data.manager.BackupManagerImpl$ReplaceScopePayload { *; }
+-keep class com.streamvault.data.manager.PendingBackupRestoreCoordinator$ReplaceScopePayload { *; }
 -keep class com.streamvault.data.local.entity.** { *; }
 -keep class com.streamvault.data.remote.xtream.model.** { *; }
 
