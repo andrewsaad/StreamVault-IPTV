@@ -99,3 +99,18 @@ internal class CoalescingSnapshotWriter(
         worker.join()
     }
 }
+
+/**
+ * The support snapshot is one shared file, so an engine with nothing loaded (an idle preview or
+ * multi-view slot) must not overwrite the report of the engine that is actually playing.
+ */
+internal fun shouldWritePlaybackSupportSnapshot(
+    hasStream: Boolean,
+    isLowMemoryDevice: Boolean,
+    isBuffering: Boolean,
+    hasFirstFrame: Boolean
+): Boolean {
+    if (!hasStream) return false
+    if (!isLowMemoryDevice) return true
+    return !isBuffering || hasFirstFrame
+}

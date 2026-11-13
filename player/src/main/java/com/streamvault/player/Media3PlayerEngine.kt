@@ -3234,10 +3234,13 @@ class Media3PlayerEngine @Inject constructor(
         appendLine("lastError=${PlaybackLogSanitizer.sanitizeMessage(lastSupportErrorMessage)}")
     }
 
-    private fun shouldRefreshPlaybackSupportSnapshot(): Boolean {
-        if (!isLowMemoryPlaybackDevice) return true
-        return _playbackState.value != PlaybackState.BUFFERING || _playerStats.value.ttffMs > 0L
-    }
+    private fun shouldRefreshPlaybackSupportSnapshot(): Boolean =
+        shouldWritePlaybackSupportSnapshot(
+            hasStream = lastStreamInfo != null,
+            isLowMemoryDevice = isLowMemoryPlaybackDevice,
+            isBuffering = _playbackState.value == PlaybackState.BUFFERING,
+            hasFirstFrame = _playerStats.value.ttffMs > 0L
+        )
 
     private fun resolveStartupAudioOutputPath(): String = when {
         audioOutputPreference == AudioOutputPreference.PREFER_PASSTHROUGH -> "PASSTHROUGH_PREFERRED"
