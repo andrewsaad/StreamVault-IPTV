@@ -1,5 +1,75 @@
 package com.streamvault.player.timeshift
 
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+
+/**
+ * The DASH capture's bookkeeping, kept free of Android and HTTP so tests run the same code the
+ * session does: which advertised segments to fetch, the buffered segments, and pruning to the
+ * duration limit and, for the memory backend, the byte limit (oldest media segments first). Init
+ * segments are stored with no duration and are never pruned.
+ */
+internal class DashCaptureBuffer<T : Any>(
+    private val maxDurationMs: Long,
+    private val maxBytes: Long?,
+    private val durationOf: (T) -> Long,
+    private val bytesOf: (T) -> Long,
+    private val onRemoved: (T) -> Unit
+) {
+    private val segments = ArrayDeque<T>()
+    private val mutex = Mutex()
+    private val seenInitUrls = linkedSetOf<String>()
+    private val cursor = DashSegmentCursor()
+    private var runningDurationMs = 0L
+
+    /**
+     * Takes in one manifest poll. [fetch] downloads a segment (an init segment when `isInit`);
+     * [onWindow] receives the buffered media duration after each media segment is added.
+     * Must be called from a single capture coroutine at a time.
+     */
+    suspend fun ingest(
+        initUrl: String?,
+        advertised: List<DashMediaSegmentRef>,
+        fetch: suspend (uri: String, durationMs: Long, isInit: Boolean) -> T,
+        onWindow: (Long) -> Unit
+    ) {
+        // Download each init segment once (identified by URL).
+        if (initUrl != null && seenInitUrls.add(initUrl)) {
+            val init = fetch(initUrl, 0L, true)
+            mutex.withLock { segments += init }
+        }
+
+        cursor.onManifest(advertised)
+        for (segment in advertised) {
+            currentCoroutineContext().ensureActive()
+            if (!cursor.take(segment)) continue
+            val retained = fetch(segment.uri, segment.durationMs, false)
+            val windowDurationMs = mutex.withLock {
+                runningDurationMs += durationOf(retained)
+                segments += retained
+                runningDurationMs = pruneOldestToLimits(
+                    items = segments,
+                    runningDurationMs = runningDurationMs,
+                    maxDurationMs = maxDurationMs,
+                    maxBytes = maxBytes,
+                    durationOf = durationOf,
+                    bytesOf = bytesOf,
+                    // The init segment sits at the head; it is kept and pruning continues past it.
+                    canPrune = { isDashMediaSegment(durationOf(it)) },
+                    onRemoved = onRemoved
+                )
+                runningDurationMs
+            }
+            onWindow(windowDurationMs)
+        }
+    }
+
+    /** The buffered segments in capture order, init segments included. */
+    suspend fun snapshot(): List<T> = mutex.withLock { segments.toList() }
+}
+
 /**
  * One media segment a DASH manifest advertises. [position] is the segment's `$Time$`
  * (SegmentTimeline) or `$Number$` (fixed duration), which only grows during a live stream;

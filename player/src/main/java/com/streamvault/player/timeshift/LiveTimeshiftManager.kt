@@ -911,11 +911,13 @@ internal class DefaultLiveTimeshiftManager @Inject constructor(
         sessionDir: File
     ) : Session(streamInfo, config, backend, sessionDir) {
 
-        private val segments = ArrayDeque<HlsSegmentSnapshot>()
-        private val segmentMutex = Mutex()
-        private val seenInitUrls = linkedSetOf<String>()
-        private val mediaCursor = DashSegmentCursor()
-        private var runningSegmentDurationMs = 0L
+        private val buffer = DashCaptureBuffer<HlsSegmentSnapshot>(
+            maxDurationMs = effectiveDepthMs,
+            maxBytes = effectiveMaxBytes,
+            durationOf = { it.durationMs },
+            bytesOf = { it.payload?.size?.toLong() ?: 0L },
+            onRemoved = { it.file?.delete() }
+        )
 
         override suspend fun capture() {
             var consecutiveErrors = 0
@@ -926,29 +928,15 @@ internal class DefaultLiveTimeshiftManager @Inject constructor(
                     consecutiveErrors = 0
                     val parsed = parseMpd(streamInfo.url, mpdText)
 
-                    // Download init segment once (identified by URL; seenInitUrls deduplicates it).
-                    parsed.initSegmentUrl?.let { initUrl ->
-                        if (seenInitUrls.add(initUrl)) {
+                    buffer.ingest(
+                        initUrl = parsed.initSegmentUrl,
+                        advertised = parsed.mediaSegments,
+                        fetch = { uri, durationMs, isInit ->
                             if (backend == LiveTimeshiftBackend.DISK) checkDiskAndBudget()
-                            val retained = retainSegment(initUrl, durationMs = 0L, isInit = true)
-                            segmentMutex.withLock { segments += retained }
-                        }
-                    }
-
-                    mediaCursor.onManifest(parsed.mediaSegments)
-                    parsed.mediaSegments.forEach { remote ->
-                        currentCoroutineContext().ensureActive()
-                        if (!mediaCursor.take(remote)) return@forEach
-                        if (backend == LiveTimeshiftBackend.DISK) checkDiskAndBudget()
-                        val retained = retainSegment(remote.uri, remote.durationMs, isInit = false)
-                        val windowDuration = segmentMutex.withLock {
-                            runningSegmentDurationMs += retained.durationMs
-                            segments += retained
-                            pruneSegmentsLocked()
-                            runningSegmentDurationMs
-                        }
-                        updateWindow(windowDuration)
-                    }
+                            retainSegment(uri, durationMs, isInit)
+                        },
+                        onWindow = { windowDuration -> updateWindow(windowDuration) }
+                    )
 
                     if (!parsed.isDynamic) break  // VOD / static — no need to re-poll
                     delay(parsed.minimumUpdatePeriodMs.coerceAtLeast(1_000L))
@@ -965,8 +953,8 @@ internal class DefaultLiveTimeshiftManager @Inject constructor(
             val snapshotId = sequence.incrementAndGet()
             val snapshotDir = File(sessionDir, "snapshot-$snapshotId").apply { mkdirs() }
             activeSnapshotDir = snapshotDir
-            val snapshotSegments = segmentMutex.withLock { segments.toList() }
-                .filter { it.durationMs > 0L }  // exclude init segment from HLS timing
+            val all = buffer.snapshot()  // includes init
+            val snapshotSegments = all.filter { it.durationMs > 0L }  // exclude init segment from HLS timing
             if (snapshotSegments.isEmpty()) return null
 
             // Re-package captured DASH segments as a static HLS playlist.
@@ -974,7 +962,6 @@ internal class DefaultLiveTimeshiftManager @Inject constructor(
             // is built around HLS output, so DASH snapshots follow the same pattern.
             val playlist = File(snapshotDir, "index.m3u8")
             val targetDurationSeconds = snapshotSegments.maxOf { ((it.durationMs + 999L) / 1000L).toInt().coerceAtLeast(1) }
-            val all = segmentMutex.withLock { segments.toList() }  // includes init
             var mediaIndex = 0
             val playlistSegments = all.mapIndexed { index, segment ->
                 val isInit = segment.durationMs == 0L
@@ -1013,20 +1000,6 @@ internal class DefaultLiveTimeshiftManager @Inject constructor(
                 val bytes = fetchBytes(uri)
                 HlsSegmentSnapshot(uri, durationMs, null, bytes)
             }
-        }
-
-        private fun pruneSegmentsLocked() {
-            // The init segment sits at the head of the deque; it is kept and pruning continues past it.
-            runningSegmentDurationMs = pruneOldestToLimits(
-                items = segments,
-                runningDurationMs = runningSegmentDurationMs,
-                maxDurationMs = effectiveDepthMs,
-                maxBytes = effectiveMaxBytes,
-                durationOf = { it.durationMs },
-                bytesOf = { it.payload?.size?.toLong() ?: 0L },
-                canPrune = { isDashMediaSegment(it.durationMs) },
-                onRemoved = { it.file?.delete() }
-            )
         }
 
         private fun streamSegmentToDisk(url: String, target: File) {
