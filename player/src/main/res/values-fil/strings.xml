@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="player_error_live_startup_timeout">Hindi masimulan ang pag-play. Subukan ang ibang stream.</string>
-    <string name="player_live_timeshift_still_buffering">Nagba-buffer pa ang local live rewind.</string>
+    <string name="player_live_timeshift_still_buffering">Inihahanda pa ang lokal na pag-rewind ng live na palabas.</string>
 </resources>
