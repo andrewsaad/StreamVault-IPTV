@@ -309,6 +309,70 @@ class ProviderSyncWorkerTest {
     }
 
     @Test
+    fun `sync success keeps provider edits made while the sync was running`() = runTest {
+        val staleProvider = ProviderEntity(
+            id = 9L,
+            name = "Playlist",
+            type = ProviderType.M3U,
+            serverUrl = "https://example.com/list.m3u",
+            m3uUrl = "https://example.com/list.m3u",
+            isActive = false,
+            status = ProviderStatus.PARTIAL,
+            lastSyncedAt = 0L
+        )
+        val editedDuringSync = staleProvider.copy(name = "Renamed", m3uUrl = "https://example.com/new.m3u")
+        whenever(providerDao.getById(9L)).thenReturn(editedDuringSync)
+        whenever(syncManager.currentSyncState(9L)).thenReturn(SyncState.Success(123L))
+
+        reconcileTargetedProviderStatus(
+            providerDao = providerDao,
+            channelDao = channelDao,
+            categoryDao = categoryDao,
+            syncMetadataRepository = syncMetadataRepository,
+            syncManager = syncManager,
+            provider = staleProvider,
+            result = Result.success(Unit),
+            currentTimeMillis = 456L
+        )
+
+        val updatedProvider = argumentCaptor<ProviderEntity>()
+        verify(providerDao).update(updatedProvider.capture())
+        assertThat(updatedProvider.firstValue.name).isEqualTo("Renamed")
+        assertThat(updatedProvider.firstValue.m3uUrl).isEqualTo("https://example.com/new.m3u")
+        assertThat(updatedProvider.firstValue.status).isEqualTo(ProviderStatus.ACTIVE)
+        assertThat(updatedProvider.firstValue.lastSyncedAt).isEqualTo(456L)
+    }
+
+    @Test
+    fun `sync failure keeps provider edits made while the sync was running`() = runTest {
+        val staleProvider = ProviderEntity(
+            id = 9L,
+            name = "Playlist",
+            type = ProviderType.M3U,
+            serverUrl = "https://example.com/list.m3u",
+            m3uUrl = "https://example.com/list.m3u",
+            isActive = true,
+            status = ProviderStatus.ACTIVE
+        )
+        whenever(providerDao.getById(9L)).thenReturn(staleProvider.copy(name = "Renamed"))
+
+        reconcileTargetedProviderStatus(
+            providerDao = providerDao,
+            channelDao = channelDao,
+            categoryDao = categoryDao,
+            syncMetadataRepository = syncMetadataRepository,
+            syncManager = syncManager,
+            provider = staleProvider,
+            result = Result.error("boom")
+        )
+
+        val updatedProvider = argumentCaptor<ProviderEntity>()
+        verify(providerDao).update(updatedProvider.capture())
+        assertThat(updatedProvider.firstValue.name).isEqualTo("Renamed")
+        assertThat(updatedProvider.firstValue.status).isEqualTo(ProviderStatus.ERROR)
+    }
+
+    @Test
     fun `targeted xtream resume success without committed live channels stays inactive partial`() = runTest {
         val provider = ProviderEntity(
             id = 9L,

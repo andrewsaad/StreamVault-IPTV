@@ -66,6 +66,9 @@ internal suspend fun reconcileTargetedProviderStatus(
     activateOnSuccess: Boolean = true,
     currentTimeMillis: Long = System.currentTimeMillis()
 ) {
+    // `provider` was read before the sync ran. Write back the current row so edits made during
+    // the sync (name, URLs, credentials, runtime fields) are not overwritten with stale values.
+    val currentProvider = providerDao.getById(provider.id) ?: provider
     when (result) {
         is com.streamvault.domain.model.Result.Success -> {
             val finalStatus = if (syncManager.currentSyncState(provider.id) is SyncState.Partial) {
@@ -81,7 +84,7 @@ internal suspend fun reconcileTargetedProviderStatus(
                     syncMetadataRepository
                 )) {
                 providerDao.update(
-                    provider.copy(
+                    currentProvider.copy(
                         isActive = false,
                         status = ProviderStatus.PARTIAL,
                         lastSyncedAt = currentTimeMillis
@@ -89,9 +92,8 @@ internal suspend fun reconcileTargetedProviderStatus(
                 )
                 return
             }
-            val currentProvider = providerDao.getById(provider.id) ?: provider
             providerDao.update(
-                provider.copy(
+                currentProvider.copy(
                     // A periodic sync must never change the user's selected provider. The
                     // explicit targeted-resume path may activate its provider, while all other
                     // successful syncs retain the current persisted selection.
@@ -102,8 +104,8 @@ internal suspend fun reconcileTargetedProviderStatus(
             )
         }
         is com.streamvault.domain.model.Result.Error -> {
-            if (provider.status != ProviderStatus.PARTIAL) {
-                providerDao.update(provider.copy(isActive = false, status = ProviderStatus.ERROR))
+            if (currentProvider.status != ProviderStatus.PARTIAL) {
+                providerDao.update(currentProvider.copy(isActive = false, status = ProviderStatus.ERROR))
             }
         }
         is com.streamvault.domain.model.Result.Loading -> Unit
