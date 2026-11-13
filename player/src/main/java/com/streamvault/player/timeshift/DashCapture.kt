@@ -20,6 +20,13 @@ internal class DashCaptureBuffer<T : Any>(
 ) {
     private val segments = ArrayDeque<T>()
     private val mutex = Mutex()
+    /**
+     * Init segment URLs already downloaded. Media segments are not tracked here ([cursor] covers
+     * them), so this grows by one entry per distinct init URL, normally one per representation or
+     * period. It is not bounded: a server that changes the init URL on every poll adds an entry and
+     * a pinned init segment (never pruned) each time, for the life of the session. A URL is marked
+     * before its fetch, so a failed init download is not retried under the same URL.
+     */
     private val seenInitUrls = linkedSetOf<String>()
     private val cursor = DashSegmentCursor()
     private var runningDurationMs = 0L
