@@ -19,6 +19,9 @@ import org.junit.After
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.mockito.kotlin.any
+import org.mockito.kotlin.doThrow
+import org.mockito.kotlin.mock
 import org.robolectric.RuntimeEnvironment
 
 /**
@@ -357,6 +360,28 @@ class FavoriteSyncIntegrationTest {
     }
 
     @Test
+    fun `a failed apply rolls back the commit so the next sync applies the server copy`() = runTest {
+        val a = tv(1, listOf(1))
+        val b = tv(7, listOf(1))
+        a.addLive(1)
+        a.pair(); a.engine.sync()
+        b.pair()
+
+        val failingApplier: FavoriteSyncApplier = mock {
+            onBlocking { apply(any(), any(), any()) } doThrow IllegalStateException("apply failed")
+        }
+        assertThat(b.engineWith(failingApplier).sync()).isInstanceOf(FavoriteSyncOutcome.Failed::class.java)
+
+        // Nothing from the failed pass was committed, so the join is still pending.
+        assertThat(b.state.etag()).isNull()
+        assertThat(b.state.joinMode()).isEqualTo(FavoriteSyncJoinMode.MERGE)
+        assertThat(b.globalLiveStreams()).isEmpty()
+
+        assertThat(b.engine.sync()).isEqualTo(FavoriteSyncOutcome.Synced)
+        assertThat(b.globalLiveStreams()).containsExactly(1L)
+    }
+
+    @Test
     fun `every TV reads the household salt from the server copy`() = runTest {
         val a = tv(1, listOf(1))
         val b = tv(7, listOf(1))
@@ -390,7 +415,7 @@ class FavoriteSyncIntegrationTest {
         state.setJoinMode(mode)
     }
 
-    private class Tv(val database: StreamVaultDatabase, val providerId: Long, server: FakeSyncServer) {
+    private class Tv(val database: StreamVaultDatabase, val providerId: Long, private val server: FakeSyncServer) {
         val secrets = InMemorySecretStore()
         // Few PBKDF2 rounds keep the tests fast; production uses FavoriteSyncCrypto.PBKDF2_ITERATIONS.
         private val keyring = FavoriteSyncKeyring(secrets, 10)
@@ -399,11 +424,14 @@ class FavoriteSyncIntegrationTest {
         private val identity = FavoriteSyncIdentity(database.providerDao(), { IDENTITY }, dao)
         private val runner = RoomDatabaseTransactionRunner(database)
         val recorder = FavoriteSyncRecorder(secrets, state, identity, dao, FavoriteSyncChangeSignal(), keyring)
-        val engine = FavoriteSyncEngine(
+        val engine = engineWith(FavoriteSyncApplier(dao, database.favoriteDao(), identity, runner))
+
+        // Engine and applier share nothing else, so a test can swap the applier alone.
+        fun engineWith(applier: FavoriteSyncApplier) = FavoriteSyncEngine(
             secrets,
             state,
             identity,
-            FavoriteSyncApplier(dao, database.favoriteDao(), identity, runner),
+            applier,
             recorder,
             runner,
             { _, _ -> server.transport },

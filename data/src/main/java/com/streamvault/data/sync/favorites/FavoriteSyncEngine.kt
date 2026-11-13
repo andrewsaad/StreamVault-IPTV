@@ -155,7 +155,9 @@ class FavoriteSyncEngine @Inject constructor(
         val providerKeys = identity.localProviderKeys(keys)
         val clock = state.clock()
         FavoriteSyncMerger.maxTimestamp(remote)?.let(clock::observe)
-        val (merged, joinMode) = transactionRunner.inTransaction {
+        // The apply shares the commit's transaction: if it fails, the replica, etag and join mode
+        // roll back together, so the next sync re-fetches instead of treating the copy as applied.
+        transactionRunner.inTransaction {
             if (rejoin) {
                 state.resetReplica()
                 if (state.joinMode() == null) state.setJoinMode(FavoriteSyncJoinMode.MERGE)
@@ -178,12 +180,11 @@ class FavoriteSyncEngine @Inject constructor(
             // The replica was read inside this transaction, so equality means nothing is left to upload.
             state.setDirty(merged != remote)
             state.saveClock()
-            merged to joinMode
+            // "Use the server's copy" only overrides providers the server copy actually has.
+            val authoritative = if (joinMode == FavoriteSyncJoinMode.USE_SERVER) remote.providers.keys else emptySet()
+            state.setUnmatchedCount(applier.apply(merged, providerKeys, authoritative))
+            if (joinMode != null) state.setJoinMode(null)
         }
-        // "Use the server's copy" only overrides providers the server copy actually has.
-        val authoritative = if (joinMode == FavoriteSyncJoinMode.USE_SERVER) remote.providers.keys else emptySet()
-        state.setUnmatchedCount(applier.apply(merged, providerKeys, authoritative))
-        if (joinMode != null) state.setJoinMode(null)
     }
 
     /** First join: the server copy plus this TV's favorites under [policy]. */
