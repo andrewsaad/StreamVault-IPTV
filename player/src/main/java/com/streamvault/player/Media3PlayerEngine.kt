@@ -298,11 +298,29 @@ class Media3PlayerEngine @Inject constructor(
     private val preloadPriorityHandler = Handler(context.mainLooper)
     private val qualityConnectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
     private var qualityNetworkCallbackRegistered = false
+    private val qualityNetworkFilter = QualityNetworkChangeFilter()
     private val qualityNetworkCallback = object : ConnectivityManager.NetworkCallback() {
-        override fun onAvailable(network: Network) = scheduleQualityPolicyRefresh()
-        override fun onLost(network: Network) = scheduleQualityPolicyRefresh()
-        override fun onCapabilitiesChanged(network: Network, networkCapabilities: NetworkCapabilities) =
-            scheduleQualityPolicyRefresh()
+        override fun onAvailable(network: Network) {
+            if (qualityNetworkFilter.onAvailable(network)) scheduleQualityPolicyRefresh()
+        }
+        override fun onLost(network: Network) {
+            if (qualityNetworkFilter.onLost(network)) scheduleQualityPolicyRefresh()
+        }
+        override fun onCapabilitiesChanged(network: Network, networkCapabilities: NetworkCapabilities) {
+            val signature = QualityNetworkChangeFilter.Signature(
+                transportMask = listOf(
+                    NetworkCapabilities.TRANSPORT_WIFI,
+                    NetworkCapabilities.TRANSPORT_CELLULAR,
+                    NetworkCapabilities.TRANSPORT_ETHERNET,
+                    NetworkCapabilities.TRANSPORT_VPN
+                ).foldIndexed(0) { index, mask, transport ->
+                    if (networkCapabilities.hasTransport(transport)) mask or (1 shl index) else mask
+                },
+                metered = !networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_METERED),
+                validated = networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
+            )
+            if (qualityNetworkFilter.onCapabilitiesChanged(network, signature)) scheduleQualityPolicyRefresh()
+        }
     }
     private var currentRetryContext: PlaybackRetryContext? = null
     private var journalSessionPending = false
