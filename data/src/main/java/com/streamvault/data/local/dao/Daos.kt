@@ -3577,13 +3577,27 @@ abstract class FavoriteDao {
         newContentType: String
     )
 
-    @Query("DELETE FROM favorites WHERE content_type = 'LIVE' AND content_id NOT IN (SELECT id FROM channels)")
+    /**
+     * Stale-favorite cleanup for the three types below. A provider whose latest sync failed or was
+     * partial may be missing items only because its catalog is incomplete, so its favorites are kept
+     * until a healthy sync. Maintenance only runs while no provider sync is active.
+     */
+    @Query(
+        "DELETE FROM favorites WHERE content_type = 'LIVE' AND content_id NOT IN (SELECT id FROM channels) " +
+            "AND provider_id NOT IN (SELECT id FROM providers WHERE status IN ('ERROR', 'PARTIAL'))"
+    )
     abstract suspend fun deleteMissingLiveFavorites(): Int
 
-    @Query("DELETE FROM favorites WHERE content_type = 'MOVIE' AND content_id NOT IN (SELECT id FROM movies)")
+    @Query(
+        "DELETE FROM favorites WHERE content_type = 'MOVIE' AND content_id NOT IN (SELECT id FROM movies) " +
+            "AND provider_id NOT IN (SELECT id FROM providers WHERE status IN ('ERROR', 'PARTIAL'))"
+    )
     abstract suspend fun deleteMissingMovieFavorites(): Int
 
-    @Query("DELETE FROM favorites WHERE content_type = 'SERIES' AND content_id NOT IN (SELECT id FROM series)")
+    @Query(
+        "DELETE FROM favorites WHERE content_type = 'SERIES' AND content_id NOT IN (SELECT id FROM series) " +
+            "AND provider_id NOT IN (SELECT id FROM providers WHERE status IN ('ERROR', 'PARTIAL'))"
+    )
     abstract suspend fun deleteMissingSeriesFavorites(): Int
 
     @Query("SELECT * FROM favorites WHERE id = :favoriteId LIMIT 1")
