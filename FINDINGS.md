@@ -44,3 +44,6 @@ One line per finding; full write-up by key: `node ~/.claude/scripts/doc-lookup.j
 - [beein-english-channels-503]: All six beIN Sport 1/2 EN channels return HTTP 503 on every probe while the account is idle and other channels
 - [windows-kernel-paged-pool-reaped-builds]: 5.7 GB of Windows paged pool left about 2 GB free, so the harness stopped about ten Gradle runs
 - [single-connection-provider-account]: The provider allows one connection: any scan or playback blocks the others, and the app showed the provider Un
+- [scan-resume-reprobed-same-stretch]: In-app scan resume held the point back to the first refused channel, so a scan stopped every ~10 min could re-probe the same stretch and never finish (fixed, commit 69be4f06)
+- [rescan-run-unusable-evidence]: The 2026-11-12 re-probe of EMPTY/UNCLEAR channels is unusable as evidence: 1,548 network errors, 487 first-scan OK became EMPTY, 178 EMPTY became OK
+- [player-idle-reset-test-fails-on-master]: IdleConnectionResetRecoveryTest (resume offset 532480 vs at least 1000000) fails on fork master 68b2ca4a as well as the branch
