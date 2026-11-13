@@ -11,6 +11,12 @@ internal class QualityNetworkChangeFilter {
     private var networkId: Any? = null
     private var signature: Signature? = null
 
+    /** Forgets the tracked network so a fresh callback registration behaves like a first sighting. */
+    fun reset() {
+        networkId = null
+        signature = null
+    }
+
     fun onAvailable(id: Any): Boolean {
         if (id == networkId) return false
         networkId = id

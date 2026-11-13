@@ -1860,6 +1860,7 @@ class Media3PlayerEngine @Inject constructor(
     private fun registerQualityNetworkCallback() {
         val manager = qualityConnectivityManager ?: return
         if (qualityNetworkCallbackRegistered) return
+        qualityNetworkFilter.reset()
         runCatching { manager.registerDefaultNetworkCallback(qualityNetworkCallback) }
             .onSuccess { qualityNetworkCallbackRegistered = true }
             .onFailure { error ->
@@ -1872,6 +1873,7 @@ class Media3PlayerEngine @Inject constructor(
         if (!qualityNetworkCallbackRegistered) return
         runCatching { manager.unregisterNetworkCallback(qualityNetworkCallback) }
         qualityNetworkCallbackRegistered = false
+        qualityNetworkFilter.reset()
     }
 
     private fun scheduleQualityPolicyRefresh() {

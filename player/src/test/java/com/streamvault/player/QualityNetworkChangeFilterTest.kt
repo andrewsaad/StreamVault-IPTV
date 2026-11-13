@@ -19,6 +19,18 @@ class QualityNetworkChangeFilterTest {
     }
 
     @Test
+    fun `reset makes the next callback behave like a first sighting`() {
+        val filter = QualityNetworkChangeFilter()
+        filter.onAvailable("net1")
+        filter.onCapabilitiesChanged("net1", wifi)
+        assertThat(filter.onAvailable("net1")).isFalse()
+
+        filter.reset()
+
+        assertThat(filter.onAvailable("net1")).isTrue()
+    }
+
+    @Test
     fun `transport change, new network and loss reset quality state`() {
         val filter = QualityNetworkChangeFilter()
         filter.onAvailable("net1")
