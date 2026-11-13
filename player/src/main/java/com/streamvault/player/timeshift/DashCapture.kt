@@ -15,8 +15,8 @@ import kotlinx.coroutines.sync.withLock
  * buffered, so old and new timelines are never mixed in one rewind window.
  */
 internal class DashCaptureBuffer<T : Any>(
-    private val maxDurationMs: Long,
-    private val maxBytes: Long?,
+    val maxDurationMs: Long,
+    val maxBytes: Long?,
     private val durationOf: (T) -> Long,
     private val bytesOf: (T) -> Long,
     private val onRemoved: (T) -> Unit
@@ -110,6 +110,24 @@ internal class DashCaptureBuffer<T : Any>(
     /** The buffered segments in capture order, init segments included. */
     suspend fun snapshot(): List<T> = mutex.withLock { segments.toList() }
 }
+
+/**
+ * The buffer a DASH capture session runs on, with the duration and byte limits taken from [config]
+ * for [backend], so the session cannot leave the memory backend without its byte cap.
+ */
+internal fun <T : Any> dashCaptureBufferFor(
+    config: TimeshiftConfig,
+    backend: LiveTimeshiftBackend,
+    durationOf: (T) -> Long,
+    bytesOf: (T) -> Long,
+    onRemoved: (T) -> Unit
+): DashCaptureBuffer<T> = DashCaptureBuffer(
+    maxDurationMs = config.effectiveDepthMs(backend),
+    maxBytes = config.effectiveMaxBytes(backend),
+    durationOf = durationOf,
+    bytesOf = bytesOf,
+    onRemoved = onRemoved
+)
 
 /**
  * One media segment a DASH manifest advertises. [position] is the segment's `$Time$`

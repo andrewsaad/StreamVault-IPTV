@@ -82,4 +82,25 @@ class DashSegmentCursorTest {
 
         assertThat(cursor.poll(segments(4L..6L))).containsExactly(6L)
     }
+
+    private fun startingAt(startMs: Long) =
+        listOf(DashMediaSegmentRef(uri = "seg-$startMs.m4s", durationMs = 2_000L, position = startMs, startMs = startMs))
+
+    @Test
+    fun `a manifest just under a minute behind the mark is a lagging copy`() {
+        val cursor = DashSegmentCursor()
+        cursor.poll(startingAt(1_000_000L))
+
+        assertThat(cursor.onManifest(startingAt(1_000_000L - 59_999L))).isFalse()
+        assertThat(cursor.onManifest(startingAt(1_000_000L - 60_000L))).isFalse()
+        assertThat(cursor.poll(startingAt(1_000_000L - 60_000L))).isEmpty()
+    }
+
+    @Test
+    fun `a manifest just over a minute behind the mark is a restart`() {
+        val cursor = DashSegmentCursor()
+        cursor.poll(startingAt(1_000_000L))
+
+        assertThat(cursor.poll(startingAt(1_000_000L - 60_001L))).containsExactly(1_000_000L - 60_001L)
+    }
 }

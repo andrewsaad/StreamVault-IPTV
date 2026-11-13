@@ -885,9 +885,9 @@ internal class DefaultLiveTimeshiftManager @Inject constructor(
         sessionDir: File
     ) : Session(streamInfo, config, backend, sessionDir) {
 
-        private val buffer = DashCaptureBuffer<HlsSegmentSnapshot>(
-            maxDurationMs = effectiveDepthMs,
-            maxBytes = effectiveMaxBytes,
+        private val buffer = dashCaptureBufferFor<HlsSegmentSnapshot>(
+            config = config,
+            backend = backend,
             durationOf = { it.durationMs },
             bytesOf = { it.payload?.size?.toLong() ?: 0L },
             onRemoved = { it.file?.delete() }

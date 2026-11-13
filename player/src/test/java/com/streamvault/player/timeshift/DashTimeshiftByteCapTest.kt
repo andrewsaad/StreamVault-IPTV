@@ -125,4 +125,15 @@ class DashTimeshiftByteCapTest {
         assertThat(harness.fetched.last()).isEqualTo("seg-151.m4s")
         assertThat(harness.buffer.snapshot().last().uri).isEqualTo("seg-151.m4s")
     }
+
+    @Test
+    fun `the DASH session buffer gets the memory byte cap and the disk buffer gets none`() {
+        val memory = dashCaptureBufferFor<Segment>(config, LiveTimeshiftBackend.MEMORY, { it.durationMs }, { it.bytes }, {})
+        val disk = dashCaptureBufferFor<Segment>(config, LiveTimeshiftBackend.DISK, { it.durationMs }, { it.bytes }, {})
+
+        assertThat(memory.maxBytes).isEqualTo(cap)
+        assertThat(memory.maxDurationMs).isEqualTo(depthMs)
+        assertThat(disk.maxBytes).isNull()
+        assertThat(disk.maxDurationMs).isEqualTo(config.effectiveDepthMs(LiveTimeshiftBackend.DISK))
+    }
 }
