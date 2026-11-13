@@ -19,9 +19,10 @@ class ExternalNavigationRequestParser @Inject constructor(
 ) {
     fun parse(intent: Intent): ExternalNavigationRequest? {
         // MainActivity is exported, so a Serializable EXTRA_PLAYER_REQUEST is never read: any app could send one
-        // with an arbitrary stream URL. The app's own launcher, Watch Next and TV-input intents travel through
-        // Intent.toUri, which drops Serializable extras anyway; they use PlayerRequestIntentExtras, which only
-        // accepts internal provider URLs.
+        // with an arbitrary stream URL. Only Watch Next writes PlayerRequestIntentExtras, and only for internal
+        // provider URLs, which is all read() accepts. The launcher recommendation and TV-input channel intents (and Watch
+        // Next for any other URL) still put a Serializable EXTRA_PLAYER_REQUEST, but they travel through
+        // Intent.toUri, which drops Serializable extras, so that extra never reached this parser from them either.
         PlayerRequestIntentExtras.read(intent)?.let { return ExternalNavigationRequest.Player(it) }
         readExternalDestinationExtra(intent)?.let { return ExternalNavigationRequest.Destination(it) }
 
