@@ -18,6 +18,10 @@ import com.streamvault.domain.model.Category
 import com.streamvault.domain.model.CategorySortMode
 import com.streamvault.domain.model.Channel
 import com.streamvault.domain.model.ChannelNumberingMode
+import com.streamvault.domain.model.CombinedCategory
+import com.streamvault.domain.model.CombinedCategoryBinding
+import com.streamvault.domain.model.CombinedM3uProfile
+import com.streamvault.domain.model.CombinedM3uProfileMember
 import com.streamvault.domain.model.ContentType
 import com.streamvault.domain.model.PlaybackHistory
 import com.streamvault.domain.model.LegacyProvider as Provider
@@ -789,6 +793,98 @@ class HomeViewModelTest {
         advanceUntilIdle()
 
         verify(channelRepository).searchChannelsByCategoryPaged(eq(provider.id), eq(category.id), eq("bbc"), any())
+    }
+
+    private fun stubCombinedSource(
+        profileId: Long,
+        providerId: Long,
+        categories: List<CombinedCategory>
+    ) = runBlocking {
+        whenever(combinedM3uRepository.getActiveLiveSource())
+            .thenReturn(flowOf(ActiveLiveSource.CombinedM3uSource(profileId)))
+        whenever(combinedM3uRepository.getProfile(profileId)).thenReturn(
+            CombinedM3uProfile(
+                id = profileId,
+                name = "Combined",
+                members = listOf(
+                    CombinedM3uProfileMember(profileId = profileId, providerId = providerId, priority = 0)
+                )
+            )
+        )
+        whenever(combinedM3uRepository.getCombinedCategories(profileId)).thenReturn(flowOf(categories))
+        whenever(getCustomCategories.invoke(eq(listOf(providerId)), eq(ContentType.LIVE))).thenReturn(flowOf(emptyList()))
+    }
+
+    @Test
+    fun `channel search filters the combined all channels category`() = runTest {
+        val combinedCategory = CombinedCategory(
+            category = Category(id = 11L, name = "News", count = 2),
+            bindings = listOf(CombinedCategoryBinding(providerId = 30L, providerName = "P", categoryId = 1L))
+        )
+        stubCombinedSource(profileId = 5L, providerId = 30L, categories = listOf(combinedCategory))
+        whenever(combinedM3uRepository.getCombinedChannels(5L, combinedCategory)).thenReturn(
+            flowOf(
+                listOf(
+                    Channel(id = 1L, name = "BBC News", providerId = 30L, streamUrl = "https://stream/1"),
+                    Channel(id = 2L, name = "CNN", providerId = 30L, streamUrl = "https://stream/2")
+                )
+            )
+        )
+
+        viewModel = createViewModel()
+        advanceUntilIdle()
+        val allCategory = viewModel.uiState.value.categories.first { it.id == ChannelRepository.ALL_CHANNELS_ID }
+        viewModel.selectCategory(allCategory)
+        advanceUntilIdle()
+        assertThat(viewModel.uiState.value.filteredChannels.map { it.id }).containsExactly(1L, 2L)
+
+        viewModel.updateChannelSearchQuery("bbc")
+        advanceUntilIdle()
+
+        assertThat(viewModel.uiState.value.filteredChannels.map { it.id }).containsExactly(1L)
+    }
+
+    @Test
+    fun `channel search filters the combined recent virtual category`() = runTest {
+        stubCombinedSource(profileId = 5L, providerId = 30L, categories = emptyList())
+        whenever(playbackHistoryRepository.getRecentlyWatchedByProvider(eq(30L), any())).thenReturn(
+            flowOf(
+                listOf(
+                    PlaybackHistory(
+                        contentId = 1L,
+                        contentType = ContentType.LIVE,
+                        providerId = 30L,
+                        title = "BBC News",
+                        streamUrl = "https://stream/1"
+                    ),
+                    PlaybackHistory(
+                        contentId = 2L,
+                        contentType = ContentType.LIVE,
+                        providerId = 30L,
+                        title = "CNN",
+                        streamUrl = "https://stream/2"
+                    )
+                )
+            )
+        )
+        whenever(channelRepository.getChannelsByIds(any())).thenReturn(
+            flowOf(
+                listOf(
+                    Channel(id = 1L, name = "BBC News", providerId = 30L, streamUrl = "https://stream/1"),
+                    Channel(id = 2L, name = "CNN", providerId = 30L, streamUrl = "https://stream/2")
+                )
+            )
+        )
+
+        viewModel = createViewModel()
+        advanceUntilIdle()
+        assertThat(viewModel.uiState.value.selectedCategory?.id).isEqualTo(VirtualCategoryIds.RECENT)
+        assertThat(viewModel.uiState.value.filteredChannels.map { it.id }).containsExactly(1L, 2L)
+
+        viewModel.updateChannelSearchQuery("cnn")
+        advanceUntilIdle()
+
+        assertThat(viewModel.uiState.value.filteredChannels.map { it.id }).containsExactly(2L)
     }
 
     @Test

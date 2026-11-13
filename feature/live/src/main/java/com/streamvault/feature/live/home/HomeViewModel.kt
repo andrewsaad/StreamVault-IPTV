@@ -758,9 +758,10 @@ class HomeViewModel @Inject constructor(
                         }
                         if (allFlows.isEmpty()) flowOf(emptyList())
                         else combine(allFlows) { arrays -> arrays.toList().flatMap { it } }
+                            .filteredByNameQuery(queryFlow)
                     } else if (category.isVirtual) {
                         val providerIds = currentLiveProviderIds()
-                        when (category.id) {
+                        val orderedChannels = when (category.id) {
                             VirtualCategoryIds.RECENT -> {
                                 observeRecentLiveIds(providerIds, limit = 24)
                                     .flatMapLatest(::loadChannelsByOrderedIds)
@@ -777,6 +778,7 @@ class HomeViewModel @Inject constructor(
                                     .flatMapLatest(::loadChannelsByOrderedIds)
                             }
                         }
+                        orderedChannels.filteredByNameQuery(queryFlow)
                     } else {
                         val combinedCategory = combinedCategoriesById[category.id]
                         if (combinedCategory == null) {
@@ -811,16 +813,7 @@ class HomeViewModel @Inject constructor(
                             .flatMapLatest { ids -> loadChannelsByOrderedIds(ids) }
                     }
 
-                    combine(orderedFlow, queryFlow) { channels, query ->
-                        val trimmedQuery = query.trim()
-                        if (trimmedQuery.isBlank()) {
-                            channels
-                        } else if (trimmedQuery.length < MIN_CHANNEL_SEARCH_QUERY_LENGTH) {
-                            emptyList()
-                        } else {
-                            channels.filter { it.name.contains(trimmedQuery, ignoreCase = true) }
-                        }
-                    }
+                    orderedFlow.filteredByNameQuery(queryFlow)
                 } else {
                     val providerId = _uiState.value.provider?.id ?: return@launch
                     queryFlow.flatMapLatest { query ->
@@ -891,6 +884,16 @@ class HomeViewModel @Inject constructor(
             }
         }
     }
+
+    private fun Flow<List<Channel>>.filteredByNameQuery(queryFlow: Flow<String>): Flow<List<Channel>> =
+        combine(this, queryFlow) { channels, query ->
+            val trimmedQuery = query.trim()
+            when {
+                trimmedQuery.isBlank() -> channels
+                trimmedQuery.length < MIN_CHANNEL_SEARCH_QUERY_LENGTH -> emptyList()
+                else -> channels.filter { it.name.contains(trimmedQuery, ignoreCase = true) }
+            }
+        }
 
     fun updateCategorySearchQuery(query: String) {
         if (_uiState.value.isChannelReorderMode) return
