@@ -8,6 +8,8 @@ provider allows only one: never run it while the in-app scan or playback is acti
 The tool never prints or writes the provider login or any stream URL. The report is a CSV
 with channel id, name, status and a fixed-vocabulary detail only. Re-running resumes: a channel
 whose latest CSV row is OK, DEAD or EMPTY is skipped; UNCLEAR channels are scanned again.
+An UNCLEAR row with detail provider-403 means the provider refused the request (account busy or
+address limited): it says nothing about the channel, so stop and retry later instead of looping.
 
     python tools/channel_probe.py --secret secret.md --out channel_scan.csv
     python tools/channel_probe.py --secret secret.md --out channel_scan.csv --limit 50
@@ -241,7 +243,8 @@ def run(secret_path: Path, out_path: Path, limit=None, sleep=time.sleep, log=pri
     login = parse_secret(secret_path.read_text(encoding="utf-8"))
     server, username, password = login["SERVER"], login["USERNAME"], login["PASSWORD"]
     channels = fetch_channels(server, username, password)
-    already = done_ids(out_path)
+    listed = {cid for cid, _ in channels}
+    already = done_ids(out_path) & listed  # ids the provider no longer lists are not counted
     todo = [(cid, name) for cid, name in channels if cid not in already]
     if limit is not None:
         todo = todo[:limit]

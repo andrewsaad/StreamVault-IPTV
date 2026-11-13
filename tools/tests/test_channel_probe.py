@@ -326,6 +326,23 @@ class ChannelProbeTest(unittest.TestCase):
             # A second run has nothing left to scan.
             self.assertEqual(sum(PROBE.run(secret, out, sleep=lambda _: None, log=logged.append).values()), 0)
 
+    def test_already_scanned_count_ignores_ids_the_provider_no_longer_lists(self):
+        def api():
+            rows = [{"stream_id": i, "name": "Chan %d" % i} for i in (1, 2)]
+            return 200, json.dumps(rows).encode()
+
+        base, _hits = self.serve({"/player_api.php": api})
+        with tempfile.TemporaryDirectory() as tmp:
+            secret = Path(tmp) / "secret.md"
+            secret.write_text("SERVER=%s\nUSERNAME=%s\nPASSWORD=%s\n" % (base, USER, PASSWORD), encoding="utf-8")
+            out = Path(tmp) / "scan.csv"
+            # Channel 99 was scanned earlier but the provider no longer lists it.
+            out.write_text("id,name,status,detail\n1,Chan 1,OK,ok\n99,Gone,OK,ok\n", encoding="utf-8")
+            logged = []
+            PROBE.run(secret, out, limit=0, sleep=lambda _: None, log=logged.append)
+            # limit=0 keeps the run from probing anything; only the summary line matters here.
+            self.assertIn("channels: 2 total, 1 already scanned, 0 to scan now", logged)
+
 
 if __name__ == "__main__":
     unittest.main()
