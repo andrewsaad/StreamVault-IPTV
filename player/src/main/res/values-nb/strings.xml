@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="player_error_live_startup_timeout">Avspillingen kunne ikke starte. Prøv en annen strøm.</string>
+    <string name="player_live_timeshift_still_buffering">Lokal live-spol bufrer fortsatt.</string>
 </resources>

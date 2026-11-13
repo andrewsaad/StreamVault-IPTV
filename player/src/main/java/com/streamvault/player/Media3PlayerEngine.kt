@@ -102,6 +102,7 @@ import com.streamvault.player.playback.LiveMpegTsEndRecovery
 import com.streamvault.player.playback.canRecoverLiveMpegTsEnd
 import com.streamvault.player.playback.StartupRefreshGate
 import com.streamvault.player.playback.liveStartupTimeoutMessage
+import com.streamvault.player.playback.liveTimeshiftStillBufferingMessage
 import com.streamvault.player.playback.AutomaticRecoveryAction
 import com.streamvault.player.playback.buildDecoderReuseWorkaroundEvaluation
 import com.streamvault.player.playback.buildPlaybackRendererPlan
@@ -2536,7 +2537,7 @@ class Media3PlayerEngine @Inject constructor(
         val liveInfo = activeLiveTimeshiftStreamInfo ?: return
         scope.launch {
             val snapshot = liveTimeshiftManager.createSnapshot() ?: run {
-                syncTimeshiftState(messageOverride = "Local live rewind is still buffering.")
+                syncTimeshiftState(messageOverride = liveTimeshiftStillBufferingMessage(context))
                 return@launch
             }
             if (activeLiveTimeshiftStreamInfo !== liveInfo) return@launch

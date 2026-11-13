@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="player_error_live_startup_timeout">پخش شروع نشد. جریان دیگری را امتحان کنید.</string>
+    <string name="player_live_timeshift_still_buffering">عقببری زنده محلی هنوز در حال بافر است.</string>
 </resources>

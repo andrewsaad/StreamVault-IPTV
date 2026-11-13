@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="player_error_live_startup_timeout">無法開始播放。請嘗試其他串流。</string>
+    <string name="player_live_timeshift_still_buffering">本機直播倒轉仍在緩衝中。</string>
 </resources>

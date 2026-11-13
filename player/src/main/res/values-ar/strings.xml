@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="player_error_live_startup_timeout">تعذر بدء التشغيل. جرّب بثًا آخر.</string>
+    <string name="player_live_timeshift_still_buffering">لا يزال الإرجاع المحلي للبث المباشر في طور التخزين المؤقت.</string>
 </resources>

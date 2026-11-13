@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="player_error_live_startup_timeout">Prehrávanie sa nepodarilo spustiť. Skúste iný stream.</string>
+    <string name="player_live_timeshift_still_buffering">Miestny posun živého vysielania sa stále ukladá do vyrovnávacej pamäte.</string>
 </resources>

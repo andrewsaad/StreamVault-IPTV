@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="player_error_live_startup_timeout">Die Wiedergabe konnte nicht gestartet werden. Versuche einen anderen Stream.</string>
+    <string name="player_live_timeshift_still_buffering">Lokales Live-Zurückspulen puffert noch.</string>
 </resources>

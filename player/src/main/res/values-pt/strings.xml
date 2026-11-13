@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="player_error_live_startup_timeout">Não foi possível iniciar a reprodução. Experimente outra transmissão.</string>
+    <string name="player_live_timeshift_still_buffering">O retrocesso ao vivo local ainda está em buffering.</string>
 </resources>

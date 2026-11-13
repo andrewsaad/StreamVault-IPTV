@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="player_error_live_startup_timeout">Δεν ήταν δυνατή η έναρξη της αναπαραγωγής. Δοκιμάστε άλλη ροή.</string>
+    <string name="player_live_timeshift_still_buffering">Τοπική επανάληψη ακόμα σε buffering.</string>
 </resources>

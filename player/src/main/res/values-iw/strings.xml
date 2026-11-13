@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="player_error_live_startup_timeout">לא ניתן להתחיל את הניגון. נסו שידור אחר.</string>
+    <string name="player_live_timeshift_still_buffering">הרצה לאחור מקומית עדיין מאגרת.</string>
 </resources>

@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="player_error_live_startup_timeout">ไม่สามารถเริ่มเล่นได้ โปรดลองสตรีมอื่น</string>
+    <string name="player_live_timeshift_still_buffering">การย้อนหลังสดในเครื่องยังคงบัฟเฟอร์อยู่</string>
 </resources>

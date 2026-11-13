@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="player_error_live_startup_timeout">प्लेबैक शुरू नहीं हो सका। कोई दूसरी स्ट्रीम आज़माएँ।</string>
+    <string name="player_live_timeshift_still_buffering">स्थानीय लाइव रिवाइंड अभी भी बफ़र हो रहा है।</string>
 </resources>

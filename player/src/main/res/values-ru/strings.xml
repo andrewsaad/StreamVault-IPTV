@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="player_error_live_startup_timeout">Не удалось начать воспроизведение. Попробуйте другой поток.</string>
+    <string name="player_live_timeshift_still_buffering">Локальная перемотка ещё буферизуется.</string>
 </resources>

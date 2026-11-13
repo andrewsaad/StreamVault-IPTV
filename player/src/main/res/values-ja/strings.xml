@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="player_error_live_startup_timeout">再生を開始できませんでした。別のストリームをお試しください。</string>
+    <string name="player_live_timeshift_still_buffering">ローカルライブ巻き戻しはまだバッファリング中です。</string>
 </resources>

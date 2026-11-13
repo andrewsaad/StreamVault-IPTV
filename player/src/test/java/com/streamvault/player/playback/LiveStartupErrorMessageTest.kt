@@ -16,6 +16,27 @@ import org.robolectric.RuntimeEnvironment
 class LiveStartupErrorMessageTest {
     @Test
     fun `message follows selected app locale for every advertised locale without mutating context`() {
+        assertMessageFollowsAppLocale(
+            resourceName = "player_error_live_startup_timeout",
+            resId = com.streamvault.player.R.string.player_error_live_startup_timeout,
+            message = ::liveStartupTimeoutMessage
+        )
+    }
+
+    @Test
+    fun `timeshift still buffering message follows selected app locale for every advertised locale`() {
+        assertMessageFollowsAppLocale(
+            resourceName = "player_live_timeshift_still_buffering",
+            resId = com.streamvault.player.R.string.player_live_timeshift_still_buffering,
+            message = ::liveTimeshiftStillBufferingMessage
+        )
+    }
+
+    private fun assertMessageFollowsAppLocale(
+        resourceName: String,
+        resId: Int,
+        message: (android.content.Context) -> String
+    ) {
         val repositoryRoot = findRepositoryRoot()
         val advertisedLocales = readAdvertisedLocales(
             repositoryRoot.resolve("app/src/main/res/xml/locales_config.xml")
@@ -30,7 +51,7 @@ class LiveStartupErrorMessageTest {
         }
         val englishContext = applicationContext.createConfigurationContext(englishConfiguration)
         val englishContextConfiguration = Configuration(englishContext.resources.configuration)
-        val englishMessage = englishContext.getString(com.streamvault.player.R.string.player_error_live_startup_timeout)
+        val englishMessage = englishContext.getString(resId)
 
         try {
             for (languageTag in advertisedLocales) {
@@ -40,9 +61,9 @@ class LiveStartupErrorMessageTest {
                 val expectedXmlMessage = readExpectedString(
                     repositoryRoot.resolve("player/src/main/res"),
                     languageTag,
-                    "player_error_live_startup_timeout"
+                    resourceName
                 )
-                val actualMessage = liveStartupTimeoutMessage(englishContext)
+                val actualMessage = message(englishContext)
 
                 assertWithMessage("message for advertised locale $languageTag")
                     .that(actualMessage)
