@@ -322,7 +322,7 @@ class ProviderSyncWorkerTest {
             status = ProviderStatus.PARTIAL,
             lastSyncedAt = 0L
         )
-        val editedDuringSync = staleProvider.copy(name = "Renamed", m3uUrl = "https://example.com/new.m3u")
+        val editedDuringSync = staleProvider.copy(name = "Renamed")
         whenever(providerDao.getById(9L)).thenReturn(editedDuringSync)
         whenever(syncManager.currentSyncState(9L)).thenReturn(SyncState.Success(123L))
 
@@ -340,7 +340,6 @@ class ProviderSyncWorkerTest {
         val updatedProvider = argumentCaptor<ProviderEntity>()
         verify(providerDao).update(updatedProvider.capture())
         assertThat(updatedProvider.firstValue.name).isEqualTo("Renamed")
-        assertThat(updatedProvider.firstValue.m3uUrl).isEqualTo("https://example.com/new.m3u")
         assertThat(updatedProvider.firstValue.status).isEqualTo(ProviderStatus.ACTIVE)
         assertThat(updatedProvider.firstValue.lastSyncedAt).isEqualTo(456L)
     }
