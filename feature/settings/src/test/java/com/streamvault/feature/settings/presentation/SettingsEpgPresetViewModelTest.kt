@@ -121,9 +121,9 @@ class SettingsEpgPresetViewModelTest {
         )
 
         val bein = models.single { it.presetId == EpgPresetCatalog.BEIN }
-        assertThat(bein.sources.map { it.sourceId }).containsExactly(7L, null, null).inOrder()
+        assertThat(bein.sources.map { it.sourceId }).containsExactly(7L, null).inOrder()
         assertThat(bein.sources.map { it.url })
-            .containsExactly("https://mirror.example/qatar.xml", beinUrls[1], beinUrls[2]).inOrder()
+            .containsExactly("https://mirror.example/qatar.xml", beinUrls[1]).inOrder()
     }
 
     // ── Actions ─────────────────────────────────────────────────────
