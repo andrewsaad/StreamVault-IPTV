@@ -1039,6 +1039,15 @@
     <string name="settings_channel_cleanup_description">Analiza los canales en vivo de este proveedor y oculta los que no funcionan</string>
     <string name="channel_cleanup_scan_note">Un análisis puede tardar horas. Un solo fallo nunca oculta un canal: un canal solo se sugiere después de fallar en dos días distintos.</string>
     <string name="channel_cleanup_scan_button">Analizar canales</string>
+    <string name="channel_cleanup_scan_new_button">Escanear canales nuevos (%1$d)</string>
+    <string name="channel_cleanup_recheck_button">Volver a comprobar canales con fallos (%1$d)</string>
+    <string name="channel_cleanup_export_button">Exportar resultados</string>
+    <string name="channel_cleanup_import_button">Importar resultados</string>
+    <string name="channel_cleanup_export_done">Resultados exportados.</string>
+    <string name="channel_cleanup_export_failed">No se pudieron exportar los resultados.</string>
+    <string name="channel_cleanup_import_done">Se importaron %1$d canales que funcionan y %2$d con fallos. %3$d omitidos.</string>
+    <string name="channel_cleanup_import_failed">No se pudo leer ese archivo como resultados de canales.</string>
+    <string name="channel_cleanup_share_note">El archivo exportado solo contiene números y nombres de canales, nunca el usuario, la contraseña ni la dirección del servidor. Los fallos importados solo se vuelven a comprobar aquí; no se oculta nada automáticamente.</string>
     <string name="channel_cleanup_stop_button">Detener</string>
     <string name="channel_cleanup_last_finished">Último análisis terminado: %1$s</string>
     <string name="channel_cleanup_never_scanned">Aún no ha terminado ningún análisis</string>

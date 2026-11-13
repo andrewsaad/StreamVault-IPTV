@@ -1044,6 +1044,15 @@
     <string name="settings_channel_cleanup_description">Skeniraj kanale uživo ovog pružatelja i sakrij one koji ne rade</string>
     <string name="channel_cleanup_scan_note">Skeniranje može trajati satima. Jedna pogreška nikada ne skriva kanal: kanal se predlaže tek nakon što zakaže u dva različita dana.</string>
     <string name="channel_cleanup_scan_button">Skeniraj kanale</string>
+    <string name="channel_cleanup_scan_new_button">Skeniraj nove kanale (%1$d)</string>
+    <string name="channel_cleanup_recheck_button">Ponovno provjeri neuspjele kanale (%1$d)</string>
+    <string name="channel_cleanup_export_button">Izvezi rezultate</string>
+    <string name="channel_cleanup_import_button">Uvezi rezultate</string>
+    <string name="channel_cleanup_export_done">Rezultati su izvezeni.</string>
+    <string name="channel_cleanup_export_failed">Rezultate nije moguće izvesti.</string>
+    <string name="channel_cleanup_import_done">Uvezeno je %1$d ispravnih i %2$d neuspjelih kanala. Preskočeno: %3$d.</string>
+    <string name="channel_cleanup_import_failed">Tu datoteku nije moguće pročitati kao rezultate kanala.</string>
+    <string name="channel_cleanup_share_note">Izvezena datoteka sadrži samo brojeve i nazive kanala, nikad prijavu ni adresu poslužitelja. Uvezeni neuspjeli kanali ponovno se provjeravaju samo ovdje; ništa se ne skriva automatski.</string>
     <string name="channel_cleanup_stop_button">Zaustavi</string>
     <string name="channel_cleanup_last_finished">Zadnje skeniranje završeno: %1$s</string>
     <string name="channel_cleanup_never_scanned">Još nijedno skeniranje nije završeno</string>

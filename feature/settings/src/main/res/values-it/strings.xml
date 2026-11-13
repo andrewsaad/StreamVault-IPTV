@@ -1039,6 +1039,15 @@
     <string name="settings_channel_cleanup_description">Analizza i canali live di questo provider e nascondi quelli che non funzionano</string>
     <string name="channel_cleanup_scan_note">Un\'analisi può richiedere ore. Un singolo errore non nasconde mai un canale: un canale viene suggerito solo dopo aver fallito in due giorni distinti.</string>
     <string name="channel_cleanup_scan_button">Analizza canali</string>
+    <string name="channel_cleanup_scan_new_button">Scansiona i nuovi canali (%1$d)</string>
+    <string name="channel_cleanup_recheck_button">Ricontrolla i canali non funzionanti (%1$d)</string>
+    <string name="channel_cleanup_export_button">Esporta risultati</string>
+    <string name="channel_cleanup_import_button">Importa risultati</string>
+    <string name="channel_cleanup_export_done">Risultati esportati.</string>
+    <string name="channel_cleanup_export_failed">Impossibile esportare i risultati.</string>
+    <string name="channel_cleanup_import_done">Importati %1$d canali funzionanti e %2$d non funzionanti. %3$d saltati.</string>
+    <string name="channel_cleanup_import_failed">Impossibile leggere il file come risultati dei canali.</string>
+    <string name="channel_cleanup_share_note">Il file esportato contiene solo numeri e nomi dei canali, mai le credenziali o l’indirizzo del server. I canali non funzionanti importati vengono ricontrollati solo qui; nulla viene nascosto automaticamente.</string>
     <string name="channel_cleanup_stop_button">Interrompi</string>
     <string name="channel_cleanup_last_finished">Ultima analisi terminata: %1$s</string>
     <string name="channel_cleanup_never_scanned">Nessuna analisi ancora terminata</string>

@@ -1041,6 +1041,15 @@
     <string name="settings_channel_cleanup_description">इस प्रदाता के लाइव चैनल स्कैन करें और जो काम नहीं करते उन्हें छिपाएँ</string>
     <string name="channel_cleanup_scan_note">स्कैन में घंटों लग सकते हैं। एक बार की विफलता से कोई चैनल कभी नहीं छिपता: चैनल तभी सुझाया जाता है जब वह दो अलग-अलग दिनों में विफल रहा हो।</string>
     <string name="channel_cleanup_scan_button">चैनल स्कैन करें</string>
+    <string name="channel_cleanup_scan_new_button">नए चैनल स्कैन करें (%1$d)</string>
+    <string name="channel_cleanup_recheck_button">विफल चैनल दोबारा जाँचें (%1$d)</string>
+    <string name="channel_cleanup_export_button">नतीजे निर्यात करें</string>
+    <string name="channel_cleanup_import_button">नतीजे आयात करें</string>
+    <string name="channel_cleanup_export_done">नतीजे निर्यात हो गए।</string>
+    <string name="channel_cleanup_export_failed">नतीजे निर्यात नहीं हो सके।</string>
+    <string name="channel_cleanup_import_done">%1$d चालू और %2$d विफल चैनल आयात किए गए। %3$d छोड़े गए।</string>
+    <string name="channel_cleanup_import_failed">इस फ़ाइल को चैनल नतीजों के रूप में पढ़ा नहीं जा सका।</string>
+    <string name="channel_cleanup_share_note">निर्यात की गई फ़ाइल में केवल चैनल नंबर और नाम होते हैं, लॉगिन या सर्वर पता कभी नहीं। आयात किए गए विफल चैनल केवल यहीं दोबारा जाँचे जाते हैं; कुछ भी अपने आप छिपाया नहीं जाता।</string>
     <string name="channel_cleanup_stop_button">रोकें</string>
     <string name="channel_cleanup_last_finished">पिछला स्कैन पूरा हुआ: %1$s</string>
     <string name="channel_cleanup_never_scanned">अभी तक कोई स्कैन पूरा नहीं हुआ</string>

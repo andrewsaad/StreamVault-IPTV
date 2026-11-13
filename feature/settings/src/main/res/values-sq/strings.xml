@@ -1041,6 +1041,15 @@
     <string name="settings_channel_cleanup_description">Skano kanalet live të këtij ofruesi dhe fshih ato që nuk funksionojnë</string>
     <string name="channel_cleanup_scan_note">Skanimi mund të zgjasë me orë. Një dështim i vetëm nuk fsheh kurrë një kanal: një kanal sugjerohet vetëm pasi ka dështuar në dy ditë të ndryshme.</string>
     <string name="channel_cleanup_scan_button">Skano kanalet</string>
+    <string name="channel_cleanup_scan_new_button">Skano kanalet e reja (%1$d)</string>
+    <string name="channel_cleanup_recheck_button">Rikontrollo kanalet e dështuara (%1$d)</string>
+    <string name="channel_cleanup_export_button">Eksporto rezultatet</string>
+    <string name="channel_cleanup_import_button">Importo rezultatet</string>
+    <string name="channel_cleanup_export_done">Rezultatet u eksportuan.</string>
+    <string name="channel_cleanup_export_failed">Rezultatet nuk mund të eksportoheshin.</string>
+    <string name="channel_cleanup_import_done">U importuan %1$d kanale që funksionojnë dhe %2$d të dështuara. U kapërcyen %3$d.</string>
+    <string name="channel_cleanup_import_failed">Ky skedar nuk mund të lexohej si rezultate kanalesh.</string>
+    <string name="channel_cleanup_share_note">Skedari i eksportuar përmban vetëm numrat dhe emrat e kanaleve, kurrë hyrjen ose adresën e serverit. Kanalet e dështuara të importuara rikontrollohen vetëm këtu; asgjë nuk fshihet automatikisht.</string>
     <string name="channel_cleanup_stop_button">Ndalo</string>
     <string name="channel_cleanup_last_finished">Skanimi i fundit përfundoi: %1$s</string>
     <string name="channel_cleanup_never_scanned">Ende nuk ka përfunduar asnjë skanim</string>

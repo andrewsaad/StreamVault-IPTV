@@ -1039,6 +1039,15 @@
     <string name="settings_channel_cleanup_description">Prüft die Live-Kanäle dieses Anbieters und blendet die aus, die nicht funktionieren</string>
     <string name="channel_cleanup_scan_note">Ein Scan kann Stunden dauern. Ein einzelner Fehler blendet nie einen Kanal aus: Ein Kanal wird erst vorgeschlagen, wenn er an zwei verschiedenen Tagen ausgefallen ist.</string>
     <string name="channel_cleanup_scan_button">Kanäle scannen</string>
+    <string name="channel_cleanup_scan_new_button">Neue Kanäle scannen (%1$d)</string>
+    <string name="channel_cleanup_recheck_button">Fehlgeschlagene Kanäle erneut prüfen (%1$d)</string>
+    <string name="channel_cleanup_export_button">Ergebnisse exportieren</string>
+    <string name="channel_cleanup_import_button">Ergebnisse importieren</string>
+    <string name="channel_cleanup_export_done">Ergebnisse exportiert.</string>
+    <string name="channel_cleanup_export_failed">Die Ergebnisse konnten nicht exportiert werden.</string>
+    <string name="channel_cleanup_import_done">%1$d funktionierende und %2$d fehlgeschlagene Kanäle importiert. %3$d übersprungen.</string>
+    <string name="channel_cleanup_import_failed">Diese Datei konnte nicht als Kanalergebnisse gelesen werden.</string>
+    <string name="channel_cleanup_share_note">Die exportierte Datei enthält nur Kanalnummern und -namen, niemals Zugangsdaten oder Serveradresse. Importierte Fehlschläge werden nur hier erneut geprüft; nichts wird automatisch ausgeblendet.</string>
     <string name="channel_cleanup_stop_button">Stopp</string>
     <string name="channel_cleanup_last_finished">Letzter Scan beendet: %1$s</string>
     <string name="channel_cleanup_never_scanned">Noch kein Scan abgeschlossen</string>

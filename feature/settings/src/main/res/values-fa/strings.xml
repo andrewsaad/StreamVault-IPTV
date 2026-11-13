@@ -1041,6 +1041,15 @@
     <string name="settings_channel_cleanup_description">کانال‌های زندهٔ این ارائه‌دهنده را اسکن کنید و کانال‌های ناکار را پنهان کنید</string>
     <string name="channel_cleanup_scan_note">اسکن ممکن است ساعت‌ها طول بکشد. یک خطای تکی هرگز کانالی را پنهان نمی‌کند: کانال فقط پس از آنکه در دو روز جداگانه ناموفق بود پیشنهاد می‌شود.</string>
     <string name="channel_cleanup_scan_button">اسکن کانال‌ها</string>
+    <string name="channel_cleanup_scan_new_button">اسکن کانال‌های جدید (%1$d)</string>
+    <string name="channel_cleanup_recheck_button">بررسی مجدد کانال‌های ناموفق (%1$d)</string>
+    <string name="channel_cleanup_export_button">صادر کردن نتایج</string>
+    <string name="channel_cleanup_import_button">وارد کردن نتایج</string>
+    <string name="channel_cleanup_export_done">نتایج صادر شد.</string>
+    <string name="channel_cleanup_export_failed">صادر کردن نتایج ممکن نشد.</string>
+    <string name="channel_cleanup_import_done">%1$d کانال سالم و %2$d کانال ناموفق وارد شد. %3$d رد شد.</string>
+    <string name="channel_cleanup_import_failed">این فایل به‌عنوان نتایج کانال خوانده نشد.</string>
+    <string name="channel_cleanup_share_note">فایل صادرشده فقط شماره و نام کانال‌ها را دارد، نه اطلاعات ورود و نه نشانی سرور. کانال‌های ناموفقِ واردشده فقط همین‌جا دوباره بررسی می‌شوند و چیزی به‌طور خودکار پنهان نمی‌شود.</string>
     <string name="channel_cleanup_stop_button">توقف</string>
     <string name="channel_cleanup_last_finished">آخرین اسکن پایان یافت: %1$s</string>
     <string name="channel_cleanup_never_scanned">هنوز هیچ اسکنی به پایان نرسیده است</string>

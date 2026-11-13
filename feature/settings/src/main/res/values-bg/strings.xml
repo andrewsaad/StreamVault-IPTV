@@ -1041,6 +1041,15 @@
     <string name="settings_channel_cleanup_description">Сканирайте живите канали на този доставчик и скрийте тези, които не работят</string>
     <string name="channel_cleanup_scan_note">Сканирането може да отнеме часове. Една грешка никога не скрива канал: каналът се предлага едва след като не е работил в два отделни дни.</string>
     <string name="channel_cleanup_scan_button">Сканирай каналите</string>
+    <string name="channel_cleanup_scan_new_button">Сканиране на новите канали (%1$d)</string>
+    <string name="channel_cleanup_recheck_button">Повторна проверка на неработещите канали (%1$d)</string>
+    <string name="channel_cleanup_export_button">Експортиране на резултатите</string>
+    <string name="channel_cleanup_import_button">Импортиране на резултатите</string>
+    <string name="channel_cleanup_export_done">Резултатите са експортирани.</string>
+    <string name="channel_cleanup_export_failed">Резултатите не можаха да бъдат експортирани.</string>
+    <string name="channel_cleanup_import_done">Импортирани са %1$d работещи и %2$d неработещи канала. Пропуснати: %3$d.</string>
+    <string name="channel_cleanup_import_failed">Файлът не можа да бъде прочетен като резултати за канали.</string>
+    <string name="channel_cleanup_share_note">Експортираният файл съдържа само номера и имена на канали, никога данните за вход или адреса на сървъра. Импортираните неработещи канали се проверяват повторно само тук; нищо не се скрива автоматично.</string>
     <string name="channel_cleanup_stop_button">Спри</string>
     <string name="channel_cleanup_last_finished">Последното сканиране приключи: %1$s</string>
     <string name="channel_cleanup_never_scanned">Все още няма приключило сканиране</string>

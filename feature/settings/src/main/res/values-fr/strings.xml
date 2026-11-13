@@ -1043,6 +1043,15 @@
     <string name="settings_channel_cleanup_description">Analyse les chaînes en direct de ce fournisseur et masque celles qui ne fonctionnent pas</string>
     <string name="channel_cleanup_scan_note">Une analyse peut durer des heures. Un échec isolé ne masque jamais une chaîne : une chaîne n\'est suggérée qu\'après avoir échoué sur deux jours distincts.</string>
     <string name="channel_cleanup_scan_button">Analyser les chaînes</string>
+    <string name="channel_cleanup_scan_new_button">Analyser les nouvelles chaînes (%1$d)</string>
+    <string name="channel_cleanup_recheck_button">Revérifier les chaînes en échec (%1$d)</string>
+    <string name="channel_cleanup_export_button">Exporter les résultats</string>
+    <string name="channel_cleanup_import_button">Importer les résultats</string>
+    <string name="channel_cleanup_export_done">Résultats exportés.</string>
+    <string name="channel_cleanup_export_failed">Impossible d’exporter les résultats.</string>
+    <string name="channel_cleanup_import_done">%1$d chaînes fonctionnelles et %2$d en échec importées. %3$d ignorées.</string>
+    <string name="channel_cleanup_import_failed">Impossible de lire ce fichier comme des résultats de chaînes.</string>
+    <string name="channel_cleanup_share_note">Le fichier exporté ne contient que les numéros et les noms des chaînes, jamais l’identifiant ni l’adresse du serveur. Les échecs importés ne sont revérifiés qu’ici ; rien n’est masqué automatiquement.</string>
     <string name="channel_cleanup_stop_button">Arrêter</string>
     <string name="channel_cleanup_last_finished">Dernière analyse terminée : %1$s</string>
     <string name="channel_cleanup_never_scanned">Aucune analyse terminée pour le moment</string>

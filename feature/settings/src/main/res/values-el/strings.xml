@@ -1043,6 +1043,15 @@
     <string name="settings_channel_cleanup_description">Σαρώστε τα ζωντανά κανάλια αυτού του παρόχου και αποκρύψτε όσα δεν λειτουργούν</string>
     <string name="channel_cleanup_scan_note">Η σάρωση μπορεί να διαρκέσει ώρες. Μία μεμονωμένη αποτυχία δεν αποκρύπτει ποτέ ένα κανάλι: ένα κανάλι προτείνεται μόνο αφού αποτύχει σε δύο διαφορετικές ημέρες.</string>
     <string name="channel_cleanup_scan_button">Σάρωση καναλιών</string>
+    <string name="channel_cleanup_scan_new_button">Σάρωση νέων καναλιών (%1$d)</string>
+    <string name="channel_cleanup_recheck_button">Επανέλεγχος αποτυχημένων καναλιών (%1$d)</string>
+    <string name="channel_cleanup_export_button">Εξαγωγή αποτελεσμάτων</string>
+    <string name="channel_cleanup_import_button">Εισαγωγή αποτελεσμάτων</string>
+    <string name="channel_cleanup_export_done">Τα αποτελέσματα εξήχθησαν.</string>
+    <string name="channel_cleanup_export_failed">Δεν ήταν δυνατή η εξαγωγή των αποτελεσμάτων.</string>
+    <string name="channel_cleanup_import_done">Εισήχθησαν %1$d κανάλια που λειτουργούν και %2$d που απέτυχαν. Παραλείφθηκαν %3$d.</string>
+    <string name="channel_cleanup_import_failed">Δεν ήταν δυνατή η ανάγνωση του αρχείου ως αποτελεσμάτων καναλιών.</string>
+    <string name="channel_cleanup_share_note">Το αρχείο που εξάγεται περιέχει μόνο αριθμούς και ονόματα καναλιών, ποτέ τα στοιχεία σύνδεσης ή τη διεύθυνση του διακομιστή. Τα εισαγόμενα αποτυχημένα κανάλια ελέγχονται ξανά μόνο εδώ· τίποτα δεν αποκρύπτεται αυτόματα.</string>
     <string name="channel_cleanup_stop_button">Διακοπή</string>
     <string name="channel_cleanup_last_finished">Η τελευταία σάρωση ολοκληρώθηκε: %1$s</string>
     <string name="channel_cleanup_never_scanned">Δεν έχει ολοκληρωθεί ακόμη καμία σάρωση</string>

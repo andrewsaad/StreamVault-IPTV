@@ -1038,6 +1038,15 @@
     <string name="settings_channel_cleanup_description">掃描此供應商的直播頻道，並隱藏無法播放的頻道</string>
     <string name="channel_cleanup_scan_note">掃描可能需要數小時。單次失敗絕不會隱藏頻道：只有在兩個不同日期都失敗後，頻道才會被建議隱藏。</string>
     <string name="channel_cleanup_scan_button">掃描頻道</string>
+    <string name="channel_cleanup_scan_new_button">掃描新頻道（%1$d）</string>
+    <string name="channel_cleanup_recheck_button">重新檢查失敗的頻道（%1$d）</string>
+    <string name="channel_cleanup_export_button">匯出結果</string>
+    <string name="channel_cleanup_import_button">匯入結果</string>
+    <string name="channel_cleanup_export_done">結果已匯出。</string>
+    <string name="channel_cleanup_export_failed">無法匯出結果。</string>
+    <string name="channel_cleanup_import_done">已匯入 %1$d 個正常頻道和 %2$d 個失敗頻道，略過 %3$d 個。</string>
+    <string name="channel_cleanup_import_failed">無法將該檔案讀取為頻道結果。</string>
+    <string name="channel_cleanup_share_note">匯出的檔案只包含頻道編號和名稱，絕不包含登入資訊或伺服器位址。匯入的失敗頻道只會在本裝置上重新檢查，不會自動隱藏任何內容。</string>
     <string name="channel_cleanup_stop_button">停止</string>
     <string name="channel_cleanup_last_finished">上次掃描完成時間：%1$s</string>
     <string name="channel_cleanup_never_scanned">尚未完成任何掃描</string>

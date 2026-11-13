@@ -1043,6 +1043,15 @@
     <string name="settings_channel_cleanup_description">Scan denne udbyders live-kanaler, og skjul dem, der ikke virker</string>
     <string name="channel_cleanup_scan_note">En scanning kan tage timer. En enkelt fejl skjuler aldrig en kanal: en kanal foreslås først, når den har fejlet på to forskellige dage.</string>
     <string name="channel_cleanup_scan_button">Scan kanaler</string>
+    <string name="channel_cleanup_scan_new_button">Scan nye kanaler (%1$d)</string>
+    <string name="channel_cleanup_recheck_button">Tjek mislykkede kanaler igen (%1$d)</string>
+    <string name="channel_cleanup_export_button">Eksportér resultater</string>
+    <string name="channel_cleanup_import_button">Importér resultater</string>
+    <string name="channel_cleanup_export_done">Resultaterne er eksporteret.</string>
+    <string name="channel_cleanup_export_failed">Resultaterne kunne ikke eksporteres.</string>
+    <string name="channel_cleanup_import_done">Importerede %1$d fungerende og %2$d mislykkede kanaler. %3$d sprunget over.</string>
+    <string name="channel_cleanup_import_failed">Filen kunne ikke læses som kanalresultater.</string>
+    <string name="channel_cleanup_share_note">Den eksporterede fil indeholder kun kanalnumre og -navne, aldrig login eller serveradresse. Importerede mislykkede kanaler tjekkes kun igen her; intet skjules automatisk.</string>
     <string name="channel_cleanup_stop_button">Stop</string>
     <string name="channel_cleanup_last_finished">Seneste scanning sluttede: %1$s</string>
     <string name="channel_cleanup_never_scanned">Ingen scanning er afsluttet endnu</string>

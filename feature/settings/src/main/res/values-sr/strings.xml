@@ -1044,6 +1044,15 @@
     <string name="settings_channel_cleanup_description">Скенирајте канале уживо овог провајдера и сакријте оне који не раде</string>
     <string name="channel_cleanup_scan_note">Скенирање може трајати сатима. Једна грешка никада не скрива канал: канал се предлаже тек пошто откаже у два различита дана.</string>
     <string name="channel_cleanup_scan_button">Скенирај канале</string>
+    <string name="channel_cleanup_scan_new_button">Скенирај нове канале (%1$d)</string>
+    <string name="channel_cleanup_recheck_button">Поново провери неуспешне канале (%1$d)</string>
+    <string name="channel_cleanup_export_button">Извези резултате</string>
+    <string name="channel_cleanup_import_button">Увези резултате</string>
+    <string name="channel_cleanup_export_done">Резултати су извезени.</string>
+    <string name="channel_cleanup_export_failed">Резултате није могуће извести.</string>
+    <string name="channel_cleanup_import_done">Увезено је %1$d исправних и %2$d неуспелих канала. Прескочено: %3$d.</string>
+    <string name="channel_cleanup_import_failed">Ту датотеку није могуће прочитати као резултате канала.</string>
+    <string name="channel_cleanup_share_note">Извезена датотека садржи само бројеве и називе канала, никада пријаву нити адресу сервера. Увезени неуспели канали поново се проверавају само овде; ништа се не скрива аутоматски.</string>
     <string name="channel_cleanup_stop_button">Заустави</string>
     <string name="channel_cleanup_last_finished">Последње скенирање је завршено: %1$s</string>
     <string name="channel_cleanup_never_scanned">Још ниједно скенирање није завршено</string>

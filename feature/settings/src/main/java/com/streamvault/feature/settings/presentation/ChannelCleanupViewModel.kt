@@ -4,6 +4,8 @@ import androidx.annotation.StringRes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.streamvault.domain.model.ChannelHealthPauseReason
+import com.streamvault.domain.model.ChannelHealthScanScope
+import com.streamvault.domain.model.ChannelHealthScopeCounts
 import com.streamvault.domain.model.ChannelHealthScanState
 import com.streamvault.domain.model.ChannelHealthStatus
 import com.streamvault.domain.model.ChannelHealthSuggestion
@@ -17,8 +19,11 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -51,8 +56,17 @@ data class ChannelCleanupGroup(
     val channelIds: Set<Long> get() = rows.mapTo(HashSet()) { it.channelId }
 }
 
+/** A one-line result under the scan card; [args] are the numbers filled into the string's placeholders. */
+data class ChannelCleanupMessage(
+    @StringRes val res: Int,
+    val args: List<Int> = emptyList(),
+    val isError: Boolean = false,
+)
+
 data class ChannelCleanupUiState(
     val scan: ChannelCleanupScanUi = ChannelCleanupScanUi.Idle(null),
+    val counts: ChannelHealthScopeCounts = ChannelHealthScopeCounts(),
+    val message: ChannelCleanupMessage? = null,
     val groups: List<ChannelCleanupGroup> = emptyList(),
     val selectedIds: Set<Long> = emptySet(),
     val showConfirm: Boolean = false,
@@ -128,6 +142,8 @@ class ChannelCleanupViewModel @Inject constructor(
     private val selected = MutableStateFlow<Set<Long>>(emptySet())
     private val showConfirm = MutableStateFlow(false)
     private val errorRes = MutableStateFlow<Int?>(null)
+    private val message = MutableStateFlow<ChannelCleanupMessage?>(null)
+    private val countsRefresh = MutableStateFlow(0)
 
     private val scan = providerId.flatMapLatest { id ->
         if (id == null) flowOf(ChannelHealthScanState()) else repository.observeScanState(id)
@@ -141,13 +157,27 @@ class ChannelCleanupViewModel @Inject constructor(
         selected.update { current -> if (present.containsAll(current)) current else current.filterTo(HashSet()) { it in present } }
     }
 
+    // Recounted when a scan starts or ends, the provider changes, or results are imported; never per probed channel.
+    private val counts = combine(
+        providerId,
+        scan.map { it.running to it.lastFinishedAt }.distinctUntilChanged(),
+        countsRefresh,
+    ) { id, _, _ -> id }.flatMapLatest { id ->
+        flow { emit(if (id == null) ChannelHealthScopeCounts() else repository.getScopeCounts(id)) }
+    }
+    private val notices = combine(errorRes, message, counts) { error, note, scopeCounts ->
+        Triple(error, note, scopeCounts)
+    }
+
     val uiState: StateFlow<ChannelCleanupUiState> = combine(
-        scan, groups, selected, showConfirm, errorRes,
-    ) { scanState, suggestions, selectedIds, confirm, error ->
+        scan, groups, selected, showConfirm, notices,
+    ) { scanState, suggestions, selectedIds, confirm, (error, note, scopeCounts) ->
         val grouped = groupChannelCleanupSuggestions(suggestions)
         val present = grouped.flatMapTo(HashSet()) { it.channelIds }
         ChannelCleanupUiState(
             scan = mapChannelCleanupScan(scanState),
+            counts = scopeCounts,
+            message = note,
             groups = grouped,
             // Rows that stopped being suggestions (hidden elsewhere, results cleared) leave the selection.
             selectedIds = selectedIds.filterTo(HashSet()) { it in present },
@@ -162,13 +192,51 @@ class ChannelCleanupViewModel @Inject constructor(
         selected.value = emptySet()
         showConfirm.value = false
         errorRes.value = null
+        message.value = null
     }
 
-    fun startScan() {
+    /** [scope] picks a full scan, only channels never checked here, or only the channels that failed. */
+    fun startScan(scope: ChannelHealthScanScope = ChannelHealthScanScope.ALL) {
+        val id = providerId.value ?: return
+        errorRes.value = null
+        message.value = null
+        viewModelScope.launch {
+            errorRes.value = channelCleanupStartErrorRes(repository.startScan(id, scope = scope))
+        }
+    }
+
+    /** Builds the snapshot and hands its text to [write] (the file the user picked); [write] returns whether it worked. */
+    fun exportResults(write: suspend (String) -> Boolean) {
         val id = providerId.value ?: return
         errorRes.value = null
         viewModelScope.launch {
-            errorRes.value = channelCleanupStartErrorRes(repository.startScan(id))
+            val text = (repository.exportSnapshot(id) as? Result.Success)?.data
+            val saved = text != null && runCatching { write(text) }.getOrDefault(false)
+            message.value = if (saved) {
+                ChannelCleanupMessage(R.string.channel_cleanup_export_done)
+            } else {
+                ChannelCleanupMessage(R.string.channel_cleanup_export_failed, isError = true)
+            }
+        }
+    }
+
+    /** Loads the text [read] returns (null when the file could not be read) as a snapshot made on any device. */
+    fun importResults(read: suspend () -> String?) {
+        val id = providerId.value ?: return
+        errorRes.value = null
+        viewModelScope.launch {
+            val text = runCatching { read() }.getOrNull()
+            val result = text?.let { repository.importSnapshot(id, it) }
+            message.value = if (result is Result.Success) {
+                val summary = result.data
+                countsRefresh.update { it + 1 }
+                ChannelCleanupMessage(
+                    R.string.channel_cleanup_import_done,
+                    listOf(summary.working, summary.failed, summary.skipped),
+                )
+            } else {
+                ChannelCleanupMessage(R.string.channel_cleanup_import_failed, isError = true)
+            }
         }
     }
 

@@ -1039,6 +1039,15 @@
     <string name="settings_channel_cleanup_description">扫描此提供商的直播频道，并隐藏无法播放的频道</string>
     <string name="channel_cleanup_scan_note">扫描可能需要数小时。单次失败绝不会隐藏频道：只有在两个不同的日期都失败后，频道才会被建议隐藏。</string>
     <string name="channel_cleanup_scan_button">扫描频道</string>
+    <string name="channel_cleanup_scan_new_button">扫描新频道（%1$d）</string>
+    <string name="channel_cleanup_recheck_button">重新检查失败的频道（%1$d）</string>
+    <string name="channel_cleanup_export_button">导出结果</string>
+    <string name="channel_cleanup_import_button">导入结果</string>
+    <string name="channel_cleanup_export_done">结果已导出。</string>
+    <string name="channel_cleanup_export_failed">无法导出结果。</string>
+    <string name="channel_cleanup_import_done">已导入 %1$d 个正常频道和 %2$d 个失败频道，跳过 %3$d 个。</string>
+    <string name="channel_cleanup_import_failed">无法将该文件读取为频道结果。</string>
+    <string name="channel_cleanup_share_note">导出的文件只包含频道编号和名称，绝不包含登录信息或服务器地址。导入的失败频道只会在本设备上重新检查，不会自动隐藏任何内容。</string>
     <string name="channel_cleanup_stop_button">停止</string>
     <string name="channel_cleanup_last_finished">上次扫描完成时间：%1$s</string>
     <string name="channel_cleanup_never_scanned">尚未完成任何扫描</string>

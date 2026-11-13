@@ -1038,6 +1038,15 @@
     <string name="settings_channel_cleanup_description">สแกนช่องสดของผู้ให้บริการนี้และซ่อนช่องที่ใช้งานไม่ได้</string>
     <string name="channel_cleanup_scan_note">การสแกนอาจใช้เวลาหลายชั่วโมง ความล้มเหลวเพียงครั้งเดียวจะไม่ซ่อนช่อง ช่องจะถูกแนะนำก็ต่อเมื่อล้มเหลวในสองวันที่แยกกันเท่านั้น</string>
     <string name="channel_cleanup_scan_button">สแกนช่อง</string>
+    <string name="channel_cleanup_scan_new_button">สแกนช่องใหม่ (%1$d)</string>
+    <string name="channel_cleanup_recheck_button">ตรวจสอบช่องที่ล้มเหลวอีกครั้ง (%1$d)</string>
+    <string name="channel_cleanup_export_button">ส่งออกผลลัพธ์</string>
+    <string name="channel_cleanup_import_button">นำเข้าผลลัพธ์</string>
+    <string name="channel_cleanup_export_done">ส่งออกผลลัพธ์แล้ว</string>
+    <string name="channel_cleanup_export_failed">ส่งออกผลลัพธ์ไม่สำเร็จ</string>
+    <string name="channel_cleanup_import_done">นำเข้าช่องที่ใช้งานได้ %1$d ช่องและช่องที่ล้มเหลว %2$d ช่อง ข้ามไป %3$d ช่อง</string>
+    <string name="channel_cleanup_import_failed">ไม่สามารถอ่านไฟล์นั้นเป็นผลลัพธ์ของช่องได้</string>
+    <string name="channel_cleanup_share_note">ไฟล์ที่ส่งออกมีเฉพาะหมายเลขและชื่อช่องเท่านั้น ไม่มีข้อมูลเข้าสู่ระบบหรือที่อยู่เซิร์ฟเวอร์เด็ดขาด ช่องที่ล้มเหลวซึ่งนำเข้าจะถูกตรวจสอบอีกครั้งที่นี่เท่านั้น และจะไม่มีการซ่อนอะไรโดยอัตโนมัติ</string>
     <string name="channel_cleanup_stop_button">หยุด</string>
     <string name="channel_cleanup_last_finished">สแกนครั้งล่าสุดเสร็จสิ้น: %1$s</string>
     <string name="channel_cleanup_never_scanned">ยังไม่มีการสแกนที่เสร็จสิ้น</string>

@@ -1043,6 +1043,15 @@
     <string name="settings_channel_cleanup_description">Skannaa tämän palveluntarjoajan suorat kanavat ja piilota ne, jotka eivät toimi</string>
     <string name="channel_cleanup_scan_note">Skannaus voi kestää tunteja. Yksittäinen virhe ei koskaan piilota kanavaa: kanava ehdotetaan vasta, kun se on epäonnistunut kahtena eri päivänä.</string>
     <string name="channel_cleanup_scan_button">Skannaa kanavat</string>
+    <string name="channel_cleanup_scan_new_button">Skannaa uudet kanavat (%1$d)</string>
+    <string name="channel_cleanup_recheck_button">Tarkista epäonnistuneet kanavat uudelleen (%1$d)</string>
+    <string name="channel_cleanup_export_button">Vie tulokset</string>
+    <string name="channel_cleanup_import_button">Tuo tulokset</string>
+    <string name="channel_cleanup_export_done">Tulokset viety.</string>
+    <string name="channel_cleanup_export_failed">Tuloksia ei voitu viedä.</string>
+    <string name="channel_cleanup_import_done">Tuotiin %1$d toimivaa ja %2$d epäonnistunutta kanavaa. %3$d ohitettiin.</string>
+    <string name="channel_cleanup_import_failed">Tiedostoa ei voitu lukea kanavatuloksina.</string>
+    <string name="channel_cleanup_share_note">Viety tiedosto sisältää vain kanavien numerot ja nimet, ei koskaan kirjautumistietoja tai palvelimen osoitetta. Tuodut epäonnistuneet kanavat tarkistetaan uudelleen vain täällä; mitään ei piiloteta automaattisesti.</string>
     <string name="channel_cleanup_stop_button">Pysäytä</string>
     <string name="channel_cleanup_last_finished">Viimeisin skannaus päättyi: %1$s</string>
     <string name="channel_cleanup_never_scanned">Yhtään skannausta ei ole vielä valmistunut</string>

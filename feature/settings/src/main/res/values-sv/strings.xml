@@ -1043,6 +1043,15 @@
     <string name="settings_channel_cleanup_description">Skanna den här leverantörens livekanaler och dölj de som inte fungerar</string>
     <string name="channel_cleanup_scan_note">En skanning kan ta timmar. Ett enstaka fel döljer aldrig en kanal: en kanal föreslås först när den har misslyckats under två olika dagar.</string>
     <string name="channel_cleanup_scan_button">Skanna kanaler</string>
+    <string name="channel_cleanup_scan_new_button">Skanna nya kanaler (%1$d)</string>
+    <string name="channel_cleanup_recheck_button">Kontrollera misslyckade kanaler igen (%1$d)</string>
+    <string name="channel_cleanup_export_button">Exportera resultat</string>
+    <string name="channel_cleanup_import_button">Importera resultat</string>
+    <string name="channel_cleanup_export_done">Resultaten har exporterats.</string>
+    <string name="channel_cleanup_export_failed">Resultaten kunde inte exporteras.</string>
+    <string name="channel_cleanup_import_done">Importerade %1$d fungerande och %2$d misslyckade kanaler. %3$d hoppades över.</string>
+    <string name="channel_cleanup_import_failed">Filen kunde inte läsas som kanalresultat.</string>
+    <string name="channel_cleanup_share_note">Den exporterade filen innehåller bara kanalnummer och namn, aldrig inloggning eller serveradress. Importerade misslyckade kanaler kontrolleras bara om här; inget döljs automatiskt.</string>
     <string name="channel_cleanup_stop_button">Stoppa</string>
     <string name="channel_cleanup_last_finished">Senaste skanningen avslutades: %1$s</string>
     <string name="channel_cleanup_never_scanned">Ingen skanning har slutförts ännu</string>

@@ -1046,6 +1046,15 @@
     <string name="settings_channel_cleanup_description">סרוק את הערוצים החיים של הספק הזה והסתר את אלה שלא עובדים</string>
     <string name="channel_cleanup_scan_note">סריקה עשויה לקחת שעות. כשל בודד אף פעם לא מסתיר ערוץ: ערוץ מוצע רק לאחר שנכשל בשני ימים נפרדים.</string>
     <string name="channel_cleanup_scan_button">סרוק ערוצים</string>
+    <string name="channel_cleanup_scan_new_button">סריקת ערוצים חדשים (%1$d)</string>
+    <string name="channel_cleanup_recheck_button">בדיקה חוזרת של ערוצים שנכשלו (%1$d)</string>
+    <string name="channel_cleanup_export_button">ייצוא תוצאות</string>
+    <string name="channel_cleanup_import_button">ייבוא תוצאות</string>
+    <string name="channel_cleanup_export_done">התוצאות יוצאו.</string>
+    <string name="channel_cleanup_export_failed">לא ניתן לייצא את התוצאות.</string>
+    <string name="channel_cleanup_import_done">יובאו %1$d ערוצים תקינים ו-%2$d ערוצים שנכשלו. %3$d דולגו.</string>
+    <string name="channel_cleanup_import_failed">לא ניתן לקרוא את הקובץ כתוצאות ערוצים.</string>
+    <string name="channel_cleanup_share_note">הקובץ המיוצא מכיל רק מספרי ערוצים ושמות, אף פעם לא את פרטי ההתחברות או כתובת השרת. ערוצים שנכשלו ויובאו נבדקים מחדש רק כאן; שום דבר לא מוסתר אוטומטית.</string>
     <string name="channel_cleanup_stop_button">עצור</string>
     <string name="channel_cleanup_last_finished">הסריקה האחרונה הסתיימה: %1$s</string>
     <string name="channel_cleanup_never_scanned">עדיין לא הסתיימה סריקה</string>

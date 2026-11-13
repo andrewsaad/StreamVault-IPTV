@@ -1046,6 +1046,15 @@
     <string name="settings_channel_cleanup_description">Scanează canalele live ale acestui furnizor și ascunde-le pe cele care nu funcționează</string>
     <string name="channel_cleanup_scan_note">O scanare poate dura ore. O singură eroare nu ascunde niciodată un canal: un canal este sugerat abia după ce a eșuat în două zile diferite.</string>
     <string name="channel_cleanup_scan_button">Scanează canalele</string>
+    <string name="channel_cleanup_scan_new_button">Scanează canalele noi (%1$d)</string>
+    <string name="channel_cleanup_recheck_button">Reverifică canalele cu probleme (%1$d)</string>
+    <string name="channel_cleanup_export_button">Exportă rezultatele</string>
+    <string name="channel_cleanup_import_button">Importă rezultatele</string>
+    <string name="channel_cleanup_export_done">Rezultatele au fost exportate.</string>
+    <string name="channel_cleanup_export_failed">Rezultatele nu au putut fi exportate.</string>
+    <string name="channel_cleanup_import_done">Au fost importate %1$d canale funcționale și %2$d cu probleme. %3$d omise.</string>
+    <string name="channel_cleanup_import_failed">Fișierul nu a putut fi citit ca rezultate de canale.</string>
+    <string name="channel_cleanup_share_note">Fișierul exportat conține doar numerele și numele canalelor, niciodată datele de autentificare sau adresa serverului. Canalele cu probleme importate sunt reverificate doar aici; nimic nu este ascuns automat.</string>
     <string name="channel_cleanup_stop_button">Oprește</string>
     <string name="channel_cleanup_last_finished">Ultima scanare s-a încheiat: %1$s</string>
     <string name="channel_cleanup_never_scanned">Nicio scanare încheiată încă</string>

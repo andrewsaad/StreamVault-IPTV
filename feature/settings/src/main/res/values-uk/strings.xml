@@ -1049,6 +1049,15 @@
     <string name="settings_channel_cleanup_description">Перевірте прямі канали цього провайдера й приховайте ті, що не працюють</string>
     <string name="channel_cleanup_scan_note">Перевірка може тривати години. Одна помилка ніколи не приховує канал: канал пропонується, лише якщо він не працював у два різні дні.</string>
     <string name="channel_cleanup_scan_button">Перевірити канали</string>
+    <string name="channel_cleanup_scan_new_button">Сканувати нові канали (%1$d)</string>
+    <string name="channel_cleanup_recheck_button">Перевірити знову несправні канали (%1$d)</string>
+    <string name="channel_cleanup_export_button">Експортувати результати</string>
+    <string name="channel_cleanup_import_button">Імпортувати результати</string>
+    <string name="channel_cleanup_export_done">Результати експортовано.</string>
+    <string name="channel_cleanup_export_failed">Не вдалося експортувати результати.</string>
+    <string name="channel_cleanup_import_done">Імпортовано каналів: робочих %1$d, несправних %2$d. Пропущено: %3$d.</string>
+    <string name="channel_cleanup_import_failed">Не вдалося прочитати цей файл як результати каналів.</string>
+    <string name="channel_cleanup_share_note">Експортований файл містить лише номери та назви каналів, ніколи логін чи адресу сервера. Імпортовані несправні канали перевіряються повторно лише тут; нічого не приховується автоматично.</string>
     <string name="channel_cleanup_stop_button">Зупинити</string>
     <string name="channel_cleanup_last_finished">Останню перевірку завершено: %1$s</string>
     <string name="channel_cleanup_never_scanned">Жодної перевірки ще не завершено</string>

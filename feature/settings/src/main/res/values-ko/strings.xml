@@ -1039,6 +1039,15 @@
     <string name="settings_channel_cleanup_description">이 제공업체의 라이브 채널을 검사하여 작동하지 않는 채널을 숨깁니다</string>
     <string name="channel_cleanup_scan_note">검사에는 몇 시간이 걸릴 수 있습니다. 한 번의 실패로 채널이 숨겨지지는 않습니다. 서로 다른 이틀에 걸쳐 실패한 채널만 제안됩니다.</string>
     <string name="channel_cleanup_scan_button">채널 검사</string>
+    <string name="channel_cleanup_scan_new_button">새 채널 스캔 (%1$d)</string>
+    <string name="channel_cleanup_recheck_button">실패한 채널 다시 확인 (%1$d)</string>
+    <string name="channel_cleanup_export_button">결과 내보내기</string>
+    <string name="channel_cleanup_import_button">결과 가져오기</string>
+    <string name="channel_cleanup_export_done">결과를 내보냈습니다.</string>
+    <string name="channel_cleanup_export_failed">결과를 내보내지 못했습니다.</string>
+    <string name="channel_cleanup_import_done">작동하는 채널 %1$d개와 실패한 채널 %2$d개를 가져왔습니다. %3$d개는 건너뛰었습니다.</string>
+    <string name="channel_cleanup_import_failed">이 파일을 채널 결과로 읽을 수 없습니다.</string>
+    <string name="channel_cleanup_share_note">내보낸 파일에는 채널 번호와 이름만 들어 있으며 로그인 정보나 서버 주소는 절대 포함되지 않습니다. 가져온 실패 채널은 이 기기에서만 다시 확인되며 자동으로 숨겨지지 않습니다.</string>
     <string name="channel_cleanup_stop_button">중지</string>
     <string name="channel_cleanup_last_finished">마지막 검사 완료: %1$s</string>
     <string name="channel_cleanup_never_scanned">완료된 검사가 아직 없습니다</string>

@@ -1040,6 +1040,15 @@
     <string name="settings_channel_cleanup_description">Quét các kênh trực tiếp của nhà cung cấp này và ẩn những kênh không hoạt động</string>
     <string name="channel_cleanup_scan_note">Quá trình quét có thể mất hàng giờ. Một lần lỗi đơn lẻ sẽ không bao giờ ẩn kênh: kênh chỉ được đề xuất sau khi lỗi vào hai ngày riêng biệt.</string>
     <string name="channel_cleanup_scan_button">Quét kênh</string>
+    <string name="channel_cleanup_scan_new_button">Quét kênh mới (%1$d)</string>
+    <string name="channel_cleanup_recheck_button">Kiểm tra lại các kênh lỗi (%1$d)</string>
+    <string name="channel_cleanup_export_button">Xuất kết quả</string>
+    <string name="channel_cleanup_import_button">Nhập kết quả</string>
+    <string name="channel_cleanup_export_done">Đã xuất kết quả.</string>
+    <string name="channel_cleanup_export_failed">Không thể xuất kết quả.</string>
+    <string name="channel_cleanup_import_done">Đã nhập %1$d kênh hoạt động và %2$d kênh lỗi. Bỏ qua %3$d.</string>
+    <string name="channel_cleanup_import_failed">Không thể đọc tệp đó dưới dạng kết quả kênh.</string>
+    <string name="channel_cleanup_share_note">Tệp đã xuất chỉ chứa số và tên kênh, không bao giờ chứa thông tin đăng nhập hay địa chỉ máy chủ. Các kênh lỗi được nhập chỉ được kiểm tra lại tại đây; không có gì bị ẩn tự động.</string>
     <string name="channel_cleanup_stop_button">Dừng</string>
     <string name="channel_cleanup_last_finished">Lần quét gần nhất kết thúc: %1$s</string>
     <string name="channel_cleanup_never_scanned">Chưa có lần quét nào hoàn tất</string>

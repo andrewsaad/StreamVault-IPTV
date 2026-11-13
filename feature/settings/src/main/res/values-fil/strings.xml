@@ -1041,6 +1041,15 @@
     <string name="settings_channel_cleanup_description">I-scan ang mga live channel ng provider na ito at itago ang mga hindi gumagana</string>
     <string name="channel_cleanup_scan_note">Maaaring umabot ng ilang oras ang pag-scan. Hindi kailanman itinatago ng iisang pagkabigo ang isang channel: iminumungkahi lang ang channel kapag nabigo ito sa dalawang magkahiwalay na araw.</string>
     <string name="channel_cleanup_scan_button">I-scan ang mga channel</string>
+    <string name="channel_cleanup_scan_new_button">I-scan ang mga bagong channel (%1$d)</string>
+    <string name="channel_cleanup_recheck_button">Suriin muli ang mga bigong channel (%1$d)</string>
+    <string name="channel_cleanup_export_button">I-export ang mga resulta</string>
+    <string name="channel_cleanup_import_button">I-import ang mga resulta</string>
+    <string name="channel_cleanup_export_done">Na-export ang mga resulta.</string>
+    <string name="channel_cleanup_export_failed">Hindi ma-export ang mga resulta.</string>
+    <string name="channel_cleanup_import_done">Na-import ang %1$d gumaganang channel at %2$d bigong channel. %3$d ang nilaktawan.</string>
+    <string name="channel_cleanup_import_failed">Hindi mabasa ang file na iyon bilang mga resulta ng channel.</string>
+    <string name="channel_cleanup_share_note">Ang na-export na file ay may mga numero at pangalan ng channel lang, hindi kailanman ang login o address ng server. Ang mga na-import na bigong channel ay susuriin lang ulit dito; walang awtomatikong itinatago.</string>
     <string name="channel_cleanup_stop_button">Ihinto</string>
     <string name="channel_cleanup_last_finished">Natapos ang huling pag-scan: %1$s</string>
     <string name="channel_cleanup_never_scanned">Wala pang natapos na pag-scan</string>

@@ -1055,6 +1055,15 @@
     <string name="settings_channel_cleanup_description">افحص القنوات المباشرة لهذا المزوّد وأخفِ القنوات التي لا تعمل</string>
     <string name="channel_cleanup_scan_note">قد يستغرق الفحص ساعات. لا يؤدي فشل واحد إلى إخفاء قناة: لا تُقترح القناة إلا بعد فشلها في يومين منفصلين.</string>
     <string name="channel_cleanup_scan_button">فحص القنوات</string>
+    <string name="channel_cleanup_scan_new_button">فحص القنوات الجديدة (%1$d)</string>
+    <string name="channel_cleanup_recheck_button">إعادة فحص القنوات الفاشلة (%1$d)</string>
+    <string name="channel_cleanup_export_button">تصدير النتائج</string>
+    <string name="channel_cleanup_import_button">استيراد النتائج</string>
+    <string name="channel_cleanup_export_done">تم تصدير النتائج.</string>
+    <string name="channel_cleanup_export_failed">تعذر تصدير النتائج.</string>
+    <string name="channel_cleanup_import_done">تم استيراد %1$d قناة تعمل و%2$d قناة فاشلة. تم تخطي %3$d.</string>
+    <string name="channel_cleanup_import_failed">تعذرت قراءة هذا الملف كنتائج للقنوات.</string>
+    <string name="channel_cleanup_share_note">يحتوي الملف المصدَّر على أرقام القنوات وأسمائها فقط، ولا يحتوي أبدًا على بيانات الدخول أو عنوان الخادم. القنوات الفاشلة المستوردة تُعاد فحصها هنا فقط، ولا يتم إخفاء أي شيء تلقائيًا.</string>
     <string name="channel_cleanup_stop_button">إيقاف</string>
     <string name="channel_cleanup_last_finished">انتهى آخر فحص: %1$s</string>
     <string name="channel_cleanup_never_scanned">لم ينتهِ أي فحص بعد</string>

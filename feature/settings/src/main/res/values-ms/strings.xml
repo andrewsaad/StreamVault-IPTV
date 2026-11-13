@@ -1038,6 +1038,15 @@
     <string name="settings_channel_cleanup_description">Imbas saluran langsung penyedia ini dan sembunyikan yang tidak berfungsi</string>
     <string name="channel_cleanup_scan_note">Pengimbasan boleh mengambil masa berjam-jam. Satu kegagalan tidak akan menyembunyikan saluran: saluran hanya dicadangkan selepas gagal pada dua hari yang berasingan.</string>
     <string name="channel_cleanup_scan_button">Imbas saluran</string>
+    <string name="channel_cleanup_scan_new_button">Imbas saluran baharu (%1$d)</string>
+    <string name="channel_cleanup_recheck_button">Semak semula saluran yang gagal (%1$d)</string>
+    <string name="channel_cleanup_export_button">Eksport hasil</string>
+    <string name="channel_cleanup_import_button">Import hasil</string>
+    <string name="channel_cleanup_export_done">Hasil telah dieksport.</string>
+    <string name="channel_cleanup_export_failed">Hasil tidak dapat dieksport.</string>
+    <string name="channel_cleanup_import_done">Mengimport %1$d saluran yang berfungsi dan %2$d yang gagal. %3$d dilangkau.</string>
+    <string name="channel_cleanup_import_failed">Fail itu tidak dapat dibaca sebagai hasil saluran.</string>
+    <string name="channel_cleanup_share_note">Fail yang dieksport hanya mengandungi nombor dan nama saluran, tidak pernah log masuk atau alamat pelayan. Saluran gagal yang diimport hanya disemak semula di sini; tiada apa-apa disembunyikan secara automatik.</string>
     <string name="channel_cleanup_stop_button">Henti</string>
     <string name="channel_cleanup_last_finished">Pengimbasan terakhir tamat: %1$s</string>
     <string name="channel_cleanup_never_scanned">Belum ada pengimbasan yang selesai</string>

@@ -1119,6 +1119,15 @@
     <string name="settings_channel_cleanup_description">Scan the live channels of this provider and hide the ones that do not work</string>
     <string name="channel_cleanup_scan_note">A scan can take hours. A single failure never hides a channel: a channel is only suggested after it failed on two separate days.</string>
     <string name="channel_cleanup_scan_button">Scan channels</string>
+    <string name="channel_cleanup_scan_new_button">Scan new channels (%1$d)</string>
+    <string name="channel_cleanup_recheck_button">Recheck failed channels (%1$d)</string>
+    <string name="channel_cleanup_export_button">Export results</string>
+    <string name="channel_cleanup_import_button">Import results</string>
+    <string name="channel_cleanup_export_done">Results exported.</string>
+    <string name="channel_cleanup_export_failed">Could not export the results.</string>
+    <string name="channel_cleanup_import_done">Imported %1$d working and %2$d failed channels. %3$d skipped.</string>
+    <string name="channel_cleanup_import_failed">Could not read that file as channel results.</string>
+    <string name="channel_cleanup_share_note">The exported file holds channel numbers and names only, never the login or server address. Imported failures are only rechecked here; nothing is hidden automatically.</string>
     <string name="channel_cleanup_stop_button">Stop</string>
     <string name="channel_cleanup_last_finished">Last scan finished: %1$s</string>
     <string name="channel_cleanup_never_scanned">No scan has finished yet</string>

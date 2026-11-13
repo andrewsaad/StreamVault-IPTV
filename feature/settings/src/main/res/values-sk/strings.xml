@@ -1047,6 +1047,15 @@
     <string name="settings_channel_cleanup_description">Skontroluje živé kanály tohto poskytovateľa a skryje tie, ktoré nefungujú</string>
     <string name="channel_cleanup_scan_note">Kontrola môže trvať hodiny. Jediná chyba kanál nikdy neskryje: kanál sa navrhne, až keď zlyhal v dvoch rôznych dňoch.</string>
     <string name="channel_cleanup_scan_button">Skontrolovať kanály</string>
+    <string name="channel_cleanup_scan_new_button">Skenovať nové kanály (%1$d)</string>
+    <string name="channel_cleanup_recheck_button">Znova skontrolovať nefunkčné kanály (%1$d)</string>
+    <string name="channel_cleanup_export_button">Exportovať výsledky</string>
+    <string name="channel_cleanup_import_button">Importovať výsledky</string>
+    <string name="channel_cleanup_export_done">Výsledky boli exportované.</string>
+    <string name="channel_cleanup_export_failed">Výsledky sa nepodarilo exportovať.</string>
+    <string name="channel_cleanup_import_done">Importovaných: %1$d funkčných a %2$d nefunkčných kanálov. Preskočených: %3$d.</string>
+    <string name="channel_cleanup_import_failed">Tento súbor sa nepodarilo prečítať ako výsledky kanálov.</string>
+    <string name="channel_cleanup_share_note">Exportovaný súbor obsahuje iba čísla a názvy kanálov, nikdy prihlasovacie údaje ani adresu servera. Importované nefunkčné kanály sa znova kontrolujú iba tu; nič sa neskrýva automaticky.</string>
     <string name="channel_cleanup_stop_button">Zastaviť</string>
     <string name="channel_cleanup_last_finished">Posledná kontrola skončila: %1$s</string>
     <string name="channel_cleanup_never_scanned">Zatiaľ nebola dokončená žiadna kontrola</string>

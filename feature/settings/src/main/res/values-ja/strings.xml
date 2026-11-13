@@ -1041,6 +1041,15 @@
     <string name="settings_channel_cleanup_description">このプロバイダーのライブチャンネルをスキャンし、動作しないものを非表示にします</string>
     <string name="channel_cleanup_scan_note">スキャンには数時間かかることがあります。一度の失敗でチャンネルが非表示になることはありません。2 日別々に失敗したチャンネルだけが候補になります。</string>
     <string name="channel_cleanup_scan_button">チャンネルをスキャン</string>
+    <string name="channel_cleanup_scan_new_button">新しいチャンネルをスキャン (%1$d)</string>
+    <string name="channel_cleanup_recheck_button">失敗したチャンネルを再確認 (%1$d)</string>
+    <string name="channel_cleanup_export_button">結果をエクスポート</string>
+    <string name="channel_cleanup_import_button">結果をインポート</string>
+    <string name="channel_cleanup_export_done">結果をエクスポートしました。</string>
+    <string name="channel_cleanup_export_failed">結果をエクスポートできませんでした。</string>
+    <string name="channel_cleanup_import_done">正常なチャンネル %1$d 件、失敗したチャンネル %2$d 件をインポートしました。%3$d 件はスキップしました。</string>
+    <string name="channel_cleanup_import_failed">このファイルをチャンネルの結果として読み取れませんでした。</string>
+    <string name="channel_cleanup_share_note">エクスポートされるファイルにはチャンネル番号と名前だけが含まれ、ログイン情報やサーバーのアドレスは含まれません。インポートした失敗チャンネルはこの端末でのみ再確認され、自動で非表示になることはありません。</string>
     <string name="channel_cleanup_stop_button">停止</string>
     <string name="channel_cleanup_last_finished">前回のスキャン完了: %1$s</string>
     <string name="channel_cleanup_never_scanned">完了したスキャンはまだありません</string>

@@ -1043,6 +1043,15 @@
     <string name="settings_channel_cleanup_description">Pindai saluran langsung penyedia ini dan sembunyikan yang tidak berfungsi</string>
     <string name="channel_cleanup_scan_note">Pemindaian bisa memakan waktu berjam-jam. Satu kegagalan tidak pernah menyembunyikan saluran: saluran baru disarankan setelah gagal pada dua hari berbeda.</string>
     <string name="channel_cleanup_scan_button">Pindai saluran</string>
+    <string name="channel_cleanup_scan_new_button">Pindai saluran baru (%1$d)</string>
+    <string name="channel_cleanup_recheck_button">Periksa ulang saluran yang gagal (%1$d)</string>
+    <string name="channel_cleanup_export_button">Ekspor hasil</string>
+    <string name="channel_cleanup_import_button">Impor hasil</string>
+    <string name="channel_cleanup_export_done">Hasil diekspor.</string>
+    <string name="channel_cleanup_export_failed">Hasil tidak dapat diekspor.</string>
+    <string name="channel_cleanup_import_done">Mengimpor %1$d saluran yang berfungsi dan %2$d yang gagal. %3$d dilewati.</string>
+    <string name="channel_cleanup_import_failed">File itu tidak dapat dibaca sebagai hasil saluran.</string>
+    <string name="channel_cleanup_share_note">File yang diekspor hanya berisi nomor dan nama saluran, tidak pernah login atau alamat server. Saluran gagal yang diimpor hanya diperiksa ulang di sini; tidak ada yang disembunyikan secara otomatis.</string>
     <string name="channel_cleanup_stop_button">Berhenti</string>
     <string name="channel_cleanup_last_finished">Pemindaian terakhir selesai: %1$s</string>
     <string name="channel_cleanup_never_scanned">Belum ada pemindaian yang selesai</string>

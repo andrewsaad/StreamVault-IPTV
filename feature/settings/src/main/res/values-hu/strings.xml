@@ -1043,6 +1043,15 @@
     <string name="settings_channel_cleanup_description">A szolgáltató élő csatornáinak ellenőrzése, és a nem működők elrejtése</string>
     <string name="channel_cleanup_scan_note">Az ellenőrzés órákig is eltarthat. Egyetlen hiba sosem rejt el csatornát: egy csatorna csak akkor kerül javaslatba, ha két külön napon is hibás volt.</string>
     <string name="channel_cleanup_scan_button">Csatornák ellenőrzése</string>
+    <string name="channel_cleanup_scan_new_button">Új csatornák vizsgálata (%1$d)</string>
+    <string name="channel_cleanup_recheck_button">Hibás csatornák újraellenőrzése (%1$d)</string>
+    <string name="channel_cleanup_export_button">Eredmények exportálása</string>
+    <string name="channel_cleanup_import_button">Eredmények importálása</string>
+    <string name="channel_cleanup_export_done">Az eredmények exportálva.</string>
+    <string name="channel_cleanup_export_failed">Az eredményeket nem sikerült exportálni.</string>
+    <string name="channel_cleanup_import_done">%1$d működő és %2$d hibás csatorna importálva. %3$d kihagyva.</string>
+    <string name="channel_cleanup_import_failed">A fájlt nem lehetett csatornaeredményként beolvasni.</string>
+    <string name="channel_cleanup_share_note">Az exportált fájl csak csatornaszámokat és neveket tartalmaz, soha a belépési adatokat vagy a szerver címét. Az importált hibás csatornákat csak itt ellenőrzi újra az alkalmazás; semmi nem rejtődik el automatikusan.</string>
     <string name="channel_cleanup_stop_button">Leállítás</string>
     <string name="channel_cleanup_last_finished">Utolsó ellenőrzés befejezve: %1$s</string>
     <string name="channel_cleanup_never_scanned">Még nem fejeződött be ellenőrzés</string>

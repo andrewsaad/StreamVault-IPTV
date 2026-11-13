@@ -3,8 +3,11 @@ package com.streamvault.feature.settings.presentation
 import com.google.common.truth.Truth.assertThat
 import com.streamvault.domain.model.Channel
 import com.streamvault.domain.model.ChannelHealthPauseReason
+import com.streamvault.domain.model.ChannelHealthImportSummary
 import com.streamvault.domain.model.ChannelHealthRecord
+import com.streamvault.domain.model.ChannelHealthScanScope
 import com.streamvault.domain.model.ChannelHealthScanState
+import com.streamvault.domain.model.ChannelHealthScopeCounts
 import com.streamvault.domain.model.ChannelHealthStatus
 import com.streamvault.domain.model.ChannelHealthSuggestion
 import com.streamvault.domain.model.Result
@@ -29,15 +32,34 @@ class ChannelCleanupViewModelTest {
         val suggestions = MutableStateFlow<List<ChannelHealthSuggestion>>(emptyList())
         var startResult: Result<Unit> = Result.Success(Unit)
         val startCalls = mutableListOf<Pair<Long, Set<Long>?>>()
+        val scopeCalls = mutableListOf<ChannelHealthScanScope>()
+        var scopeCounts = ChannelHealthScopeCounts()
+        var exportResult: Result<String> = Result.Success("{}")
+        var importResult: Result<ChannelHealthImportSummary> = Result.Success(ChannelHealthImportSummary(0, 0, 0))
+        val importedTexts = mutableListOf<String>()
         val cancelCalls = mutableListOf<Long>()
         val hideCalls = mutableListOf<Pair<Long, Set<Long>>>()
 
         override fun observeScanState(providerId: Long): Flow<ChannelHealthScanState> = scanState
         override fun observeSuggestions(providerId: Long): Flow<List<ChannelHealthSuggestion>> = suggestions
 
-        override suspend fun startScan(providerId: Long, categoryIds: Set<Long>?): Result<Unit> {
+        override suspend fun startScan(
+            providerId: Long,
+            categoryIds: Set<Long>?,
+            scope: ChannelHealthScanScope,
+        ): Result<Unit> {
             startCalls += providerId to categoryIds
+            scopeCalls += scope
             return startResult
+        }
+
+        override suspend fun getScopeCounts(providerId: Long): ChannelHealthScopeCounts = scopeCounts
+
+        override suspend fun exportSnapshot(providerId: Long, label: String): Result<String> = exportResult
+
+        override suspend fun importSnapshot(providerId: Long, text: String): Result<ChannelHealthImportSummary> {
+            importedTexts += text
+            return importResult
         }
 
         override suspend fun cancelScan(providerId: Long) {
@@ -350,6 +372,116 @@ class ChannelCleanupViewModelTest {
         assertThat(repository.startCalls).isEmpty()
         assertThat(repository.cancelCalls).isEmpty()
         assertThat(repository.hideCalls).isEmpty()
+    }
+
+    // -- Snapshot: scopes, export, import -------------------------------
+
+    @Test
+    fun `scope counts reach the state when a provider is bound`() {
+        repository.scopeCounts = ChannelHealthScopeCounts(newChannels = 12, badChannels = 3)
+
+        assertThat(viewModel().uiState.value.counts).isEqualTo(ChannelHealthScopeCounts(12, 3))
+    }
+
+    @Test
+    fun `counts are read again when a scan ends`() {
+        val vm = viewModel()
+        repository.scopeCounts = ChannelHealthScopeCounts(newChannels = 0, badChannels = 5)
+
+        repository.scanState.value = ChannelHealthScanState(running = true)
+        repository.scanState.value = ChannelHealthScanState(running = false, lastFinishedAt = 99L)
+
+        assertThat(vm.uiState.value.counts.badChannels).isEqualTo(5)
+    }
+
+    @Test
+    fun `each scan scope is passed to the repository`() {
+        val vm = viewModel()
+
+        vm.startScan()
+        vm.startScan(ChannelHealthScanScope.NEW_ONLY)
+        vm.startScan(ChannelHealthScanScope.BAD_ONLY)
+
+        assertThat(repository.scopeCalls).containsExactly(
+            ChannelHealthScanScope.ALL,
+            ChannelHealthScanScope.NEW_ONLY,
+            ChannelHealthScanScope.BAD_ONLY,
+        ).inOrder()
+    }
+
+    @Test
+    fun `export writes the snapshot text and reports success`() {
+        repository.exportResult = Result.Success("snapshot-text")
+        val vm = viewModel()
+        val written = mutableListOf<String>()
+
+        vm.exportResults { text -> written += text; true }
+
+        assertThat(written).containsExactly("snapshot-text")
+        assertThat(vm.uiState.value.message).isEqualTo(ChannelCleanupMessage(R.string.channel_cleanup_export_done))
+    }
+
+    @Test
+    fun `export reports a failure when nothing was scanned or the file cannot be written`() {
+        val vm = viewModel()
+        repository.exportResult = Result.Error("Nothing has been scanned yet")
+        var writes = 0
+
+        vm.exportResults { writes++; true }
+        assertThat(writes).isEqualTo(0)
+        assertThat(vm.uiState.value.message)
+            .isEqualTo(ChannelCleanupMessage(R.string.channel_cleanup_export_failed, isError = true))
+
+        repository.exportResult = Result.Success("x")
+        vm.exportResults { throw java.io.IOException("disk full") }
+        assertThat(vm.uiState.value.message?.isError).isTrue()
+    }
+
+    @Test
+    fun `import passes the file text on and reports the three counts`() {
+        repository.importResult = Result.Success(ChannelHealthImportSummary(working = 10, failed = 4, skipped = 2))
+        val vm = viewModel()
+
+        vm.importResults { "file-text" }
+
+        assertThat(repository.importedTexts).containsExactly("file-text")
+        assertThat(vm.uiState.value.message)
+            .isEqualTo(ChannelCleanupMessage(R.string.channel_cleanup_import_done, listOf(10, 4, 2)))
+    }
+
+    @Test
+    fun `import reports a failure for an unreadable file or a rejected snapshot`() {
+        val vm = viewModel()
+
+        vm.importResults { null }
+        assertThat(vm.uiState.value.message?.res).isEqualTo(R.string.channel_cleanup_import_failed)
+        assertThat(repository.importedTexts).isEmpty()
+
+        repository.importResult = Result.Error("Not a channel health snapshot")
+        vm.importResults { "garbage" }
+        assertThat(vm.uiState.value.message)
+            .isEqualTo(ChannelCleanupMessage(R.string.channel_cleanup_import_failed, isError = true))
+    }
+
+    @Test
+    fun `starting a scan clears the last export or import message`() {
+        val vm = viewModel()
+        vm.importResults { null }
+
+        vm.startScan()
+
+        assertThat(vm.uiState.value.message).isNull()
+    }
+
+    @Test
+    fun `export and import before a provider is bound do nothing`() {
+        val vm = ChannelCleanupViewModel(repository)
+
+        vm.exportResults { true }
+        vm.importResults { "x" }
+
+        assertThat(vm.uiState.value.message).isNull()
+        assertThat(repository.importedTexts).isEmpty()
     }
 
     private companion object {

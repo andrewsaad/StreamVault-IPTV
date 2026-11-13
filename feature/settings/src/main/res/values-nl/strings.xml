@@ -1043,6 +1043,15 @@
     <string name="settings_channel_cleanup_description">Scan de livekanalen van deze aanbieder en verberg de kanalen die niet werken</string>
     <string name="channel_cleanup_scan_note">Een scan kan uren duren. Eén enkele fout verbergt nooit een kanaal: een kanaal wordt pas voorgesteld nadat het op twee verschillende dagen is mislukt.</string>
     <string name="channel_cleanup_scan_button">Kanalen scannen</string>
+    <string name="channel_cleanup_scan_new_button">Nieuwe zenders scannen (%1$d)</string>
+    <string name="channel_cleanup_recheck_button">Mislukte zenders opnieuw controleren (%1$d)</string>
+    <string name="channel_cleanup_export_button">Resultaten exporteren</string>
+    <string name="channel_cleanup_import_button">Resultaten importeren</string>
+    <string name="channel_cleanup_export_done">Resultaten geëxporteerd.</string>
+    <string name="channel_cleanup_export_failed">De resultaten konden niet worden geëxporteerd.</string>
+    <string name="channel_cleanup_import_done">%1$d werkende en %2$d mislukte zenders geïmporteerd. %3$d overgeslagen.</string>
+    <string name="channel_cleanup_import_failed">Dat bestand kon niet als zenderresultaten worden gelezen.</string>
+    <string name="channel_cleanup_share_note">Het geëxporteerde bestand bevat alleen zendernummers en namen, nooit de inloggegevens of het serveradres. Geïmporteerde mislukte zenders worden alleen hier opnieuw gecontroleerd; er wordt niets automatisch verborgen.</string>
     <string name="channel_cleanup_stop_button">Stoppen</string>
     <string name="channel_cleanup_last_finished">Laatste scan voltooid: %1$s</string>
     <string name="channel_cleanup_never_scanned">Er is nog geen scan voltooid</string>

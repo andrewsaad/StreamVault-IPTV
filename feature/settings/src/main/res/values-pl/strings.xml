@@ -1049,6 +1049,15 @@
     <string name="settings_channel_cleanup_description">Przeskanuj kanały na żywo tego dostawcy i ukryj te, które nie działają</string>
     <string name="channel_cleanup_scan_note">Skanowanie może potrwać godzinami. Pojedynczy błąd nigdy nie ukrywa kanału: kanał jest proponowany dopiero, gdy zawiódł w dwóch różnych dniach.</string>
     <string name="channel_cleanup_scan_button">Skanuj kanały</string>
+    <string name="channel_cleanup_scan_new_button">Skanuj nowe kanały (%1$d)</string>
+    <string name="channel_cleanup_recheck_button">Sprawdź ponownie kanały z błędami (%1$d)</string>
+    <string name="channel_cleanup_export_button">Eksportuj wyniki</string>
+    <string name="channel_cleanup_import_button">Importuj wyniki</string>
+    <string name="channel_cleanup_export_done">Wyniki wyeksportowano.</string>
+    <string name="channel_cleanup_export_failed">Nie udało się wyeksportować wyników.</string>
+    <string name="channel_cleanup_import_done">Zaimportowano %1$d działających i %2$d niedziałających kanałów. Pominięto: %3$d.</string>
+    <string name="channel_cleanup_import_failed">Nie udało się odczytać tego pliku jako wyników kanałów.</string>
+    <string name="channel_cleanup_share_note">Wyeksportowany plik zawiera tylko numery i nazwy kanałów, nigdy danych logowania ani adresu serwera. Zaimportowane niedziałające kanały są ponownie sprawdzane tylko tutaj; nic nie jest ukrywane automatycznie.</string>
     <string name="channel_cleanup_stop_button">Zatrzymaj</string>
     <string name="channel_cleanup_last_finished">Ostatnie skanowanie zakończono: %1$s</string>
     <string name="channel_cleanup_never_scanned">Żadne skanowanie nie zostało jeszcze ukończone</string>
