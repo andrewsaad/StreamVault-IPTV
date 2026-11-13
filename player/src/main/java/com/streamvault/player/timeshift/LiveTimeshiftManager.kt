@@ -968,7 +968,13 @@ internal class DefaultLiveTimeshiftManager @Inject constructor(
             val ext = if (isInit) "init-$id.mp4" else "segment-$id.mp4"
             return if (backend == LiveTimeshiftBackend.DISK) {
                 val target = File(sessionDir, ext)
-                streamSegmentToDisk(uri, target)
+                try {
+                    streamSegmentToDisk(uri, target)
+                } catch (t: Throwable) {
+                    // The segment is fetched again next poll under a new name; drop the partial file.
+                    target.delete()
+                    throw t
+                }
                 HlsSegmentSnapshot(uri, durationMs, target, null)
             } else {
                 val bytes = fetchBytes(uri)

@@ -26,8 +26,8 @@ internal class DashCaptureBuffer<T : Any>(
      * Init segment URLs already downloaded. Media segments are not tracked here ([cursor] covers
      * them), so this grows by one entry per distinct init URL, normally one per representation or
      * period. It is not bounded: a server that changes the init URL on every poll adds an entry and
-     * a pinned init segment (never pruned) each time, for the life of the session. A URL is marked
-     * before its fetch, so a failed init download is not retried under the same URL.
+     * a pinned init segment (never pruned) each time, for the life of the session. A URL is added
+     * only after its download succeeds, so a failed init download is retried on the next poll.
      */
     private val seenInitUrls = linkedSetOf<String>()
     private val cursor = DashSegmentCursor()
@@ -57,15 +57,18 @@ internal class DashCaptureBuffer<T : Any>(
         }
 
         // Download each init segment once (identified by URL).
-        if (initUrl != null && seenInitUrls.add(initUrl)) {
+        if (initUrl != null && initUrl !in seenInitUrls) {
             val init = fetch(initUrl, 0L, true)
+            seenInitUrls += initUrl
             mutex.withLock { segments += init }
         }
 
         for (segment in advertised) {
             currentCoroutineContext().ensureActive()
-            if (!cursor.take(segment)) continue
+            if (!cursor.isNew(segment)) continue
+            // A failed download throws before the mark moves, so the segment is tried again next poll.
             val retained = fetch(segment.uri, segment.durationMs, false)
+            cursor.markTaken(segment)
             val windowDurationMs = mutex.withLock {
                 runningDurationMs += durationOf(retained)
                 segments += retained
@@ -137,11 +140,21 @@ internal class DashSegmentCursor(private val restartGapMs: Long = DASH_RESTART_G
      * one way or the other) is not taken twice.
      */
     fun take(segment: DashMediaSegmentRef): Boolean {
-        val mark = lastStartMs
-        if (mark != null && segment.startMs <= mark + lastDurationMs / 2) return false
+        if (!isNew(segment)) return false
+        markTaken(segment)
+        return true
+    }
+
+    /** True when [segment] is newer than every segment taken so far. Does not move the mark. */
+    fun isNew(segment: DashMediaSegmentRef): Boolean {
+        val mark = lastStartMs ?: return true
+        return segment.startMs > mark + lastDurationMs / 2
+    }
+
+    /** Moves the mark to [segment]; call once it has actually been captured. */
+    fun markTaken(segment: DashMediaSegmentRef) {
         lastStartMs = segment.startMs
         lastDurationMs = segment.durationMs
-        return true
     }
 
     companion object {

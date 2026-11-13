@@ -56,4 +56,35 @@ class DashCaptureBufferTest {
         assertThat(harness.fetched.count { it == "init.mp4" }).isEqualTo(2)
         assertThat(harness.windows.last()).isEqualTo(8_000L)
     }
+
+    @Test
+    fun `a failed media download is retried on the next poll`() = runTest {
+        val harness = Harness()
+        harness.poll(1L..3L)
+
+        val failure = runCatching { harness.poll(2L..5L, failing = setOf("seg-4.m4s")) }
+        assertThat(failure.isFailure).isTrue()
+
+        harness.poll(3L..6L)
+
+        assertThat(harness.buffered())
+            .containsExactlyElementsIn(listOf("init.mp4") + (1L..6L).map { "seg-$it.m4s" })
+            .inOrder()
+        assertThat(harness.fetched.count { it == "seg-4.m4s" }).isEqualTo(2)
+    }
+
+    @Test
+    fun `a failed init download is retried before any media is captured`() = runTest {
+        val harness = Harness()
+
+        val failure = runCatching { harness.poll(1L..3L, failing = setOf("init.mp4")) }
+        assertThat(failure.isFailure).isTrue()
+        assertThat(harness.buffered()).isEmpty()
+
+        harness.poll(1L..3L)
+
+        assertThat(harness.buffered())
+            .containsExactlyElementsIn(listOf("init.mp4") + (1L..3L).map { "seg-$it.m4s" })
+            .inOrder()
+    }
 }
