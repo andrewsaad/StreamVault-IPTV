@@ -10,7 +10,6 @@ import com.streamvault.app.MainActivity
 import com.streamvault.app.backup.BackupFileBridge
 import com.streamvault.core.navigation.AppDestination
 import com.streamvault.core.navigation.ExternalNavigationRequest
-import com.streamvault.core.navigation.PlayerNavigationRequest
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.Locale
 import javax.inject.Inject
@@ -19,7 +18,10 @@ class ExternalNavigationRequestParser @Inject constructor(
     @ApplicationContext private val context: Context
 ) {
     fun parse(intent: Intent): ExternalNavigationRequest? {
-        readPlayerRequestExtra(intent)?.let { return ExternalNavigationRequest.Player(it) }
+        // MainActivity is exported, so a Serializable EXTRA_PLAYER_REQUEST is never read: any app could send one
+        // with an arbitrary stream URL. The app's own launcher, Watch Next and TV-input intents travel through
+        // Intent.toUri, which drops Serializable extras anyway; they use PlayerRequestIntentExtras, which only
+        // accepts internal provider URLs.
         PlayerRequestIntentExtras.read(intent)?.let { return ExternalNavigationRequest.Player(it) }
         readExternalDestinationExtra(intent)?.let { return ExternalNavigationRequest.Destination(it) }
 
@@ -103,17 +105,6 @@ class ExternalNavigationRequestParser @Inject constructor(
         if (!isJsonMime && !isJsonPath) return false
         return uri.scheme?.lowercase(Locale.ROOT) in setOf("content", "file")
     }
-
-    @Suppress("DEPRECATION")
-    private fun readPlayerRequestExtra(intent: Intent): PlayerNavigationRequest? =
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            intent.getSerializableExtra(
-                MainActivity.EXTRA_PLAYER_REQUEST,
-                PlayerNavigationRequest::class.java
-            )
-        } else {
-            intent.getSerializableExtra(MainActivity.EXTRA_PLAYER_REQUEST) as? PlayerNavigationRequest
-        }
 
     @Suppress("DEPRECATION")
     private fun readExternalDestinationExtra(intent: Intent): AppDestination? =

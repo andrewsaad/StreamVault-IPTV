@@ -103,17 +103,16 @@ class ExternalNavigationRequestParserTest {
     }
 
     @Test
-    fun playerExtraTakesPrecedence() {
+    fun serializablePlayerExtraIsIgnored() {
+        // MainActivity is exported: another app must not be able to start playback of an arbitrary URL.
         val request = PlayerNavigationRequest(
-            streamUrl = "https://example.com/live.m3u8",
+            streamUrl = "https://attacker.example/live.m3u8",
             title = "News"
         )
         val intent = Intent(Intent.ACTION_VIEW)
             .putExtra(MainActivity.EXTRA_PLAYER_REQUEST, request)
-            .putExtra(MainActivity.EXTRA_EXTERNAL_ROUTE, "home")
 
-        assertThat(parser.parse(intent))
-            .isEqualTo(ExternalNavigationRequest.Player(request))
+        assertFallsBackHome(intent)
     }
 
     @Test
@@ -219,13 +218,13 @@ class ExternalNavigationRequestParserTest {
     }
 
     @Test
-    fun serializableExtraWinsOverPlainExtras() {
+    fun plainExtrasWinOverSerializableExtra() {
         val serialized = PlayerNavigationRequest(streamUrl = "https://example.com/a.m3u8", title = "A")
         val plain = PlayerNavigationRequest(streamUrl = xtreamUrl(XtreamStreamKind.LIVE, 1L), title = "B")
         val intent = PlayerRequestIntentExtras.write(Intent(Intent.ACTION_VIEW), plain)
             .putExtra(MainActivity.EXTRA_PLAYER_REQUEST, serialized)
 
-        assertThat(parser.parse(intent)).isEqualTo(ExternalNavigationRequest.Player(serialized))
+        assertThat(parser.parse(intent)).isEqualTo(ExternalNavigationRequest.Player(plain))
     }
 
     private fun validPlainIntent(): Intent = PlayerRequestIntentExtras.write(
