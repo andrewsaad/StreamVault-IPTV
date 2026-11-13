@@ -257,6 +257,7 @@ class ProviderSyncWorkerTest {
         )
         whenever(syncManager.currentSyncState(9L)).thenReturn(SyncState.Success(123L))
 
+        whenever(providerDao.getById(provider.id)).thenReturn(provider)
         reconcileTargetedProviderStatus(
             providerDao = providerDao,
             channelDao = channelDao,
@@ -289,6 +290,7 @@ class ProviderSyncWorkerTest {
         )
         whenever(syncManager.currentSyncState(9L)).thenReturn(SyncState.Success(123L))
 
+        whenever(providerDao.getById(provider.id)).thenReturn(provider)
         reconcileTargetedProviderStatus(
             providerDao = providerDao,
             channelDao = channelDao,
@@ -373,6 +375,62 @@ class ProviderSyncWorkerTest {
     }
 
     @Test
+    fun `provider deleted during the sync is not written back`() = runTest {
+        val staleProvider = ProviderEntity(
+            id = 9L,
+            name = "Playlist",
+            type = ProviderType.M3U,
+            serverUrl = "https://example.com/list.m3u",
+            m3uUrl = "https://example.com/list.m3u",
+            isActive = true,
+            status = ProviderStatus.ACTIVE
+        )
+        whenever(providerDao.getById(9L)).thenReturn(null)
+        whenever(syncManager.currentSyncState(9L)).thenReturn(SyncState.Success(123L))
+
+        listOf<Result<Unit>>(Result.success(Unit), Result.error("boom")).forEach { result ->
+            reconcileTargetedProviderStatus(
+                providerDao = providerDao,
+                channelDao = channelDao,
+                categoryDao = categoryDao,
+                syncMetadataRepository = syncMetadataRepository,
+                syncManager = syncManager,
+                provider = staleProvider,
+                result = result
+            )
+        }
+
+        verify(providerDao, never()).update(any())
+    }
+
+    @Test
+    fun `sync failure leaves a provider that became partial during the sync partial and active`() = runTest {
+        val staleProvider = ProviderEntity(
+            id = 9L,
+            name = "Playlist",
+            type = ProviderType.M3U,
+            serverUrl = "https://example.com/list.m3u",
+            m3uUrl = "https://example.com/list.m3u",
+            isActive = true,
+            status = ProviderStatus.ACTIVE
+        )
+        whenever(providerDao.getById(9L)).thenReturn(staleProvider.copy(status = ProviderStatus.PARTIAL))
+
+        reconcileTargetedProviderStatus(
+            providerDao = providerDao,
+            channelDao = channelDao,
+            categoryDao = categoryDao,
+            syncMetadataRepository = syncMetadataRepository,
+            syncManager = syncManager,
+            provider = staleProvider,
+            result = Result.error("boom")
+        )
+
+        // PARTIAL means usable content exists; a later failure must not deactivate it.
+        verify(providerDao, never()).update(any())
+    }
+
+    @Test
     fun `targeted xtream resume success without committed live channels stays inactive partial`() = runTest {
         val provider = ProviderEntity(
             id = 9L,
@@ -387,6 +445,7 @@ class ProviderSyncWorkerTest {
         whenever(syncManager.currentSyncState(9L)).thenReturn(SyncState.Success(123L))
         whenever(channelDao.getCount(9L)).thenReturn(flowOf(0))
 
+        whenever(providerDao.getById(provider.id)).thenReturn(provider)
         reconcileTargetedProviderStatus(
             providerDao = providerDao,
             channelDao = channelDao,
@@ -423,6 +482,7 @@ class ProviderSyncWorkerTest {
             SyncMetadata(providerId = 9L, movieCount = 4)
         )
 
+        whenever(providerDao.getById(provider.id)).thenReturn(provider)
         reconcileTargetedProviderStatus(
             providerDao = providerDao,
             channelDao = channelDao,
@@ -469,6 +529,7 @@ class ProviderSyncWorkerTest {
         )
         whenever(categoryDao.getByProviderAndTypeSync(9L, ContentType.SERIES.name)).thenReturn(emptyList())
 
+        whenever(providerDao.getById(provider.id)).thenReturn(provider)
         reconcileTargetedProviderStatus(
             providerDao = providerDao,
             channelDao = channelDao,
@@ -499,6 +560,7 @@ class ProviderSyncWorkerTest {
             status = ProviderStatus.ACTIVE
         )
 
+        whenever(providerDao.getById(provider.id)).thenReturn(provider)
         reconcileTargetedProviderStatus(
             providerDao = providerDao,
             channelDao = channelDao,

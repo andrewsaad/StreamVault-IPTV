@@ -68,7 +68,9 @@ internal suspend fun reconcileTargetedProviderStatus(
 ) {
     // `provider` was read before the sync ran. Write back the current row so edits made during
     // the sync (name, URLs, credentials, runtime fields) are not overwritten with stale values.
-    val currentProvider = providerDao.getById(provider.id) ?: provider
+    // A provider deleted during the sync has nothing to reconcile; writing the stale row back
+    // would be a no-op update at best and could leave the user with no active provider.
+    val currentProvider = providerDao.getById(provider.id) ?: return
     when (result) {
         is com.streamvault.domain.model.Result.Success -> {
             val finalStatus = if (syncManager.currentSyncState(provider.id) is SyncState.Partial) {
