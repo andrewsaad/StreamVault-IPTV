@@ -25,6 +25,7 @@ import javax.inject.Singleton
 import org.xmlpull.v1.XmlPullParser
 import org.xmlpull.v1.XmlPullParserFactory
 import kotlinx.coroutines.CoroutineScope
+import android.util.Log
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -82,6 +83,8 @@ internal suspend fun createSnapshotOrNull(block: suspend () -> LiveTimeshiftSnap
     } catch (e: CancellationException) {
         throw e
     } catch (e: Exception) {
+        // Class name only: messages and paths can carry stream URLs or file locations.
+        Log.w("LiveTimeshiftManager", "snapshot-failed type=${e.javaClass.simpleName}")
         null
     }
 
