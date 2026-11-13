@@ -10,6 +10,7 @@ import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
+import com.streamvault.domain.model.ChannelHealthScanScope
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.android.EntryPointAccessors
@@ -37,8 +38,12 @@ class ChannelHealthScanWorker(appContext: Context, params: WorkerParameters) : C
         } else {
             null
         }
+        // Work queued by a build before scopes existed has no scope key and was a full scan.
+        val scope = inputData.getString(KEY_SCOPE)
+            ?.let { name -> ChannelHealthScanScope.entries.firstOrNull { it.name == name } }
+            ?: ChannelHealthScanScope.ALL
         val scanner = EntryPointAccessors.fromApplication(applicationContext, Entry::class.java).channelHealthScanner()
-        return if (scanner.run(providerId, categoryIds, inputData.getLong(KEY_STARTED_AT, 0L))) {
+        return if (scanner.run(providerId, categoryIds, inputData.getLong(KEY_STARTED_AT, 0L), scope)) {
             Result.success()
         } else {
             Result.failure()
@@ -50,6 +55,7 @@ class ChannelHealthScanWorker(appContext: Context, params: WorkerParameters) : C
         const val KEY_FILTER_CATEGORIES = "filter_categories"
         const val KEY_CATEGORY_IDS = "category_ids"
         const val KEY_STARTED_AT = "started_at"
+        const val KEY_SCOPE = "scope"
 
         fun uniqueName(providerId: Long): String = "channel-health-scan-$providerId"
     }
@@ -61,7 +67,12 @@ class ChannelHealthScanScheduler @Inject constructor(
     @param:ApplicationContext private val context: Context
 ) {
     /** Queues a scan; a scan of the same provider that is already queued or running is kept. */
-    fun enqueue(providerId: Long, categoryIds: Set<Long>?, startedAt: Long) {
+    fun enqueue(
+        providerId: Long,
+        categoryIds: Set<Long>?,
+        startedAt: Long,
+        scope: ChannelHealthScanScope = ChannelHealthScanScope.ALL,
+    ) {
         val request = OneTimeWorkRequestBuilder<ChannelHealthScanWorker>()
             .setInputData(
                 workDataOf(
@@ -69,6 +80,7 @@ class ChannelHealthScanScheduler @Inject constructor(
                     ChannelHealthScanWorker.KEY_FILTER_CATEGORIES to (categoryIds != null),
                     ChannelHealthScanWorker.KEY_CATEGORY_IDS to categoryIds.orEmpty().toLongArray(),
                     ChannelHealthScanWorker.KEY_STARTED_AT to startedAt,
+                    ChannelHealthScanWorker.KEY_SCOPE to scope.name,
                 )
             )
             .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())

@@ -8,6 +8,7 @@ import com.streamvault.data.remote.xtream.XtreamApiService
 import com.streamvault.data.remote.xtream.XtreamStreamKind
 import com.streamvault.data.remote.xtream.XtreamUrlFactory
 import com.streamvault.domain.model.ChannelHealthPauseReason
+import com.streamvault.domain.model.ChannelHealthScanScope
 import com.streamvault.domain.model.ChannelHealthScanState
 import com.streamvault.domain.model.ChannelHealthStatus
 import com.streamvault.domain.model.XtreamConfig
@@ -46,6 +47,18 @@ internal fun shouldStoreRefusals(mainOk: Int, retryOk: Int, retryAttempts: Int, 
     val mainPassHealthy = mainOk >= MIN_MAIN_PASS_OK && retryOk >= 1
     return retryPassHealthy || mainPassHealthy
 }
+
+/**
+ * Whether a scan of [scope] probes the channel [channelId]. New channels are the ones with no settled answer
+ * yet (including those that only ever answered UNCLEAR); bad ones are the channels with a failure record,
+ * including failures imported as hints.
+ */
+internal fun selectsChannel(scope: ChannelHealthScanScope, channelId: Long, document: ChannelHealthDocument): Boolean =
+    when (scope) {
+        ChannelHealthScanScope.ALL -> true
+        ChannelHealthScanScope.NEW_ONLY -> channelId !in document.knownIds
+        ChannelHealthScanScope.BAD_ONLY -> channelId in document.records
+    }
 
 internal data class ChannelHealthTimings(
     val pauseBetweenChannelsMs: Long = 6_000L,
@@ -132,16 +145,23 @@ class ChannelHealthScanner internal constructor(
      * Returns false when the scan could not run or gave up; the reason is never the login. A scan that
      * gave up is flagged in its state ([ChannelHealthScanState.gaveUp]) so the user can be told.
      */
-    internal suspend fun run(providerId: Long, categoryIds: Set<Long>?, startedAt: Long): Boolean {
+    internal suspend fun run(
+        providerId: Long,
+        categoryIds: Set<Long>?,
+        startedAt: Long,
+        scope: ChannelHealthScanScope = ChannelHealthScanScope.ALL,
+    ): Boolean {
         val config = snapshots.getSnapshot(providerId)?.configuration as? XtreamConfig
         if (config == null) {
             markStopped(providerId)
             return false
         }
+        val document = results.read(providerId)
         val channels = channelDao.getByProviderSync(providerId)
             .filter { it.streamId > 0L && (categoryIds == null || it.categoryId in categoryIds) }
+            .filter { selectsChannel(scope, it.id, document) }
             .sortedBy { it.id }
-        val resume = results.read(providerId).resume?.takeIf { it.startedAt == startedAt }
+        val resume = document.resume?.takeIf { it.startedAt == startedAt }
         val headers = requestHeaders(providerId, config)
         val pending = ArrayList<ChannelProbeOutcome>()
         // Non-OK answers since the last OK; kept back from the store until an OK shows they are isolated.

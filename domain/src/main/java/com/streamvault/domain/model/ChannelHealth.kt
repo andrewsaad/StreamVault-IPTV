@@ -30,6 +30,24 @@ data class ChannelHealthSuggestion(
     val record: ChannelHealthRecord,
 )
 
+/** Which live channels a scan probes. */
+enum class ChannelHealthScanScope {
+    /** Every live channel. */
+    ALL,
+
+    /** Only channels the provider added since the last scan, or that never got an answer. */
+    NEW_ONLY,
+
+    /** Only channels that failed before, to see whether they work again. */
+    BAD_ONLY,
+}
+
+/** How many channels each partial scan would probe now; both are 0 until a full scan has finished once. */
+data class ChannelHealthScopeCounts(val newChannels: Int = 0, val badChannels: Int = 0)
+
+/** What loading a snapshot file did; [skipped] counts entries for unknown ids, other names, or channels already checked here. */
+data class ChannelHealthImportSummary(val working: Int, val failed: Int, val skipped: Int)
+
 enum class ChannelHealthPauseReason {
     /** Something is playing on this account; the scan yields the provider's connection. */
     PLAYBACK_ACTIVE,

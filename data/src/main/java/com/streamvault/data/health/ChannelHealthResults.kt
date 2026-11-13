@@ -49,11 +49,17 @@ internal data class ChannelHealthResume(
 /** A retried channel refused with a 5xx again; [inStreak] when it still counts toward the mass-failure streak. */
 internal data class ChannelRefusal(val channelId: Long, val checkedAt: Long, val inStreak: Boolean = false)
 
-/** Only channels whose latest answer was EMPTY or DEAD have a record; an OK answer removes it. */
+/**
+ * Only channels whose latest answer was EMPTY or DEAD have a record; an OK answer removes it.
+ * [knownIds] are the channels that have had any settled answer (OK, EMPTY or DEAD), so a channel the
+ * provider added later, or one that only ever answered UNCLEAR, is not in it. Empty on results saved
+ * by a build before it existed.
+ */
 internal data class ChannelHealthDocument(
     val records: Map<Long, ChannelHealthRecord> = emptyMap(),
     val lastFinishedAt: Long? = null,
     val resume: ChannelHealthResume? = null,
+    val knownIds: Set<Long> = emptySet(),
 )
 
 /** The failed-days rules; pure so the day counting can be tested with fixed times. */
@@ -112,7 +118,9 @@ class ChannelHealthResults internal constructor(
         if (outcomes.isEmpty() && resume == null) return
         update(providerId) { document ->
             val records = document.records.toMutableMap()
+            val known = document.knownIds.toMutableSet()
             outcomes.forEach { outcome ->
+                if (outcome.status != ChannelHealthStatus.UNCLEAR) known += outcome.channelId
                 if (outcome.status == ChannelHealthStatus.OK) {
                     // Same as failedDays back to 0: a channel that works needs no record.
                     records.remove(outcome.channelId)
@@ -126,7 +134,33 @@ class ChannelHealthResults internal constructor(
                     zone = clock.zone,
                 )?.let { records[outcome.channelId] = it }
             }
-            document.copy(records = records, resume = resume ?: document.resume)
+            document.copy(records = records, resume = resume ?: document.resume, knownIds = known)
+        }
+    }
+
+    /**
+     * Results saved before [ChannelHealthDocument.knownIds] existed have a finished scan but no known
+     * channels. The channels listed now (minus the failed ones) are taken as that scan's baseline, so
+     * "scan new channels" does not start by rescanning everything. Channels the provider added between
+     * that scan and now are wrongly assumed fine; they get checked by the next full scan.
+     */
+    internal suspend fun ensureBaseline(providerId: Long, listedIds: Set<Long>) {
+        update(providerId) { document ->
+            if (document.knownIds.isNotEmpty() || document.lastFinishedAt == null) {
+                document
+            } else {
+                document.copy(knownIds = listedIds)
+            }
+        }
+    }
+
+    /** Folds an import in: the channels become known and failed ones become hints (see [SnapshotImportPlan]). */
+    internal suspend fun applyImport(providerId: Long, plan: SnapshotImportPlan) {
+        if (plan.knownIds.isEmpty()) return
+        update(providerId) { document ->
+            val records = document.records.toMutableMap()
+            plan.hints.forEach { hint -> records.putIfAbsent(hint.channelId, hint) }
+            document.copy(records = records, knownIds = document.knownIds + plan.knownIds)
         }
     }
 
@@ -164,6 +198,8 @@ class ChannelHealthResults internal constructor(
         val resumeRefused: List<StoredRefusal> = emptyList(),
         val resumeRetryOk: Int = 0,
         val resumeRetryAttempts: Int = 0,
+        // Added later: absent in state saved by older builds, which then reads as no known channels.
+        val knownIds: List<Long> = emptyList(),
     )
 
     private fun encode(document: ChannelHealthDocument): String = json.encodeToString(
@@ -178,7 +214,8 @@ class ChannelHealthResults internal constructor(
             resumeRefused = document.resume?.refused.orEmpty().map { StoredRefusal(it.channelId, it.checkedAt, it.inStreak) },
             resumeRetryOk = document.resume?.retryOk ?: 0,
             resumeRetryAttempts = document.resume?.retryAttempts ?: 0,
-            records = document.records.values.map {
+            knownIds = document.knownIds.sorted(),
+            records =document.records.values.map {
                 StoredRecord(it.channelId, statusToStored(it.status), it.checkedAt, it.failedDays)
             },
         ),
@@ -207,7 +244,7 @@ class ChannelHealthResults internal constructor(
         } else {
             null
         }
-        return ChannelHealthDocument(records, document.lastFinishedAt, resume)
+        return ChannelHealthDocument(records, document.lastFinishedAt, resume, document.knownIds.toSet())
     }
 
     private fun statusToStored(status: ChannelHealthStatus): String = when (status) {

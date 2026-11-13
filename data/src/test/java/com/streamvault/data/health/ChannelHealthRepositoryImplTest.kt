@@ -6,6 +6,8 @@ import com.streamvault.data.remote.dto.XtreamAuthResponse
 import com.streamvault.data.remote.dto.XtreamServerInfo
 import com.streamvault.data.remote.dto.XtreamUserInfo
 import com.streamvault.data.remote.xtream.XtreamApiService
+import com.streamvault.domain.model.ChannelHealthScanScope
+import com.streamvault.domain.model.ChannelHealthScopeCounts
 import com.streamvault.domain.model.ChannelHealthStatus
 import com.streamvault.domain.model.Result
 import com.streamvault.domain.repository.ProviderSnapshotRepository
@@ -212,7 +214,7 @@ class ChannelHealthRepositoryImplTest {
         whenever(snapshots.getSnapshot(TEST_PROVIDER_ID)).thenReturn(null)
 
         assertThat(repository.startScan(TEST_PROVIDER_ID)).isInstanceOf(Result.Error::class.java)
-        verify(scheduler, never()).enqueue(any(), anyOrNull(), any())
+        verify(scheduler, never()).enqueue(any(), anyOrNull(), any(), any())
     }
 
     @Test
@@ -224,7 +226,7 @@ class ChannelHealthRepositoryImplTest {
 
         assertThat(result).isInstanceOf(Result.Error::class.java)
         assertThat((result as Result.Error).message).doesNotContain(TEST_PASSWORD)
-        verify(scheduler, never()).enqueue(any(), anyOrNull(), any())
+        verify(scheduler, never()).enqueue(any(), anyOrNull(), any(), any())
         assertThat(repository.observeScanState(TEST_PROVIDER_ID).first().scanned).isEqualTo(0)
     }
 
@@ -234,7 +236,7 @@ class ChannelHealthRepositoryImplTest {
         givenOutputFormats()
 
         assertThat(repository.startScan(TEST_PROVIDER_ID)).isEqualTo(Result.success(Unit))
-        verify(scheduler).enqueue(any(), anyOrNull(), any())
+        verify(scheduler).enqueue(any(), anyOrNull(), any(), any())
     }
 
     @Test
@@ -245,7 +247,7 @@ class ChannelHealthRepositoryImplTest {
         val result = repository.startScan(TEST_PROVIDER_ID, setOf(100L, 200L))
 
         assertThat(result).isEqualTo(Result.success(Unit))
-        verify(scheduler).enqueue(eq(TEST_PROVIDER_ID), eq(setOf(100L, 200L)), eq(clock.nowMillis))
+        verify(scheduler).enqueue(eq(TEST_PROVIDER_ID), eq(setOf(100L, 200L)), eq(clock.nowMillis), eq(ChannelHealthScanScope.ALL))
         workActive.value = true
         assertThat(repository.observeScanState(TEST_PROVIDER_ID).first().running).isTrue()
     }
@@ -318,5 +320,137 @@ class ChannelHealthRepositoryImplTest {
         results.markFinished(TEST_PROVIDER_ID)
 
         assertThat(repository.observeScanState(TEST_PROVIDER_ID).first().lastFinishedAt).isEqualTo(clock.nowMillis)
+    }
+
+    private suspend fun scanned(ok: List<Long>, dead: List<Long>) {
+        results.record(
+            TEST_PROVIDER_ID,
+            ok.map { ChannelProbeOutcome(it, ChannelHealthStatus.OK, clock.nowMillis) } +
+                dead.map { ChannelProbeOutcome(it, ChannelHealthStatus.DEAD, clock.nowMillis) },
+        )
+    }
+
+    @Test
+    fun `scope counts are zero before anything was scanned`() = runTest {
+        stubChannels(channelEntity(1L), channelEntity(2L))
+
+        assertThat(repository.getScopeCounts(TEST_PROVIDER_ID)).isEqualTo(ChannelHealthScopeCounts())
+    }
+
+    @Test
+    fun `scope counts split channels the provider added from channels that failed`() = runTest {
+        stubChannels(channelEntity(1L), channelEntity(2L), channelEntity(3L))
+        scanned(ok = listOf(1L), dead = listOf(2L))
+
+        assertThat(repository.getScopeCounts(TEST_PROVIDER_ID))
+            .isEqualTo(ChannelHealthScopeCounts(newChannels = 1, badChannels = 1))
+    }
+
+    @Test
+    fun `results from a build before known channels were tracked take the listed channels as the baseline`() = runTest {
+        stubChannels(channelEntity(1L), channelEntity(2L), channelEntity(3L))
+        storage.health.value =
+            """{"lastFinishedAt":5,"records":[{"id":2,"status":"dead","checkedAt":1,"failedDays":2}]}"""
+
+        assertThat(repository.getScopeCounts(TEST_PROVIDER_ID))
+            .isEqualTo(ChannelHealthScopeCounts(newChannels = 0, badChannels = 1))
+        // A channel the provider adds after that baseline is new.
+        stubChannels(channelEntity(1L), channelEntity(2L), channelEntity(3L), channelEntity(4L))
+        assertThat(repository.getScopeCounts(TEST_PROVIDER_ID).newChannels).isEqualTo(1)
+    }
+
+    @Test
+    fun `a new-channels scan is queued with its scope`() = runTest {
+        whenever(snapshots.getSnapshot(TEST_PROVIDER_ID)).thenReturn(xtreamSnapshot())
+        givenOutputFormats("m3u8")
+        stubChannels(channelEntity(1L), channelEntity(2L))
+        scanned(ok = listOf(1L), dead = emptyList())
+
+        val result = repository.startScan(TEST_PROVIDER_ID, scope = ChannelHealthScanScope.NEW_ONLY)
+
+        assertThat(result).isEqualTo(Result.success(Unit))
+        verify(scheduler).enqueue(eq(TEST_PROVIDER_ID), anyOrNull(), any(), eq(ChannelHealthScanScope.NEW_ONLY))
+    }
+
+    @Test
+    fun `a partial scan with nothing to scan is refused and queues no work`() = runTest {
+        whenever(snapshots.getSnapshot(TEST_PROVIDER_ID)).thenReturn(xtreamSnapshot())
+        givenOutputFormats("m3u8")
+        stubChannels(channelEntity(1L))
+        scanned(ok = listOf(1L), dead = emptyList())
+
+        assertThat(repository.startScan(TEST_PROVIDER_ID, scope = ChannelHealthScanScope.NEW_ONLY))
+            .isInstanceOf(Result.Error::class.java)
+        assertThat(repository.startScan(TEST_PROVIDER_ID, scope = ChannelHealthScanScope.BAD_ONLY))
+            .isInstanceOf(Result.Error::class.java)
+        verify(scheduler, never()).enqueue(any(), anyOrNull(), any(), any())
+    }
+
+    @Test
+    fun `a partial scan before any full scan is refused`() = runTest {
+        whenever(snapshots.getSnapshot(TEST_PROVIDER_ID)).thenReturn(xtreamSnapshot())
+        givenOutputFormats("m3u8")
+        stubChannels(channelEntity(1L))
+
+        assertThat(repository.startScan(TEST_PROVIDER_ID, scope = ChannelHealthScanScope.NEW_ONLY))
+            .isInstanceOf(Result.Error::class.java)
+    }
+
+    @Test
+    fun `scan scopes pick the right channels`() {
+        val document = ChannelHealthDocument(
+            records = mapOf(2L to com.streamvault.domain.model.ChannelHealthRecord(2L, ChannelHealthStatus.DEAD, 1L, 2)),
+            knownIds = setOf(1L, 2L),
+        )
+
+        assertThat((1L..3L).filter { selectsChannel(ChannelHealthScanScope.ALL, it, document) }).containsExactly(1L, 2L, 3L)
+        assertThat((1L..3L).filter { selectsChannel(ChannelHealthScanScope.NEW_ONLY, it, document) }).containsExactly(3L)
+        assertThat((1L..3L).filter { selectsChannel(ChannelHealthScanScope.BAD_ONLY, it, document) }).containsExactly(2L)
+    }
+
+    @Test
+    fun `export before any scan is an error`() = runTest {
+        stubChannels(channelEntity(1L))
+
+        assertThat(repository.exportSnapshot(TEST_PROVIDER_ID)).isInstanceOf(Result.Error::class.java)
+    }
+
+    @Test
+    fun `an exported snapshot loads back after the results are cleared and keeps failures as hints`() = runTest {
+        stubChannels(channelEntity(1L), channelEntity(2L), channelEntity(3L))
+        scanned(ok = listOf(1L, 2L), dead = listOf(3L))
+        val text = (repository.exportSnapshot(TEST_PROVIDER_ID) as Result.Success).data
+        repository.clearResults(TEST_PROVIDER_ID)
+
+        val summary = (repository.importSnapshot(TEST_PROVIDER_ID, text) as Result.Success).data
+
+        assertThat(summary.working).isEqualTo(2)
+        assertThat(summary.failed).isEqualTo(1)
+        assertThat(summary.skipped).isEqualTo(0)
+        assertThat(repository.getScopeCounts(TEST_PROVIDER_ID))
+            .isEqualTo(ChannelHealthScopeCounts(newChannels = 0, badChannels = 1))
+        // The imported failure is only a hint, so nothing is suggested for hiding.
+        assertThat(repository.observeSuggestions(TEST_PROVIDER_ID).first()).isEmpty()
+    }
+
+    @Test
+    fun `importing a file that is not a snapshot is an error and changes nothing`() = runTest {
+        stubChannels(channelEntity(1L))
+
+        assertThat(repository.importSnapshot(TEST_PROVIDER_ID, "hello")).isInstanceOf(Result.Error::class.java)
+        assertThat(storage.health.value).isNull()
+    }
+
+    @Test
+    fun `an exported snapshot has no address, login or url`() = runTest {
+        stubChannels(channelEntity(1L), channelEntity(2L))
+        scanned(ok = listOf(1L), dead = listOf(2L))
+
+        val text = (repository.exportSnapshot(TEST_PROVIDER_ID, label = "Vendor") as Result.Success).data
+
+        assertThat(text).doesNotContain(TEST_SERVER)
+        assertThat(text).doesNotContain(TEST_USERNAME)
+        assertThat(text).doesNotContain(TEST_PASSWORD)
+        assertThat(text).doesNotContain("http")
     }
 }
