@@ -265,6 +265,25 @@ class AppUpdateInstaller @Inject constructor(
             android.util.Log.i("AppUpdateInstaller", "APK SHA-256 verified OK for ${apkFile.name}")
         }
 
+        // The digest comes from the same release page as the file, so it cannot prove who built the APK. Only hand
+        // the installer an APK that is this app and is signed by the installed app's key (or a rotation of it).
+        val installedIdentity = UpdateApkTrust.installedIdentity(context)
+        val archiveIdentity = UpdateApkTrust.archiveIdentity(context, apkFile)
+        if (!UpdateApkTrust.isTrustedUpdate(installedIdentity, archiveIdentity)) {
+            android.util.Log.e(
+                "AppUpdateInstaller",
+                "APK signer check failed for ${apkFile.name}: package=${archiveIdentity?.packageName} " +
+                    "signers=${archiveIdentity?.signerDigests} expected=${installedIdentity?.signerDigests}"
+            )
+            apkFile.delete()
+            preferencesRepository.setAppUpdateDownloadId(null)
+            preferencesRepository.setAppUpdateDownloadVersionName(null)
+            preferencesRepository.setDownloadedAppUpdateVersionName(null)
+            return@withContext Result.error(
+                "Downloaded update failed integrity check. The file has been removed; please download again."
+            )
+        }
+
         val apkUri = FileProvider.getUriForFile(
             context,
             "${BuildConfig.APPLICATION_ID}.fileprovider",
