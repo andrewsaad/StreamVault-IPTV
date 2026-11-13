@@ -3,6 +3,7 @@ package com.streamvault.app.plugins
 import com.google.common.truth.Truth.assertThat
 import java.io.File
 import java.io.IOException
+import java.net.InetAddress
 import java.nio.file.Files
 import kotlinx.coroutines.runBlocking
 import okhttp3.OkHttpClient
@@ -23,9 +24,12 @@ class PluginApkRedirectTest {
 
     @Before
     fun start() {
+        // MockWebServer URLs use the canonical local host name, which is 127.0.0.1 on some hosts.
         val certificate = HeldCertificate.Builder()
             .commonName("localhost")
             .addSubjectAlternativeName("localhost")
+            .addSubjectAlternativeName("127.0.0.1")
+            .addSubjectAlternativeName(InetAddress.getByName("localhost").canonicalHostName)
             .build()
         val serverCertificates = HandshakeCertificates.Builder()
             .heldCertificate(certificate)
@@ -64,6 +68,8 @@ class PluginApkRedirectTest {
         }.exceptionOrNull()
 
         assertThat(failure).isInstanceOf(IOException::class.java)
+        assertThat(failure).hasMessageThat().isEqualTo("HTTP 302")
+        assertThat(httpsServer.requestCount).isEqualTo(1)
         assertThat(httpServer.requestCount).isEqualTo(0)
         assertThat(target.readText()).isEmpty()
     }
