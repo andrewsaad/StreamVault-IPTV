@@ -71,6 +71,20 @@ internal suspend fun stopOwnedTimeshiftCapture(
     deleteSessionFiles()
 }
 
+/**
+ * Snapshot creation does file I/O (disk full, storage removed) and runs from an engine scope
+ * that has no exception handler, so any throw would crash the app. A failed snapshot is
+ * reported as "no snapshot"; cancellation is always rethrown.
+ */
+internal suspend fun createSnapshotOrNull(block: suspend () -> LiveTimeshiftSnapshot?): LiveTimeshiftSnapshot? =
+    try {
+        block()
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        null
+    }
+
 internal fun buildDashSnapshotPlaylist(
     targetDurationSeconds: Int,
     segments: List<DashSnapshotPlaylistSegment>
@@ -282,7 +296,7 @@ internal class DefaultLiveTimeshiftManager @Inject constructor(
                 s.activeSnapshotDir?.let { retiredSnapshotDirs.addLast(it) }
                 s
             } ?: return@withContext null
-            session.createSnapshot()
+            createSnapshotOrNull { session.createSnapshot() }
         }
     }
 

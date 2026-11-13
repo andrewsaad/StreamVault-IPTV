@@ -31,4 +31,23 @@ class TimeshiftOwnershipTest {
 
         assertThat(events).containsExactly("writer-closed", "files-deleted").inOrder()
     }
+
+    @Test
+    fun `snapshot io failure is reported as no snapshot instead of throwing`() = runBlocking {
+        val result = createSnapshotOrNull { throw java.io.IOException("No space left on device") }
+
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `snapshot creation still propagates cancellation`() = runBlocking {
+        var cancelled = false
+        try {
+            createSnapshotOrNull { throw kotlinx.coroutines.CancellationException("stop") }
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            cancelled = true
+        }
+
+        assertThat(cancelled).isTrue()
+    }
 }
