@@ -1,36 +1,30 @@
-# HANDOFF: where we left off (2026-11-09)
+# HANDOFF: where we left off (2026-11-13, about 11:00 PST)
 
-Branch of record `feat/channel-health` (tip 82fa1b94 plus this close-out). Older handoffs: `node ~/.claude/scripts/doc-lookup.js HANDOFF_FULL.jsonl <date>`.
+Older handoffs (incl. the 2026-11-09 one with the full 11-13 loose ends): `node ~/.claude/scripts/doc-lookup.js HANDOFF_FULL.jsonl <date>`.
 
-## Done this session (2026-11-08 to 11-09)
-- EPG presets review fixes F1-F22 (F18 reverted as won't-fix), F13 one match pass per provider, R1-R4, SC-008 descoped; `feat/epg-presets` pushed to the fork (2163a91a).
-- Refresh-rate double switch on zap: root cause found by log trace on the game room TV and fixed (`stop()` no longer clears the vote, grace 15 s); verified by log on the device.
-- Sports tab: later rebroadcasts of a match are dropped (4-15 h after the first ended); not yet seen on a screen.
-- W2, W3 fixed; W33, W4 fixed and hardened after review (plain Watch Next extras accept internal xtream://, Stalker URLs only).
-- In-app Channel clean-up built and device-tested on the game room TV (entry, scan, stop, resume after the TV slept): scanner with retry and a repeated-503 rule, hide through the hidden-channels list, give-up message, Settings search entry, cleanup on provider delete, 38 locales.
-- Settings strings rounds 1-2, mojibake repair in 7 locales + guard test, log sanitizer (30 Log.w sites), required text lambdas.
-- Findings: FINDINGS.md (index) + FINDINGS_FULL.jsonl. Evidence on the guide: two-hour offset between guide families, matches on screen missing from the guide, beIN English channels return 503, French Sport 3 and Max 4-10 have no guide.
+## Done this session
+- Channel-health snapshot feature (export/import results file, "Scan new", "Recheck failed", 38 locales, 9 new strings): branch `feat/channel-health-snapshot`, tip `d3b236d4`, pushed to the fork only (no PR). The file carries no server address, login or stream URL; imports only create hints and hide nothing.
+- Desktop test evidence: snapshot branch `:data` 161 tests and `:feature:settings` 31 tests, 0 failures (BUILD SUCCESSFUL 3m 10s, 10:29). Integ branch `integ/agents-round1` tip `65408d15` (test fix cherry-picked, pushed to fork): step L (4 agent test classes) BUILD SUCCESSFUL 1m 55s; step M (player + playback tests) BUILD SUCCESSFUL 1m 23s.
+- Three agent-written tests fixed (wrong entity fields, `providersForcedByBackupReferences` moved to top level in `BackupManagerImpl.kt`).
+- Scratchpad tooling lesson: `rdC2.ps1` was sed-derived and still read `stepC1.txt`, which produced false "same errors" readings. Read result files by their own name.
 
 ## Decisions (Andrew)
-Findings go in the repo (Issues disabled on the fork); push to the fork only, no PR; defer the iPhone app; translations accepted unreviewed (note for release); fix guide scroll jank (SC-007 about 7% vs 6%) starting with W1; no presets-off baseline (would delete 27 manual beIN mappings); stale Chrome may be stopped before builds.
+Standing OK for a one-shot read-only adb screenshot of the game-room TV, no prompt (memory updated); "just do it" = keep going without asking. Snapshot design: app only, manual buttons only. PC-vs-TV scan speed: measure a ~50-channel PC probe after the TV scan ends, then decide.
 
 ## Blockers
-- PC memory: Windows kernel paged pool 5.7 GB made the harness stop about ten Gradle runs. Andrew is restarting the PC. After it, check `Pool Paged Bytes` (< 2 GB); if it climbs again look for a leaking driver.
-- Gate on tip 108879da (2026-11-13, desktop): `:data` 2,233 tests 0 failed; `:feature:settings` and `:domain:test` BUILD SUCCESSFUL; `:app` tests 224 passed and compiled (2026-11-12, older tip). Not run on this tip: lint and `:app:assembleDebug` (step C hung at `:data:test` for 11 h and was killed). `:player` `IdleConnectionResetRecoveryTest` (resume offset 532,480 vs 1,000,000) also fails on fork `master` 68b2ca4a, so it is not from this branch.
+- Game-room TV adb (192.168.68.150:5555) refused the connection at 10:45; 10:31 scan check not done, scan progress unknown (last seen 127 of 5,534, "Provider is busy, waiting"). TV may be asleep or adb off.
+- Full suites, lint and `:app:assembleDebug` not yet run on any of these tips.
 
 ## Next priorities, in order
-1. Restart the keep-awake loop for the game room TV (192.168.68.150:38189): scratchpad `keepalive_gameroom.ps1`, or send a wake key every 45 s. The in-app scan stalls when it sleeps.
-2. Gate in three steps with `gradlew --stop` between (`/c/tmp/sv_gradle.sh`): A `:data:testDebugUnitTest :app:testDebugUnitTest :app:compileDebugKotlin`; B `:feature:settings:testDebugUnitTest :domain:test`; C remaining modules, `lintDebug`, `:app:assembleDebug`. Lint always shows the same 63 pre-existing errors. Fix what fails.
-3. Independent reviewer pass on the three unverified fixes; then reinstall the debug app on the game room TV (muted by `appops PLAY_AUDIO deny`, debug app only) and re-check the dialog, give-up line, search entry and scanner retry.
-4. #50 guide check: preview about 30 sports channels at a European kickoff, decide which guide file is right, fix matching/time shift and give French channels the French rows, with tests.
-5. #54 scroll fix: W1 first (`LiveGuideGrid.kt:73-78`), re-measure with `/c/tmp/sv_jank.sh`.
-6. Push `feat/channel-health` and update `feat/epg-presets` on the fork once the gate passes.
+1. Step N on desktop (`:feature:live` `*HomeViewModelTest`, `*EpgViewModelTest`; `:feature:settings` `*SettingsBackupActionsTest`), `gradlew --stop` between runs.
+2. Full suites + lint (baselines: settings 63 errors on master, core:ui 7, playback 5) + `:app:assembleDebug` on the integ tip, then merge `feat/channel-health-snapshot` into integ once green. Do not merge before.
+3. Retry the TV scan screenshot (adb screencap only); after the scan ends, run the PC-vs-TV timing probe.
+4. Ask Andrew (separately, multiple choice): security/auth/update/CI findings W19, W32, W34, W35, W37-W39, W42; two hard-coded English strings (`Media3PlayerEngine.kt:2537` "still buffering", `LiveTimeshiftManager.kt` "Local rewind stopped: low memory."); DASH byte cap; W5 (default leave); worktree cleanup (`.claude/worktrees/agent-*`); delete `secret.md` when scans end.
+5. Run /codemap (CODEMAP built-at 82fa1b94 is 38 commits behind HEAD; new file `ChannelHealthSnapshot.kt`).
+6. Update FINDINGS statuses; no CHANGELOG.md exists in this repo (none written).
 
-## Loose ends
-- In-app scan reached channel id 736 of 5,537 with 5 stored failures (two-failed-days rule: review suggestions after a second day). PC scan finished 2026-11-11 (5,534 channels: OK 3212, EMPTY 1543, UNCLEAR 747, DEAD 32). The 2026-11-12 re-probe is NOT usable: it rescanned all channels while Gradle ran on the desktop, 1,548 answers were network errors, 487 first-scan OK became EMPTY and 178 EMPTY became OK, so EMPTY looks like a provider artifact. Hide nothing from either scan; redo a clean re-probe on an idle desktop (one-account rule). Delete `secret.md` (gitignored, holds the provider login) when the scans are done.
-- Open tasks: #30, #33 (Fire TV), #31, #32, #38, #36 (deferred), #49-#54.
-- Update FINDINGS.md statuses for W4/W33 after the gate.
-- Stale worktrees under `.claude/worktrees/` and `C:\dev\sv-*` are not cleaned up (needs Andrew's OK; some hold unmerged branches).
-- The Settings press route for SC-004 and the beIN preset timing (F13) are unmeasured; both need the manual-mappings risk resolved.
-- 2026-11-13 clean re-probe (fixed tool, seeded from the 2026-11-11 CSV, `channel_scan_clean.csv` on the desktop): stopped after 19 new rows, all `UNCLEAR provider-403`, even with every TV and app idle. Cause unknown (provider limit or block on the desktop address is inferred, not confirmed). Hide nothing. Retry later; do not hammer it. Gate result: `:feature:live` tests pass; lint errors match fork master except one more `LocalContextGetResourceValueCall` in settings (63 -> 64, the `SURROUND_UPMIX` line in `SettingsPlayerFormatting.kt`, same pattern as the 41 already on master); core:ui 7 and playback 5 are identical to master.
-- 2026-11-13 on the game-room TV (Google TV Streamer 2, debug app only, APK re-signed with the laptop debug key to match the installed app): Guide shows matched beIN programme rows (observed, one screen); after 42 down-presses the guide kept focus on 142 and did not jump back (observed once, #54). In-app scan started on the TV at about 09:28 and read "Scanned 18 of 5534" after 3 minutes (about 10 s per channel, roughly 15 h in total); it started at 0, not at the old resume point 736, so the saved progress was probably reset by the app update (inferred, not confirmed). The provider tile shows Online but EPG 0 with a Partial warning: inferred to be the on-demand guide fallback of this provider (no full XMLTV), not a failure; confirm via Show diagnostics when the scan is done. Keep the TV on and the provider idle until the scan ends. PC tool nits fixed in 21fcd4ce.
+## Risks
+Stream ids may differ across resellers (name hash reduces this); label field always empty; removed-channel retention simplified; translations are Claude Code's own, not native-reviewed; no device test of the snapshot buttons yet.
+
+## Open todos
+#2 gate (A/B/C), #4 EPG #50, #5 re-probe (paused), #7 TV scan check, #8 agents on open findings, #13 verify (lint, assembleDebug, docs).
