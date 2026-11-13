@@ -15,9 +15,47 @@ data class TimeshiftConfig(
         else
             depthMs
 
+    /** Byte cap for the in-memory backend; null for backends that are not held on the heap. */
+    fun effectiveMaxBytes(backend: LiveTimeshiftBackend): Long? =
+        if (backend == LiveTimeshiftBackend.MEMORY) MAX_MEMORY_BACKEND_BYTES else null
+
     companion object {
         const val MAX_MEMORY_BACKEND_DEPTH_MINUTES = 5
+
+        /**
+         * 96 MiB: the memory backend keeps every chunk on the Java heap, and the 5 minute time cap alone
+         * allows about 300 MB at 8 Mbps, which can exhaust the heap on low-RAM TV devices. 96 MiB leaves the
+         * full 5 minutes for streams up to about 2.5 Mbps and shortens the rewind window (oldest dropped
+         * first) for anything heavier.
+         */
+        const val MAX_MEMORY_BACKEND_BYTES = 96L * 1024L * 1024L
     }
+}
+
+/**
+ * Drops the oldest items until both the duration limit and the optional byte limit hold, and
+ * returns the remaining duration. [canPrune] false stops pruning (items that must be kept).
+ */
+internal fun <T> pruneOldestToLimits(
+    items: ArrayDeque<T>,
+    runningDurationMs: Long,
+    maxDurationMs: Long,
+    maxBytes: Long?,
+    durationOf: (T) -> Long,
+    bytesOf: (T) -> Long,
+    canPrune: (T) -> Boolean = { true },
+    onRemoved: (T) -> Unit
+): Long {
+    var durationMs = runningDurationMs
+    var bytes = if (maxBytes != null) items.sumOf(bytesOf) else 0L
+    while (items.isNotEmpty() && (durationMs > maxDurationMs || (maxBytes != null && bytes > maxBytes))) {
+        if (!canPrune(items.first())) break
+        val removed = items.removeFirst()
+        durationMs -= durationOf(removed)
+        bytes -= bytesOf(removed)
+        onRemoved(removed)
+    }
+    return durationMs
 }
 
 enum class LiveTimeshiftBackend {

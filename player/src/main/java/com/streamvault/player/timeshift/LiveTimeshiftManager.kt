@@ -398,6 +398,7 @@ internal class DefaultLiveTimeshiftManager @Inject constructor(
         var job: Job? = null
         var activeSnapshotDir: File? = null
         val effectiveDepthMs: Long = config.effectiveDepthMs(backend)
+        val effectiveMaxBytes: Long? = config.effectiveMaxBytes(backend)
         protected val sequence = AtomicLong(0L)
         protected val stateStartMs = System.currentTimeMillis()
         private val activeCall = AtomicReference<okhttp3.Call?>()
@@ -633,11 +634,15 @@ internal class DefaultLiveTimeshiftManager @Inject constructor(
         }
 
         private fun pruneProgressiveChunksLocked() {
-            while (runningChunkDurationMs > effectiveDepthMs && chunks.isNotEmpty()) {
-                val removed = chunks.removeFirst()
-                removed.file?.delete()
-                runningChunkDurationMs -= removed.durationMs
-            }
+            runningChunkDurationMs = pruneOldestToLimits(
+                items = chunks,
+                runningDurationMs = runningChunkDurationMs,
+                maxDurationMs = effectiveDepthMs,
+                maxBytes = effectiveMaxBytes,
+                durationOf = { it.durationMs },
+                bytesOf = { it.payload?.size?.toLong() ?: 0L },
+                onRemoved = { it.file?.delete() }
+            )
         }
     }
 
@@ -758,11 +763,15 @@ internal class DefaultLiveTimeshiftManager @Inject constructor(
         }
 
         private fun pruneHlsSegmentsLocked() {
-            while (runningSegmentDurationMs > effectiveDepthMs && segments.isNotEmpty()) {
-                val removed = segments.removeFirst()
-                removed.file?.delete()
-                runningSegmentDurationMs -= removed.durationMs
-            }
+            runningSegmentDurationMs = pruneOldestToLimits(
+                items = segments,
+                runningDurationMs = runningSegmentDurationMs,
+                maxDurationMs = effectiveDepthMs,
+                maxBytes = effectiveMaxBytes,
+                durationOf = { it.durationMs },
+                bytesOf = { it.payload?.size?.toLong() ?: 0L },
+                onRemoved = { it.file?.delete() }
+            )
         }
 
         private fun fetchText(url: String): String {
