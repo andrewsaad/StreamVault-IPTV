@@ -24,6 +24,10 @@ import com.streamvault.domain.model.Program
 import com.streamvault.feature.live.presentation.model.guideLookupKey
 import kotlinx.coroutines.delay
 
+/** Changes when the guide should scroll to its starting channel again: the list appearing or the target changing, not paging. */
+internal fun liveGuideInitialScrollKey(channels: List<Channel>, resolvedInitialChannelId: Long?): Pair<Boolean, Long?> =
+    channels.isNotEmpty() to resolvedInitialChannelId
+
 fun liveGuideInitialFocusIndex(
     channels: List<Channel>,
     initialFocusedChannelId: Long?
@@ -70,7 +74,8 @@ fun LiveGuideGrid(
         liveGuideInitialFocusIndex(channels, resolvedInitialChannelId)
     }
 
-    LaunchedEffect(channels.size, resolvedInitialChannelId) {
+    // Keyed on whether channels exist, not on how many: paging in more channels must not scroll the guide back.
+    LaunchedEffect(liveGuideInitialScrollKey(channels, resolvedInitialChannelId)) {
         if (channels.isEmpty()) return@LaunchedEffect
         verticalListState.scrollToItem((initialFocusIndex - 2).coerceAtLeast(0))
         delay(140)
