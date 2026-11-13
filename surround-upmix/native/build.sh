@@ -23,15 +23,19 @@ mkdir -p "$WORK"
 cd "$WORK"
 # FFMPEG_TARBALL may point at an already downloaded ffmpeg-$FFMPEG_VERSION.tar.xz.
 TARBALL="${FFMPEG_TARBALL:-$WORK/ffmpeg-$FFMPEG_VERSION.tar.xz}"
-if [ ! -d "ffmpeg-$FFMPEG_VERSION" ]; then
-  [ -f "$TARBALL" ] || curl -fsSL -o "$TARBALL" "https://ffmpeg.org/releases/ffmpeg-$FFMPEG_VERSION.tar.xz"
-  # Never build from an unverified download: a wrong hash stops the build before anything is extracted.
-  if ! echo "$FFMPEG_SHA256  $TARBALL" | sha256sum -c --status -; then
-    echo "SHA-256 mismatch for $TARBALL (expected $FFMPEG_SHA256); refusing to build" >&2
-    exit 1
+[ -f "$TARBALL" ] || curl -fsSL -o "$TARBALL" "https://ffmpeg.org/releases/ffmpeg-$FFMPEG_VERSION.tar.xz"
+# Never build from unverified sources. The tarball is checked on every run, even when an earlier run already
+# unpacked it, and the source tree is always re-extracted from it, so a tree left on disk is never trusted.
+if ! echo "$FFMPEG_SHA256  $TARBALL" | sha256sum -c --status -; then
+  echo "SHA-256 mismatch for $TARBALL (expected $FFMPEG_SHA256); refusing to build" >&2
+  if [ -z "${FFMPEG_TARBALL:-}" ]; then
+    # This script's own download: delete it so the next run fetches a fresh copy instead of failing forever.
+    rm -f "$TARBALL"
   fi
-  tar xf "$TARBALL"
+  exit 1
 fi
+rm -rf "ffmpeg-$FFMPEG_VERSION"
+tar xf "$TARBALL"
 
 build_abi() {
   local abi=$1 triple=$2 arch=$3 cpu=$4 builtins=$5 extra_cflags=$6

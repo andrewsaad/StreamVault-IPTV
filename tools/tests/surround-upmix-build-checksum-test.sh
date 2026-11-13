@@ -1,6 +1,7 @@
 #!/usr/bin/env sh
 # The surround-upmix native build must refuse an FFmpeg tarball whose SHA-256 does not match the pinned value,
-# and must do so before extracting anything. Runs offline: FFMPEG_TARBALL points at a local bogus file.
+# and must do so before extracting anything, on every run, even when an earlier run left an unpacked tree.
+# Runs offline: every case puts a local bogus tarball where the script looks, so it never downloads.
 
 set -eu
 
@@ -14,6 +15,17 @@ check_line=$(grep -n 'sha256sum -c' "$build_script" | head -n 1 | cut -d: -f1)
 extract_line=$(grep -n 'tar xf' "$build_script" | head -n 1 | cut -d: -f1)
 if [ -z "$check_line" ] || [ -z "$extract_line" ] || [ "$check_line" -ge "$extract_line" ]; then
   printf 'build.sh must verify the FFmpeg tarball hash before extracting it\n' >&2
+  exit 1
+fi
+if grep -n 'if \[ ! -d "ffmpeg-' "$build_script" >/dev/null; then
+  printf 'build.sh must not skip the hash check when the FFmpeg tree is already unpacked
+' >&2
+  exit 1
+fi
+remove_line=$(grep -n 'rm -rf "ffmpeg-' "$build_script" | head -n 1 | cut -d: -f1)
+if [ -z "$remove_line" ] || [ "$remove_line" -le "$check_line" ] || [ "$remove_line" -ge "$extract_line" ]; then
+  printf 'build.sh must replace any old FFmpeg tree with one extracted from the verified tarball
+' >&2
   exit 1
 fi
 
