@@ -246,7 +246,7 @@ class EpgViewModelTest {
     }
 
     @Test
-    fun `guide stops paging instead of rethrowing when the in-flight prefetch fails`() = runTest {
+    fun `guide retries the page and keeps paging when the in-flight prefetch fails`() = runTest {
         val provider = Provider(id = 1L, name = "Provider", type = ProviderType.XTREAM_CODES, serverUrl = "https://provider.example.com")
         val channels = (1L..61L).map { Channel(id = it, name = "Channel $it", providerId = provider.id, streamId = it, epgChannelId = "epg.$it") }
         configureGuide(provider, channels.take(EpgViewModel.MAX_CHANNELS))
@@ -254,11 +254,15 @@ class EpgViewModelTest {
         whenever(preferencesRepository.getEmptyGuideKeys(provider.id)).thenReturn(emptyMap())
         whenever(providerRepository.getProgramsForLiveStreams(eq(provider.id), any(), any())).thenReturn(emptyMap())
         val prefetchGate = CompletableDeferred<Unit>()
+        val pageRequests = java.util.concurrent.atomic.AtomicInteger()
         wheneverBlocking {
             channelRepository.getChannelsWithoutErrorsPageOffset(provider.id, ChannelRepository.ALL_CHANNELS_ID, EpgViewModel.MAX_CHANNELS, EpgViewModel.MAX_CHANNELS)
         }.doSuspendableAnswer {
-            prefetchGate.await()
-            throw IllegalStateException("prefetch failed")
+            if (pageRequests.getAndIncrement() == 0) {
+                prefetchGate.await()
+                throw IllegalStateException("prefetch failed")
+            }
+            channels.drop(EpgViewModel.MAX_CHANNELS)
         }
         val viewModel = createViewModel()
         waitForUiState { viewModel.uiState.value.channels.size == EpgViewModel.MAX_CHANNELS }
@@ -267,9 +271,9 @@ class EpgViewModelTest {
         viewModel.requestMoreChannels()
         testDispatcher.scheduler.advanceUntilIdle()
         prefetchGate.complete(Unit)
-        waitForUiState { !viewModel.uiState.value.hasMoreChannels }
+        waitForUiState { viewModel.uiState.value.channels.size == 61 }
 
-        assertThat(viewModel.uiState.value.channels.size).isEqualTo(EpgViewModel.MAX_CHANNELS)
+        assertThat(pageRequests.get()).isEqualTo(2)
     }
 
     @Test

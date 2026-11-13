@@ -65,6 +65,7 @@ import java.time.Instant
 import java.time.ZoneId
 import javax.inject.Inject
 import android.app.Application
+import android.util.Log
 import com.streamvault.feature.live.R
 import com.streamvault.player.di.AuxiliaryPlayerEngine
 import com.streamvault.feature.live.api.LivePreviewHandoffPort
@@ -607,14 +608,33 @@ class EpgViewModel @Inject constructor(
         }
         prefetchJob = null
         loadMoreJob = viewModelScope.launch {
-            // A prefetch that failed (before or after this call) must end paging, not rethrow into viewModelScope.
-            val page = try {
+            // A failed prefetch must not rethrow into viewModelScope or end paging: retry the page once.
+            // Only a null result (no more pages) ends paging.
+            var failed = false
+            val prefetched = try {
                 deferred.await()
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
+                logPrefetchFailure(e)
+                failed = true
                 null
-            } ?: run {
+            }
+            val page = (if (failed) {
+                val retrySnapshot = baseGuideSnapshot.value ?: return@launch
+                try {
+                    fetchPrefetchedPage(retrySnapshot)
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    logPrefetchFailure(e)
+                    // Keep hasMoreChannels true; arm a fresh prefetch so the next request can retry.
+                    schedulePrefetchNextPage(retrySnapshot)
+                    return@launch
+                }
+            } else {
+                prefetched
+            }) ?: run {
                 baseGuideSnapshot.update { it?.copy(hasMoreChannels = false) }
                 return@launch
             }
@@ -659,28 +679,34 @@ class EpgViewModel @Inject constructor(
 
     private fun schedulePrefetchNextPage(snapshot: GuideBaseSnapshot) {
         if (!snapshot.hasMoreChannels) return
-        prefetchJob = viewModelScope.async<GuidePrefetchedPage?> {
-            val channels = fetchGuideChannelPage(
-                providerId = snapshot.providerId,
-                categoryId = snapshot.selectedCategoryId,
-                offset = snapshot.nextRawChannelOffset,
-                hiddenCategoryIds = snapshot.hiddenCategoryIds,
-                favoritesOnly = snapshot.showFavoritesOnly,
-                favoriteChannelIds = snapshot.favoriteChannelIds
-            )
-            if (channels.isEmpty()) return@async null
-            val programs = loadGuidePrograms(
-                providerId = snapshot.providerId,
-                channels = channels,
-                windowStart = snapshot.guideWindowStart,
-                windowEnd = snapshot.guideWindowEnd
-            )
-            GuidePrefetchedPage(
-                channels = channels,
-                programs = programs,
-                nextRawOffset = snapshot.nextRawChannelOffset + MAX_CHANNELS
-            )
-        }
+        prefetchJob = viewModelScope.async<GuidePrefetchedPage?> { fetchPrefetchedPage(snapshot) }
+    }
+
+    private suspend fun fetchPrefetchedPage(snapshot: GuideBaseSnapshot): GuidePrefetchedPage? {
+        val channels = fetchGuideChannelPage(
+            providerId = snapshot.providerId,
+            categoryId = snapshot.selectedCategoryId,
+            offset = snapshot.nextRawChannelOffset,
+            hiddenCategoryIds = snapshot.hiddenCategoryIds,
+            favoritesOnly = snapshot.showFavoritesOnly,
+            favoriteChannelIds = snapshot.favoriteChannelIds
+        )
+        if (channels.isEmpty()) return null
+        val programs = loadGuidePrograms(
+            providerId = snapshot.providerId,
+            channels = channels,
+            windowStart = snapshot.guideWindowStart,
+            windowEnd = snapshot.guideWindowEnd
+        )
+        return GuidePrefetchedPage(
+            channels = channels,
+            programs = programs,
+            nextRawOffset = snapshot.nextRawChannelOffset + MAX_CHANNELS
+        )
+    }
+
+    private fun logPrefetchFailure(error: Exception) {
+        runCatching { Log.w("EpgViewModel", "guide-prefetch-failed type=${error.javaClass.simpleName}") }
     }
 
     private suspend fun fetchGuideChannelPage(
