@@ -113,7 +113,7 @@ class EpgPresetManagerImplTest {
         val rows = repo.rows.value.associateBy { it.url }
         val bein = EpgPresetCatalog.byId(EpgPresetCatalog.BEIN)!!.sources
         assertThat(bein.map { rows.getValue(it.url).name })
-            .containsExactly("open-epg QATAR1", "epgshare01 BEIN1", "epgshare01 AE1").inOrder()
+            .containsExactly("open-epg QATAR1", "epgshare01 AE1").inOrder()
         val priorities = repo.assignments.getValue(1L)
         assertThat(bein.map { priorities.getValue(rows.getValue(it.url).id) }).isInStrictOrder()
     }
@@ -413,15 +413,15 @@ class EpgPresetManagerImplTest {
         manager.setEnabled(EpgPresetCatalog.EGYPT, true)
         manager.setEnabled(EpgPresetCatalog.BEIN, true)
 
-        assertThat(rankedKeys(1L)).containsExactly("QATAR1", "BEIN1", "AE1").inOrder()
-        assertThat(rankedKeys(2L)).containsExactly("QATAR1", "BEIN1", "AE1").inOrder()
+        assertThat(rankedKeys(1L)).containsExactly("QATAR1", "AE1").inOrder()
+        assertThat(rankedKeys(2L)).containsExactly("QATAR1", "AE1").inOrder()
         val lowestPreset = repo.assignments.getValue(1L).filterKeys { it != handAdded.id }.values.min()
         assertThat(repo.assignments.getValue(1L).getValue(handAdded.id)).isLessThan(lowestPreset)
     }
 
     @Test
     fun `aFileAddedToTheCatalogLater_takesItsCatalogPlace_notTheLast`() = runTest {
-        // A device that turned beIN on before QATAR1 existed: only BEIN1 and AE1 were assigned.
+        // A device that turned beIN on before QATAR1 existed: only AE1 was assigned.
         manager.setEnabled(EpgPresetCatalog.BEIN, true)
         val qatarId = sourceIdFor(beinSources.first().url)
         repo.deleteSource(qatarId)
@@ -429,7 +429,24 @@ class EpgPresetManagerImplTest {
 
         manager.reconcile()
 
-        assertThat(rankedKeys(1L)).containsExactly("QATAR1", "BEIN1", "AE1").inOrder()
+        assertThat(rankedKeys(1L)).containsExactly("QATAR1", "AE1").inOrder()
+    }
+
+    @Test
+    fun `reconcile_releasesAnOwnedBein1RowTheCatalogNoLongerLists`() = runTest {
+        // BEIN1 labels Qatar local time as +0100, so its times run 2 hours late; the catalog dropped it.
+        manager.setEnabled(EpgPresetCatalog.BEIN, true)
+        val old = repo.addSource("epgshare01 BEIN1", "https://epgshare01.online/epgshare01/epg_ripper_BEIN1.xml.gz").getOrNull()!!
+        repo.assignSourceToProvider(1L, old.id, priority = 9)
+        store.update {
+            it.copy(sources = it.sources + ("BEIN1" to EpgPresetSourceRecord(sourceId = old.id, owned = true, assignedProviderIds = setOf(1L))))
+        }
+
+        manager.reconcile()
+
+        assertThat(repo.rows.value.map { it.id }).doesNotContain(old.id)
+        assertThat(repo.assignments.getValue(1L).keys).doesNotContain(old.id)
+        assertThat(store.current().sources.keys).containsExactly("QATAR1", "AE1")
     }
 
     @Test
@@ -561,7 +578,7 @@ class EpgPresetManagerImplTest {
         val manager = managerOnTestScheduler()
         manager.setEnabled(EpgPresetCatalog.BEIN, true)
         val bein = EpgPresetCatalog.byId(EpgPresetCatalog.BEIN)!!.sources
-        val edited = bein.single { it.key == "BEIN1" }
+        val edited = bein.single { it.key == "AE1" }
         repo.refreshCalls.clear()
         now += 25 * 60 * 60_000L // every file is past its gap, so a whole-preset refresh would take them all
 
@@ -569,9 +586,9 @@ class EpgPresetManagerImplTest {
         runCurrent()
         assertThat(repo.refreshCalls).isEmpty()
 
-        manager.updateAddress(EpgPresetCatalog.BEIN, edited.key, "https://mirror.example/bein1.xml")
+        manager.updateAddress(EpgPresetCatalog.BEIN, edited.key, "https://mirror.example/ae1.xml")
         runCurrent()
-        assertThat(repo.refreshCalls).containsExactly(sourceIdFor("https://mirror.example/bein1.xml"))
+        assertThat(repo.refreshCalls).containsExactly(sourceIdFor("https://mirror.example/ae1.xml"))
     }
 
     @Test

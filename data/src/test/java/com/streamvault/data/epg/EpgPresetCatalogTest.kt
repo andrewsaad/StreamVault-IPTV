@@ -64,7 +64,7 @@ class EpgPresetCatalogTest {
     fun `bein_readsTheQatarFileFirst_becauseItMatchesProviderNamesWithCorrectTimes`() {
         // validation-precision.md: BEIN1 and AE1 alone map 20 of 188 beIN sports channels, with Qatar 165.
         val bein = EpgPresetCatalog.byId(EpgPresetCatalog.BEIN)!!
-        assertThat(bein.sources.map { it.key }).containsExactly("QATAR1", "BEIN1", "AE1").inOrder()
+        assertThat(bein.sources.map { it.key }).containsExactly("QATAR1", "AE1").inOrder()
         assertThat(bein.sources.first().url).isEqualTo("https://www.open-epg.com/files/qatar1.xml")
     }
 

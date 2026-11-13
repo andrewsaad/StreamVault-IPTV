@@ -358,7 +358,7 @@ class EpgPresetManagerImpl internal constructor(
 
     /**
      * Puts the preset's own rows of each provider in [providerIds] in catalog order (QATAR1 before
-     * BEIN1 before AE1, whichever preset was turned on first), reusing the priorities those rows
+     * AE1, whichever preset was turned on first), reusing the priorities those rows
      * already hold, so hand-added sources keep their place above them. Runs only for providers
      * that just got a new preset row, so a user's own reordering stands until then.
      */

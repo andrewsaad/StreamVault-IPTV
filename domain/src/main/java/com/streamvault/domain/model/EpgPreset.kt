@@ -27,12 +27,13 @@ object EpgPresetCatalog {
 
     /**
      * First for beIN: its ids match provider beIN names, and its times agree with kickoff where
-     * BEIN1's run about 2 hours late (specs/001-epg-presets-matches/validation-precision.md).
+     * BEIN1's run about 2 hours late, so BEIN1 is not in the catalog
+     * (specs/001-epg-presets-matches/validation-precision.md).
      */
     private val QATAR = EpgPresetSource(key = "QATAR1", url = "https://www.open-epg.com/files/qatar1.xml")
 
     val all: List<EpgPreset> = listOf(
-        EpgPreset(BEIN, listOf(QATAR, source("BEIN1"), source("AE1"))),
+        EpgPreset(BEIN, listOf(QATAR, source("AE1"))),
         EpgPreset(EGYPT, listOf(source("AE1"))),
         EpgPreset(US, listOf(source("US2"), source("US_SPORTS1"))),
     )
