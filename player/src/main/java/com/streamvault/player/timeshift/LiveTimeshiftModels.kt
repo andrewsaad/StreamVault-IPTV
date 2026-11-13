@@ -66,21 +66,6 @@ internal fun <T> pruneOldestToLimits(
 /** A DASH init segment is stored with no duration and must be kept for every later media segment. */
 internal fun isDashMediaSegment(durationMs: Long): Boolean = durationMs > 0L
 
-/** Seen-set key for a DASH init segment, kept apart from media segment addresses. */
-internal const val DASH_INIT_SEEN_KEY_PREFIX = "__init__:"
-
-/**
- * Keeps only the seen keys the latest manifest still lists (init keys are always kept). A segment
- * dropped by pruning stays "seen" while it is still advertised, so it is not downloaded again and
- * appended out of order, and the set cannot grow without bound. An empty list (a manifest that
- * could not be resolved) changes nothing, so buffered segments are not fetched a second time.
- */
-internal fun retainAdvertisedDashSegments(seen: MutableSet<String>, advertisedUris: Collection<String>) {
-    if (advertisedUris.isEmpty()) return
-    val advertised = advertisedUris.toHashSet()
-    seen.retainAll { it.startsWith(DASH_INIT_SEEN_KEY_PREFIX) || it in advertised }
-}
-
 enum class LiveTimeshiftBackend {
     NONE,
     DISK,

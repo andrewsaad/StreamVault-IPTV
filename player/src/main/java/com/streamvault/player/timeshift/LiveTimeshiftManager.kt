@@ -913,7 +913,8 @@ internal class DefaultLiveTimeshiftManager @Inject constructor(
 
         private val segments = ArrayDeque<HlsSegmentSnapshot>()
         private val segmentMutex = Mutex()
-        private val seenSegments = linkedSetOf<String>()
+        private val seenInitUrls = linkedSetOf<String>()
+        private val mediaCursor = DashSegmentCursor()
         private var runningSegmentDurationMs = 0L
 
         override suspend fun capture() {
@@ -925,20 +926,21 @@ internal class DefaultLiveTimeshiftManager @Inject constructor(
                     consecutiveErrors = 0
                     val parsed = parseMpd(streamInfo.url, mpdText)
 
-                    // Download init segment once (identified by URL; seenSegments deduplicates it).
+                    // Download init segment once (identified by URL; seenInitUrls deduplicates it).
                     parsed.initSegmentUrl?.let { initUrl ->
-                        if (seenSegments.add("$DASH_INIT_SEEN_KEY_PREFIX$initUrl")) {
+                        if (seenInitUrls.add(initUrl)) {
                             if (backend == LiveTimeshiftBackend.DISK) checkDiskAndBudget()
-                            val retained = retainSegment(RemoteHlsSegment(initUrl, 0L), isInit = true)
+                            val retained = retainSegment(initUrl, durationMs = 0L, isInit = true)
                             segmentMutex.withLock { segments += retained }
                         }
                     }
 
+                    mediaCursor.onManifest(parsed.mediaSegments)
                     parsed.mediaSegments.forEach { remote ->
                         currentCoroutineContext().ensureActive()
-                        if (!seenSegments.add(remote.uri)) return@forEach
+                        if (!mediaCursor.take(remote)) return@forEach
                         if (backend == LiveTimeshiftBackend.DISK) checkDiskAndBudget()
-                        val retained = retainSegment(remote, isInit = false)
+                        val retained = retainSegment(remote.uri, remote.durationMs, isInit = false)
                         val windowDuration = segmentMutex.withLock {
                             runningSegmentDurationMs += retained.durationMs
                             segments += retained
@@ -947,7 +949,6 @@ internal class DefaultLiveTimeshiftManager @Inject constructor(
                         }
                         updateWindow(windowDuration)
                     }
-                    retainAdvertisedDashSegments(seenSegments, parsed.mediaSegments.map { it.uri })
 
                     if (!parsed.isDynamic) break  // VOD / static — no need to re-poll
                     delay(parsed.minimumUpdatePeriodMs.coerceAtLeast(1_000L))
@@ -1001,16 +1002,16 @@ internal class DefaultLiveTimeshiftManager @Inject constructor(
             )
         }
 
-        private fun retainSegment(remote: RemoteHlsSegment, isInit: Boolean): HlsSegmentSnapshot {
+        private fun retainSegment(uri: String, durationMs: Long, isInit: Boolean): HlsSegmentSnapshot {
             val id = sequence.incrementAndGet()
             val ext = if (isInit) "init-$id.mp4" else "segment-$id.mp4"
             return if (backend == LiveTimeshiftBackend.DISK) {
                 val target = File(sessionDir, ext)
-                streamSegmentToDisk(remote.uri, target)
-                HlsSegmentSnapshot(remote.uri, remote.durationMs, target, null)
+                streamSegmentToDisk(uri, target)
+                HlsSegmentSnapshot(uri, durationMs, target, null)
             } else {
-                val bytes = fetchBytes(remote.uri)
-                HlsSegmentSnapshot(remote.uri, remote.durationMs, null, bytes)
+                val bytes = fetchBytes(uri)
+                HlsSegmentSnapshot(uri, durationMs, null, bytes)
             }
         }
 
@@ -1187,7 +1188,7 @@ internal class DefaultLiveTimeshiftManager @Inject constructor(
                 ?.let { resolveRelativeUrl(baseUrl, it) }
 
             val ts = rep.timescale.takeIf { it > 0L } ?: 1L
-            val mediaSegments: List<RemoteHlsSegment> = if (timelineSegments.isNotEmpty()) {
+            val mediaSegments: List<DashMediaSegmentRef> = if (timelineSegments.isNotEmpty()) {
                 // SegmentTimeline mode: each (t, d) pair is one segment.
                 timelineSegments.mapIndexed { index, (t, d) ->
                     val number = rep.startNumber + index
@@ -1197,7 +1198,12 @@ internal class DefaultLiveTimeshiftManager @Inject constructor(
                         .replace("\$Number\$", number.toString())
                         .replace("\$Time\$", t.toString())
                         .let { resolveRelativeUrl(baseUrl, it) }
-                    RemoteHlsSegment(uri = uri, durationMs = if (ts > 0L) d * 1000L / ts else d)
+                    DashMediaSegmentRef(
+                        uri = uri,
+                        durationMs = d * 1000L / ts,
+                        position = t,
+                        startMs = t * 1000L / ts
+                    )
                 }
             } else if (rep.segmentDuration > 0L) {
                 // Fixed-duration mode: compute number from wall clock and availabilityStartTime.
@@ -1212,7 +1218,13 @@ internal class DefaultLiveTimeshiftManager @Inject constructor(
                         .replace("\$Bandwidth\$", rep.bandwidth.toString())
                         .replace("\$Number\$", number.toString())
                         .let { resolveRelativeUrl(baseUrl, it) }
-                    RemoteHlsSegment(uri = uri, durationMs = rep.segmentDuration * 1000L / ts)
+                    val segmentDurationMs = rep.segmentDuration * 1000L / ts
+                    DashMediaSegmentRef(
+                        uri = uri,
+                        durationMs = segmentDurationMs,
+                        position = number,
+                        startMs = number * segmentDurationMs
+                    )
                 }
             } else {
                 emptyList()
@@ -1254,7 +1266,7 @@ internal class DefaultLiveTimeshiftManager @Inject constructor(
         val isDynamic: Boolean,
         val minimumUpdatePeriodMs: Long,
         val initSegmentUrl: String?,
-        val mediaSegments: List<RemoteHlsSegment>
+        val mediaSegments: List<DashMediaSegmentRef>
     )
 
     private companion object {

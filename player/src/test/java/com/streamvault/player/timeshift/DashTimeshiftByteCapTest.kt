@@ -80,23 +80,4 @@ class DashTimeshiftByteCapTest {
         assertThat(segments).containsExactly(initSegment)
         assertThat(removed).hasSize(3)
     }
-
-    @Test
-    fun `pruned segments stay seen while the manifest still lists them`() {
-        val seen = linkedSetOf("${DASH_INIT_SEEN_KEY_PREFIX}init.mp4", "seg-1.m4s", "seg-2.m4s", "seg-3.m4s")
-
-        retainAdvertisedDashSegments(seen, advertisedUris = listOf("seg-2.m4s", "seg-3.m4s", "seg-4.m4s"))
-
-        // seg-2 may already be pruned from the buffer, but it is still listed: it must not be fetched again.
-        assertThat(seen).containsExactly("${DASH_INIT_SEEN_KEY_PREFIX}init.mp4", "seg-2.m4s", "seg-3.m4s")
-    }
-
-    @Test
-    fun `an empty manifest segment list leaves the seen set alone`() {
-        val seen = linkedSetOf("${DASH_INIT_SEEN_KEY_PREFIX}init.mp4", "seg-1.m4s")
-
-        retainAdvertisedDashSegments(seen, advertisedUris = emptyList())
-
-        assertThat(seen).containsExactly("${DASH_INIT_SEEN_KEY_PREFIX}init.mp4", "seg-1.m4s")
-    }
 }
