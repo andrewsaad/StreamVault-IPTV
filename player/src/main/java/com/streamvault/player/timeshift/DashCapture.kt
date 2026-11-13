@@ -1,5 +1,6 @@
 package com.streamvault.player.timeshift
 
+import java.util.Locale
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.sync.Mutex
@@ -134,4 +135,28 @@ internal class DashSegmentCursor(private val restartGapMs: Long = DASH_RESTART_G
         /** A manifest more than a minute behind what was captured is a restart, not a lagging copy. */
         const val DASH_RESTART_GAP_MS = 60_000L
     }
+}
+
+internal data class DashSnapshotPlaylistSegment(
+    val fileName: String,
+    val durationMs: Long,
+    val isInit: Boolean
+)
+
+internal fun buildDashSnapshotPlaylist(
+    targetDurationSeconds: Int,
+    segments: List<DashSnapshotPlaylistSegment>
+): String = buildString {
+    appendLine("#EXTM3U")
+    appendLine("#EXT-X-VERSION:7")
+    appendLine("#EXT-X-TARGETDURATION:$targetDurationSeconds")
+    appendLine("#EXT-X-MEDIA-SEQUENCE:0")
+    segments.firstOrNull { it.isInit }?.let { initSegment ->
+        appendLine("#EXT-X-MAP:URI=\"${initSegment.fileName}\"")
+    }
+    segments.filterNot(DashSnapshotPlaylistSegment::isInit).forEach { segment ->
+        appendLine("#EXTINF:${"%.3f".format(Locale.US, segment.durationMs / 1000.0)},")
+        appendLine(segment.fileName)
+    }
+    appendLine("#EXT-X-ENDLIST")
 }
