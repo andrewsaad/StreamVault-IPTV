@@ -52,6 +52,9 @@ import com.streamvault.feature.system.api.StreamVaultPluginOwner
 import com.streamvault.feature.system.api.owner
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
+import java.io.IOException
+import java.io.InputStream
+import java.io.OutputStream
 import java.net.URI
 import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
@@ -347,8 +350,10 @@ class StreamVaultPluginManager @Inject constructor(
 
     suspend fun installApkFromUrl(url: String): Result<Unit> = withContext(Dispatchers.IO) {
         val normalizedUrl = url.trim()
-        if (!isHttpOrHttpsUrl(normalizedUrl)) {
-            return@withContext Result.error("Plugin URL must be http or https")
+        // A plugin APK is code that will run on the device, so it must not travel over cleartext HTTP, where any
+        // network on the path could swap it.
+        if (!isHttpsPluginUrl(normalizedUrl)) {
+            return@withContext Result.error(context.getString(R.string.plugin_install_url_requires_https))
         }
 
         val target = pluginApkFile("plugin-${System.currentTimeMillis()}.apk")
@@ -358,9 +363,13 @@ class StreamVaultPluginManager @Inject constructor(
             okHttpClient.newCall(request).useCancellableResponse { response ->
                 if (!response.isSuccessful) error("HTTP ${response.code}")
                 val body = response.body ?: error("Empty response")
-                target.outputStream().use { output -> body.byteStream().copyTo(output) }
+                if (body.contentLength() > MAX_PLUGIN_APK_BYTES) error("Plugin APK exceeds size limit")
+                target.outputStream().use { output ->
+                    body.byteStream().use { input -> copyAtMost(input, output, MAX_PLUGIN_APK_BYTES) }
+                }
             }
         }.onFailure { error ->
+            target.delete()
             return@withContext Result.error("Could not download plugin APK", error)
         }
         launchPackageInstaller(target)
@@ -1079,13 +1088,6 @@ class StreamVaultPluginManager @Inject constructor(
         return File(downloadsDir, "plugin-apks/$fileName")
     }
 
-    private fun isHttpOrHttpsUrl(value: String): Boolean =
-        runCatching {
-            val parsed = URI(value)
-            parsed.scheme.equals("http", ignoreCase = true) ||
-                parsed.scheme.equals("https", ignoreCase = true)
-        }.getOrDefault(false)
-
     private fun invalidateDiscovery() {
         synchronized(discoveryLock) {
             cachedDiscovery = null
@@ -1192,6 +1194,7 @@ class StreamVaultPluginManager @Inject constructor(
         const val PLAYBACK_HANDLER_TIMEOUT_MILLIS = 5_000L
         const val PLAYBACK_TOTAL_TIMEOUT_MILLIS = 5_000L
         const val PENDING_MUTATION_PREFIX = "pending."
+        const val MAX_PLUGIN_APK_BYTES = 256L * 1024 * 1024
     }
 }
 
@@ -1221,6 +1224,25 @@ private fun String.isSafeHttpHeaderName(): Boolean =
     isNotBlank() && all { char ->
         char.isLetterOrDigit() || char in setOf('!', '#', '$', '%', '&', '\'', '*', '+', '.', '^', '_', '`', '|', '~', '-')
     }
+
+internal fun isHttpsPluginUrl(value: String): Boolean =
+    runCatching {
+        val parsed = URI(value)
+        parsed.scheme.equals("https", ignoreCase = true) && !parsed.host.isNullOrBlank()
+    }.getOrDefault(false)
+
+/** Copies [input] to [output], failing once more than [maxBytes] arrive, so a server cannot fill the device. */
+internal fun copyAtMost(input: InputStream, output: OutputStream, maxBytes: Long): Long {
+    val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+    var total = 0L
+    while (true) {
+        val read = input.read(buffer)
+        if (read == -1) return total
+        total += read
+        if (total > maxBytes) throw IOException("Download exceeded $maxBytes bytes")
+        output.write(buffer, 0, read)
+    }
+}
 
 /** Discovery lists only usable services; the orphan check also needs disabled ones. */
 internal fun pluginServiceQueryFlags(includeDisabledComponents: Boolean): Int =

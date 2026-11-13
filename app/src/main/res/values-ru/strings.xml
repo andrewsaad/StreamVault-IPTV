@@ -291,4 +291,5 @@
     <string name="torrent_storage_check_failed">Не удалось проверить доступное место. Воспроизведение торрента нельзя безопасно продолжить.</string>
     <string name="nav_extensions">Расширения</string>
     <string name="nav_sports">Спорт</string>
+    <string name="plugin_install_url_requires_https">Ссылки для загрузки плагинов должны начинаться с https://</string>
 </resources>

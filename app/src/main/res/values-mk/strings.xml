@@ -343,4 +343,5 @@
     <string name="torrent_storage_check_failed">Не може да се провери достапниот простор. Репродукцијата на торент не може безбедно да продолжи.</string>
     <string name="nav_extensions">Проширувања</string>
     <string name="nav_sports">Спорт</string>
+    <string name="plugin_install_url_requires_https">Врските за преземање приклучоци мора да започнуваат со https://</string>
 </resources>

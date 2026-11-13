@@ -344,4 +344,5 @@
     <string name="torrent_storage_check_failed">Voľné úložisko sa nepodarilo skontrolovať. Prehrávanie torrentu nemôže bezpečne pokračovať.</string>
     <string name="nav_extensions">Rozšírenia</string>
     <string name="nav_sports">Šport</string>
+    <string name="plugin_install_url_requires_https">Odkazy na stiahnutie doplnkov musia začínať na https://</string>
 </resources>

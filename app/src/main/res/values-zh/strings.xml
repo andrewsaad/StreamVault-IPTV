@@ -291,4 +291,5 @@
     <string name="torrent_storage_check_failed">无法检查可用存储空间，无法安全地继续播放种子内容。</string>
     <string name="nav_extensions">扩展功能</string>
     <string name="nav_sports">体育</string>
+    <string name="plugin_install_url_requires_https">插件下载链接必须以 https:// 开头</string>
 </resources>

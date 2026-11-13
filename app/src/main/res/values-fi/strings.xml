@@ -291,4 +291,5 @@
     <string name="torrent_storage_check_failed">Vapaata tallennustilaa ei voitu tarkistaa. Torrentin toistoa ei voida jatkaa turvallisesti.</string>
     <string name="nav_extensions">Laajennukset</string>
     <string name="nav_sports">Urheilu</string>
+    <string name="plugin_install_url_requires_https">Laajennusten latauslinkkien on alettava merkeillä https://</string>
 </resources>
