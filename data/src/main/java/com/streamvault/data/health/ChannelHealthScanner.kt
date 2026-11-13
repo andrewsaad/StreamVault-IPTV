@@ -158,9 +158,14 @@ class ChannelHealthScanner internal constructor(
         // OK answers in the main pass, and OK answers, attempts and repeated 5xx answers in the retry pass.
         // They only cover the part of the scan this run saw, so a restarted scan judges more strictly.
         var mainOk = 0
-        var retryOk = 0
-        var retryAttempts = 0
-        var retryRefusals = 0
+        var retryOk = resume?.retryOk ?: 0
+        var retryAttempts = resume?.retryAttempts ?: 0
+        // Refusals saved by the run that was stopped; the ones still in the mass-failure streak count toward it again.
+        resume?.refused?.forEach { saved ->
+            val outcome = ChannelProbeOutcome(saved.channelId, ChannelHealthStatus.UNCLEAR, saved.checkedAt)
+            refused[saved.channelId] = outcome
+            if (saved.inStreak) streak += outcome
+        }
         var retrying = resume?.retryAfterChannelId != null
         var queue = if (retrying) channels.filter { it.id in retryIds } else channels
         // Ids up to this one are already done in the current pass (null: none).
@@ -171,27 +176,36 @@ class ChannelHealthScanner internal constructor(
         var retryAfterId: Long? = if (retrying) resume?.retryAfterChannelId else null
         var finished = false
         var gaveUp = false
-        // Channels up to this id are settled; a held-back streak is not, so it is probed again after a restart.
+        // Channels up to this id are settled. A held-back streak of undecided answers is not, so it is probed again
+        // after a restart; that costs at most massFailureStreak - 1 channels per restart, so progress still advances.
+        // Refused channels are NOT held back: they are saved with the resume point (see [ChannelRefusal]), because
+        // holding the point back for them made every restart re-probe the same stretch and the scan never finished.
         fun resumePoint(): ChannelHealthResume {
-            // Held-back refusals are not stored yet either, so they are probed again after a restart.
-            val heldBack = listOfNotNull(streak.firstOrNull(), refused.values.firstOrNull())
-                .minOfOrNull { it.channelId }?.let { it - 1 }
+            val heldBack = streak.firstOrNull { it.channelId !in refused }?.let { it.channelId - 1 }
             val retryAfter = retryAfterId
+            val point = if (retryAfter != null) heldBack ?: retryAfter else heldBack ?: lastProbedId
+            val streakIds = streak.mapTo(HashSet()) { it.channelId }
+            // A refusal past the point is probed (and counted) again, so it is not saved.
+            val savedRefusals = refused.values.filter { it.channelId <= point }
+                .map { ChannelRefusal(it.channelId, it.checkedAt, inStreak = it.channelId in streakIds) }
             if (retryAfter != null) {
                 return ChannelHealthResume(
                     startedAt,
                     lastProbedId,
                     retryIds.toList(),
-                    heldBack ?: retryAfter,
+                    point,
                     serverErrorIds.toList(),
+                    savedRefusals,
+                    retryOk,
+                    retryAttempts - streak.count { it.channelId > point },
                 )
             }
-            val point = heldBack ?: lastProbedId
             return ChannelHealthResume(
                 startedAt,
                 point,
                 retryIds.filter { it <= point },
                 serverErrorIds = serverErrorIds.filter { it <= point },
+                refused = savedRefusals,
             )
         }
         // Refused channels are decided once, at the end of the retry pass; every other outcome is kept as it is.
@@ -253,7 +267,6 @@ class ChannelHealthScanner internal constructor(
                             channel.id in serverErrorIds
                         ) {
                             refused[channel.id] = outcome
-                            retryRefusals++
                         }
                     } else if (status == ChannelHealthStatus.OK) {
                         mainOk++
@@ -275,6 +288,8 @@ class ChannelHealthScanner internal constructor(
                     if (streak.size >= timings.massFailureStreak) {
                         // Everything failing at once points at the provider or the account, not the channels.
                         streak.forEach { refused.remove(it.channelId) }
+                        // The storm's attempts are not evidence about the provider's health either way.
+                        if (retrying) retryAttempts -= streak.size
                         streak.clear()
                         if (++backoffsInARow >= timings.maxBackoffsInARow) {
                             gaveUp = true
@@ -313,7 +328,7 @@ class ChannelHealthScanner internal constructor(
                 total = channels.size + queue.size
                 setState(providerId) { it.copy(total = total) }
             }
-            if (shouldStoreRefusals(mainOk, retryOk, retryAttempts, retryRefusals)) {
+            if (shouldStoreRefusals(mainOk, retryOk, retryAttempts, refused.size)) {
                 pending += refused.values.map { it.copy(status = ChannelHealthStatus.EMPTY) }
             }
             finished = true
@@ -323,8 +338,9 @@ class ChannelHealthScanner internal constructor(
         } finally {
             withContext(NonCancellable) {
                 // A scan that gave up saw a provider in trouble, so its 5xx answers are never stored.
+                // Refused channels stay in the streak so the saved resume state still marks them (see [ChannelRefusal]).
                 pending += settled(streak)
-                streak.clear()
+                streak.removeAll { it.channelId !in refused }
                 flush()
                 if (finished) results.markFinished(providerId)
                 setState(providerId) { it.copy(running = false, paused = null, gaveUp = gaveUp) }

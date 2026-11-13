@@ -445,7 +445,9 @@ class ChannelHealthScannerTest {
         advanceUntilIdle()
         assertThat(probed).containsExactly(1L, 2L, 3L, 4L, 5L, 1L, 3L).inOrder()
         assertThat(results.read(TEST_PROVIDER_ID).resume)
-            .isEqualTo(ChannelHealthResume(500L, 5L, listOf(1L, 3L, 5L), 3L))
+            .isEqualTo(
+                ChannelHealthResume(500L, 5L, listOf(1L, 3L, 5L), 3L, retryOk = 1, retryAttempts = 2),
+            )
 
         assertThat(scanner.run(TEST_PROVIDER_ID, null, 500L)).isTrue()
 
@@ -683,9 +685,22 @@ class ChannelHealthScannerTest {
         runCurrent()
         job.cancel()
         advanceUntilIdle()
-        // The refusal is only held back, so the retry pass resumes before it and nothing is stored yet.
+        // This used to pin the retry point at 0: the refusal held it back, so every restart re-probed it. The
+        // refusal is now saved with the resume (and still counts toward the mass-failure streak), the retry pass
+        // resumes after it, and nothing is stored as EMPTY yet.
         assertThat(results.read(TEST_PROVIDER_ID).resume)
-            .isEqualTo(ChannelHealthResume(500L, 7L, listOf(1L, 3L, 5L, 7L), 0L, listOf(1L)))
+            .isEqualTo(
+                ChannelHealthResume(
+                    500L,
+                    7L,
+                    listOf(1L, 3L, 5L, 7L),
+                    1L,
+                    listOf(1L),
+                    listOf(ChannelRefusal(1L, clock.nowMillis, inStreak = true)),
+                    retryOk = 0,
+                    retryAttempts = 1,
+                ),
+            )
         assertThat(results.read(TEST_PROVIDER_ID).records).isEmpty()
 
         assertThat(scanner.run(TEST_PROVIDER_ID, null, 500L)).isTrue()
@@ -694,10 +709,166 @@ class ChannelHealthScannerTest {
     }
 
     @Test
+    fun `a scan stopped over and over in a long retry pass with an early refusal still finishes without re-probing`() = runTest {
+        val total = 300L
+        givenChannels(*(1L..total).map { channelEntity(it) }.toTypedArray())
+        givenAccount("1", "0")
+        // Channel 1 is refused with a 503 on both passes; the other odd channels time out once and recover, so
+        // the retry queue holds 150 channels (about 15 minutes at the 6 s pace, more than one run).
+        val probed = givenProbeAnswers(
+            (1L..total).associateWith {
+                when {
+                    it == 1L -> listOf(serverError, serverError)
+                    it % 2L == 1L -> listOf(unclear, ok)
+                    else -> listOf(ok)
+                }
+            },
+        )
+        var finished = false
+        var runs = 0
+        while (!finished && runs < 30) {
+            runs++
+            val before = probed.size
+            val saved = results.read(TEST_PROVIDER_ID).resume
+            val job = backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+                finished = scanner.run(TEST_PROVIDER_ID, null, 500L)
+            }
+            // WorkManager stops the job about every 10 minutes, which is about 100 channels at the 6 s pace.
+            advanceTimeBy(600_000L)
+            runCurrent()
+            if (saved != null) {
+                val inRetry = saved.retryAfterChannelId != null || saved.afterChannelId >= total
+                val point = when {
+                    saved.retryAfterChannelId != null -> saved.retryAfterChannelId!!
+                    inRetry -> 0L
+                    else -> saved.afterChannelId
+                }
+                val fresh = probed.drop(before)
+                // The part of the run that continues the saved pass is ascending and must start after the saved point.
+                val samePass = fresh.withIndex().takeWhile { (i, id) -> i == 0 || id > fresh[i - 1] }.map { it.value }
+                assertThat(samePass.filter { it <= point }).isEmpty()
+            }
+            if (!job.isCompleted) {
+                job.cancel()
+                advanceUntilIdle()
+            }
+        }
+
+        assertThat(finished).isTrue()
+        assertThat(runs).isLessThan(30)
+        // Main pass once, retry pass once: the early refusal is never probed again after a stop.
+        assertThat(probed.count { it == 1L }).isEqualTo(2)
+        val document = results.read(TEST_PROVIDER_ID)
+        assertThat(document.resume).isNull()
+        assertThat(document.records.keys).containsExactly(1L)
+        assertThat(document.records.getValue(1L).status).isEqualTo(ChannelHealthStatus.EMPTY)
+    }
+
+    @Test
+    fun `refusals dropped by a mass failure no longer count as refused when the provider is judged`() = runTest {
+        val noBackoffOnUnclear = ChannelHealthScanner(
+            snapshots = snapshots,
+            channelDao = channelDao,
+            xtreamApi = xtreamApi,
+            probe = probe,
+            results = results,
+            // Out of the way, so the ten-in-a-row mass failure guard is the one that acts.
+            timings = ChannelHealthTimings(unclearInARowBeforeBackoff = 100),
+        )
+        givenChannels(*(1L..43L).map { channelEntity(it) }.toTypedArray())
+        givenAccount("1", "0")
+        // Ten refusals in a row in the retry pass (dropped by the mass failure guard), eleven recoveries, then one
+        // refusal that stays. 22 retry attempts and 11 good answers: the old stale count of 11 refusals failed the
+        // half rule (22 < 22) and stored nothing; the one real refusal passes it (2 < 22).
+        givenProbeAnswers(
+            (1L..43L).associateWith {
+                when {
+                    it % 2L == 0L -> listOf(ok)
+                    it <= 19L || it == 43L -> listOf(serverError)
+                    else -> listOf(unclear, ok)
+                }
+            },
+        )
+
+        assertThat(noBackoffOnUnclear.run(TEST_PROVIDER_ID, null, 0L)).isTrue()
+
+        val records = results.read(TEST_PROVIDER_ID).records
+        assertThat(records.keys).containsExactly(43L)
+        assertThat(records.getValue(43L).status).isEqualTo(ChannelHealthStatus.EMPTY)
+    }
+
+    @Test
+    fun `refusals saved in the mass failure streak still count toward it after a restart`() = runTest {
+        givenChannels(*(1L..12L).map { channelEntity(it) }.toTypedArray())
+        givenAccount("1", "0")
+        // Nine refusals were in the streak when the scan was stopped; one more refusal after the restart makes ten
+        // in a row. Eleven good answers and 60 attempts would pass the half rule, so only the guard stops them
+        // being stored as EMPTY.
+        results.record(
+            TEST_PROVIDER_ID,
+            emptyList(),
+            ChannelHealthResume(
+                500L,
+                12L,
+                (1L..10L).toList(),
+                9L,
+                (1L..10L).toList(),
+                (1L..9L).map { ChannelRefusal(it, 77L, inStreak = true) },
+                retryOk = 11,
+                retryAttempts = 60,
+            ),
+        )
+        val probed = givenProbeAnswers((1L..12L).associateWith { listOf(serverError) })
+
+        assertThat(scanner.run(TEST_PROVIDER_ID, null, 500L)).isTrue()
+
+        assertThat(probed).containsExactly(10L)
+        assertThat(results.read(TEST_PROVIDER_ID).records).isEmpty()
+    }
+
+    @Test
     fun `a progress marker stored before retries existed still reads back`() = runTest {
         storage.health.value = """{"resumeStartedAt":500,"resumeAfterId":1}"""
 
         assertThat(results.read(TEST_PROVIDER_ID).resume).isEqualTo(ChannelHealthResume(500L, 1L))
+    }
+
+    @Test
+    fun `a progress marker saved by the build before refusals were stored still decodes and resumes`() = runTest {
+        // Exactly the fields the previous build wrote: no refusals, no retry counts.
+        storage.health.value =
+            """{"resumeStartedAt":500,"resumeAfterId":4,"resumeRetryIds":[1],"resumeRetryAfterId":0,"resumeServerErrorIds":[1]}"""
+        val resume = results.read(TEST_PROVIDER_ID).resume
+        assertThat(resume).isEqualTo(ChannelHealthResume(500L, 4L, listOf(1L), 0L, listOf(1L)))
+        assertThat(resume!!.refused).isEmpty()
+        assertThat(resume.retryOk).isEqualTo(0)
+        assertThat(resume.retryAttempts).isEqualTo(0)
+        givenChannels(*(1L..4L).map { channelEntity(it) }.toTypedArray())
+        givenAccount("1", "0")
+        val probed = givenProbeAnswers((1L..4L).associateWith { if (it == 1L) listOf(serverError) else listOf(ok) })
+
+        assertThat(scanner.run(TEST_PROVIDER_ID, null, 500L)).isTrue()
+
+        // Only the retry of channel 1 is left; the main pass is not repeated.
+        assertThat(probed).containsExactly(1L)
+        assertThat(results.read(TEST_PROVIDER_ID).resume).isNull()
+    }
+
+    @Test
+    fun `refusals and retry counts round trip through the stored progress marker`() = runTest {
+        val resume = ChannelHealthResume(
+            500L,
+            9L,
+            listOf(1L, 3L),
+            1L,
+            listOf(1L),
+            listOf(ChannelRefusal(1L, 77L, inStreak = true), ChannelRefusal(2L, 78L)),
+            retryOk = 4,
+            retryAttempts = 6,
+        )
+        results.record(TEST_PROVIDER_ID, emptyList(), resume)
+
+        assertThat(results.read(TEST_PROVIDER_ID).resume).isEqualTo(resume)
     }
 
     @Test

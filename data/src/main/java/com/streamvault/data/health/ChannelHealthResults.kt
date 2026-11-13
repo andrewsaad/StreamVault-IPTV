@@ -30,6 +30,10 @@ internal data class ChannelProbeOutcome(
  * main pass is over; [retryAfterChannelId] is null during the main pass and, once the retry pass has
  * started, the last retried id (0 before the first). [serverErrorIds] are the [retryIds] whose UNCLEAR
  * answer was an HTTP 5xx; a second 5xx on the retry makes such a channel count as EMPTY.
+ * [refused] are the retried channels the provider refused with a 5xx again (decided only at the end of the
+ * retry pass), and [retryOk] and [retryAttempts] the retry-pass counts so far, so a restart neither probes
+ * those channels again nor loses the evidence [shouldStoreRefusals] needs. All three default to empty/0, which
+ * is what state saved by a build before they existed reads as.
  */
 internal data class ChannelHealthResume(
     val startedAt: Long,
@@ -37,7 +41,13 @@ internal data class ChannelHealthResume(
     val retryIds: List<Long> = emptyList(),
     val retryAfterChannelId: Long? = null,
     val serverErrorIds: List<Long> = emptyList(),
+    val refused: List<ChannelRefusal> = emptyList(),
+    val retryOk: Int = 0,
+    val retryAttempts: Int = 0,
 )
+
+/** A retried channel refused with a 5xx again; [inStreak] when it still counts toward the mass-failure streak. */
+internal data class ChannelRefusal(val channelId: Long, val checkedAt: Long, val inStreak: Boolean = false)
 
 /** Only channels whose latest answer was EMPTY or DEAD have a record; an OK answer removes it. */
 internal data class ChannelHealthDocument(
@@ -139,6 +149,9 @@ class ChannelHealthResults internal constructor(
     private class StoredRecord(val id: Long, val status: String, val checkedAt: Long, val failedDays: Int)
 
     @Serializable
+    private class StoredRefusal(val id: Long, val checkedAt: Long, val inStreak: Boolean = false)
+
+    @Serializable
     private class StoredDocument(
         val lastFinishedAt: Long? = null,
         val records: List<StoredRecord> = emptyList(),
@@ -147,6 +160,10 @@ class ChannelHealthResults internal constructor(
         val resumeRetryIds: List<Long> = emptyList(),
         val resumeRetryAfterId: Long? = null,
         val resumeServerErrorIds: List<Long> = emptyList(),
+        // Added later: absent in state saved by older builds, which then reads as no refusals and zero counts.
+        val resumeRefused: List<StoredRefusal> = emptyList(),
+        val resumeRetryOk: Int = 0,
+        val resumeRetryAttempts: Int = 0,
     )
 
     private fun encode(document: ChannelHealthDocument): String = json.encodeToString(
@@ -158,6 +175,9 @@ class ChannelHealthResults internal constructor(
             resumeRetryIds = document.resume?.retryIds.orEmpty(),
             resumeRetryAfterId = document.resume?.retryAfterChannelId,
             resumeServerErrorIds = document.resume?.serverErrorIds.orEmpty(),
+            resumeRefused = document.resume?.refused.orEmpty().map { StoredRefusal(it.channelId, it.checkedAt, it.inStreak) },
+            resumeRetryOk = document.resume?.retryOk ?: 0,
+            resumeRetryAttempts = document.resume?.retryAttempts ?: 0,
             records = document.records.values.map {
                 StoredRecord(it.channelId, statusToStored(it.status), it.checkedAt, it.failedDays)
             },
@@ -180,6 +200,9 @@ class ChannelHealthResults internal constructor(
                 document.resumeRetryIds,
                 document.resumeRetryAfterId,
                 document.resumeServerErrorIds,
+                document.resumeRefused.map { ChannelRefusal(it.id, it.checkedAt, it.inStreak) },
+                document.resumeRetryOk,
+                document.resumeRetryAttempts,
             )
         } else {
             null
