@@ -1098,6 +1098,7 @@
     <string name="settings_backup_import_failed">Sigurnosnu kopiju nije moguće uvesti</string>
     <string name="settings_backup_select_section">Odaberite barem jedan odjeljak za uvoz</string>
     <string name="settings_backup_imported">Konfiguracija je uvezena: %1$s</string>
+    <string name="settings_backup_providers_imported_for_references">Pružatelji su ipak uvezeni jer se spremljena knjižnica i povijest pozivaju na njih.</string>
     <string name="settings_update_check_failed">Provjera ažuriranja nije uspjela</string>
     <string name="settings_update_download_failed">Ažuriranje nije moguće preuzeti</string>
     <string name="settings_update_install_failed">Ažuriranje nije moguće instalirati. Ako Android to zatraži, dopustite instalacije iz ove aplikacije i pokušajte ponovno.</string>

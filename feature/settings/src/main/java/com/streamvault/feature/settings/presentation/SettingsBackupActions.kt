@@ -206,7 +206,12 @@ class SettingsBackupActions(
                         val summary = stremioAddonSectionLabel?.let { label ->
                             success.importedSummary.replace(BACKUP_SECTION_STREMIO_ADDONS, label())
                         } ?: success.importedSummary
-                        text(R.string.settings_backup_imported, listOf(summary))
+                        val importedMessage = text(R.string.settings_backup_imported, listOf(summary))
+                        if (success.result.providersImportedForReferences) {
+                            importedMessage + " " + text(R.string.settings_backup_providers_imported_for_references, emptyList())
+                        } else {
+                            importedMessage
+                        }
                     },
                     // Preserve the source and plan after partial/failed-before-commit outcomes so
                     // the user can retry the same durable checkpoint instead of starting over.

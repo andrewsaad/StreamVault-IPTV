@@ -1103,6 +1103,7 @@
     <string name="settings_backup_import_failed">Не удалось импортировать резервную копию</string>
     <string name="settings_backup_select_section">Выберите хотя бы один раздел для импорта</string>
     <string name="settings_backup_imported">Конфигурация импортирована: %1$s</string>
+    <string name="settings_backup_providers_imported_for_references">Поставщики всё равно были импортированы, так как сохранённая библиотека и история ссылаются на них.</string>
     <string name="settings_update_check_failed">Не удалось проверить наличие обновлений</string>
     <string name="settings_update_download_failed">Не удалось скачать обновление</string>
     <string name="settings_update_install_failed">Не удалось установить обновление. Если Android попросит, разрешите установку из этого приложения и повторите попытку.</string>

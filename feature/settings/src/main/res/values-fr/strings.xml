@@ -1097,6 +1097,7 @@
     <string name="settings_backup_import_failed">Impossible d\'importer la sauvegarde</string>
     <string name="settings_backup_select_section">Sélectionnez au moins une section à importer</string>
     <string name="settings_backup_imported">Configuration importée : %1$s</string>
+    <string name="settings_backup_providers_imported_for_references">Les fournisseurs ont tout de même été importés, car la bibliothèque enregistrée et l\'historique y font référence.</string>
     <string name="settings_update_check_failed">Impossible de rechercher les mises à jour</string>
     <string name="settings_update_download_failed">Impossible de télécharger la mise à jour</string>
     <string name="settings_update_install_failed">Impossible d\'installer la mise à jour. Si Android le demande, autorisez les installations depuis cette application, puis réessayez.</string>

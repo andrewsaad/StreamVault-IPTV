@@ -1095,6 +1095,7 @@
     <string name="settings_backup_import_failed">Резервната копија не може да се увезе</string>
     <string name="settings_backup_select_section">Изберете најмалку еден дел за увоз</string>
     <string name="settings_backup_imported">Конфигурацијата е увезена: %1$s</string>
+    <string name="settings_backup_providers_imported_for_references">Давателите сепак беа увезени, бидејќи зачуваната библиотека и историјата се повикуваат на нив.</string>
     <string name="settings_update_check_failed">Проверката за ажурирања не успеа</string>
     <string name="settings_update_download_failed">Ажурирањето не може да се преземе</string>
     <string name="settings_update_install_failed">Ажурирањето не може да се инсталира. Ако Android побара, дозволете инсталации од оваа апликација и обидете се повторно.</string>

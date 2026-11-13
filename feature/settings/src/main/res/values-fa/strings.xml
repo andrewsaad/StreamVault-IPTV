@@ -1095,6 +1095,7 @@
     <string name="settings_backup_import_failed">وارد کردن نسخه پشتیبان ناموفق بود</string>
     <string name="settings_backup_select_section">حداقل یک بخش را برای وارد کردن انتخاب کنید</string>
     <string name="settings_backup_imported">پیکربندی وارد شد: %1$s</string>
+    <string name="settings_backup_providers_imported_for_references">ارائه‌دهندگان با این حال وارد شدند، زیرا کتابخانه ذخیره‌شده و تاریخچه به آن‌ها ارجاع دارند.</string>
     <string name="settings_update_check_failed">بررسی به‌روزرسانی ناموفق بود</string>
     <string name="settings_update_download_failed">دانلود به‌روزرسانی ناموفق بود</string>
     <string name="settings_update_install_failed">نصب به‌روزرسانی ناموفق بود. اگر Android درخواست کرد، نصب از این برنامه را مجاز کنید و دوباره تلاش کنید.</string>

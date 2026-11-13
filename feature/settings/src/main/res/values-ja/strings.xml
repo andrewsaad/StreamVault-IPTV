@@ -1095,6 +1095,7 @@
     <string name="settings_backup_import_failed">バックアップをインポートできませんでした</string>
     <string name="settings_backup_select_section">インポートするセクションを 1 つ以上選択してください</string>
     <string name="settings_backup_imported">設定をインポートしました: %1$s</string>
+    <string name="settings_backup_providers_imported_for_references">保存済みライブラリと履歴がプロバイダーを参照しているため、プロバイダーもインポートされました。</string>
     <string name="settings_update_check_failed">アップデートを確認できませんでした</string>
     <string name="settings_update_download_failed">アップデートをダウンロードできませんでした</string>
     <string name="settings_update_install_failed">アップデートをインストールできませんでした。Android から求められた場合は、このアプリからのインストールを許可して、もう一度お試しください。</string>

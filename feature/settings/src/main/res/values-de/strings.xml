@@ -1093,6 +1093,7 @@
     <string name="settings_backup_import_failed">Das Backup konnte nicht importiert werden</string>
     <string name="settings_backup_select_section">Wählen Sie mindestens einen Bereich zum Importieren aus</string>
     <string name="settings_backup_imported">Konfiguration importiert: %1$s</string>
+    <string name="settings_backup_providers_imported_for_references">Die Anbieter wurden trotzdem importiert, weil die gespeicherte Bibliothek und der Verlauf auf sie verweisen.</string>
     <string name="settings_update_check_failed">Die Suche nach Updates ist fehlgeschlagen</string>
     <string name="settings_update_download_failed">Das Update konnte nicht heruntergeladen werden</string>
     <string name="settings_update_install_failed">Das Update konnte nicht installiert werden. Falls Android danach fragt, erlauben Sie Installationen aus dieser App und versuchen Sie es erneut.</string>

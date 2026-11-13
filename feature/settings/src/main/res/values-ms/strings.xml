@@ -1092,6 +1092,7 @@
     <string name="settings_backup_import_failed">Tidak dapat mengimport sandaran</string>
     <string name="settings_backup_select_section">Pilih sekurang-kurangnya satu bahagian untuk diimport</string>
     <string name="settings_backup_imported">Konfigurasi diimport: %1$s</string>
+    <string name="settings_backup_providers_imported_for_references">Pembekal tetap diimport kerana pustaka tersimpan dan sejarah merujuk kepada mereka.</string>
     <string name="settings_update_check_failed">Tidak dapat menyemak kemas kini</string>
     <string name="settings_update_download_failed">Tidak dapat memuat turun kemas kini</string>
     <string name="settings_update_install_failed">Tidak dapat memasang kemas kini. Jika Android memintanya, benarkan pemasangan daripada apl ini dan cuba lagi.</string>

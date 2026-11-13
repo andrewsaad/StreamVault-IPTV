@@ -1100,6 +1100,7 @@
     <string name="settings_backup_import_failed">לא ניתן היה לייבא את הגיבוי</string>
     <string name="settings_backup_select_section">בחר לפחות מקטע אחד לייבוא</string>
     <string name="settings_backup_imported">התצורה יובאה: %1$s</string>
+    <string name="settings_backup_providers_imported_for_references">הספקים יובאו בכל זאת, כי הספרייה השמורה וההיסטוריה מפנות אליהם.</string>
     <string name="settings_update_check_failed">בדיקת העדכונים נכשלה</string>
     <string name="settings_update_download_failed">לא ניתן היה להוריד את העדכון</string>
     <string name="settings_update_install_failed">לא ניתן היה להתקין את העדכון. אם Android יבקש, אפשר התקנות מהאפליקציה הזו ונסה שוב.</string>

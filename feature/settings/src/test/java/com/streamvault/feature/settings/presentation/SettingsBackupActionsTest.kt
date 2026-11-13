@@ -98,6 +98,21 @@ class SettingsBackupActionsTest {
     }
 
     @Test
+    fun importThatForcedProviders_tellsTheUserWhyTheyWereImported() = runTest {
+        for (forced in listOf(true, false)) {
+            val ui = MutableStateFlow(SettingsUiState(pendingBackupUri = "content://backup", backupPreview = preview()))
+            whenever(importBackup.confirm(org.mockito.kotlin.any())).thenReturn(ImportBackupResult.Success(
+                BackupImportResult(outcome = BackupRestoreOutcome.COMPLETE, providersImportedForReferences = forced)
+            ))
+            SettingsBackupActions(exportBackup, importBackup, ui, text = fakeText, loadRestoreProviders = { emptyList() })
+                .confirmBackupImport(this)
+            advanceUntilIdle()
+            val warning = resText(R.string.settings_backup_providers_imported_for_references)
+            assertThat(ui.value.userMessage?.contains(warning)).isEqualTo(forced)
+        }
+    }
+
+    @Test
     fun mixedReferences_onlyOfferConfiguredUnambiguousProvidersWhenProviderImportIsSelected() = runTest {
         val ui = MutableStateFlow(SettingsUiState(pendingBackupUri = "content://backup",
             backupPreview = preview(), backupImportPlan = BackupImportPlan(importProviders = true)))

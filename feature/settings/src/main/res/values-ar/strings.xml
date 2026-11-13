@@ -1109,6 +1109,7 @@
     <string name="settings_backup_import_failed">تعذّر استيراد النسخة الاحتياطية</string>
     <string name="settings_backup_select_section">اختر قسماً واحداً على الأقل للاستيراد</string>
     <string name="settings_backup_imported">تم استيراد الإعدادات: %1$s</string>
+    <string name="settings_backup_providers_imported_for_references">تم استيراد مزوّدي الخدمة رغم ذلك لأن المكتبة المحفوظة وسجل المشاهدة يشيران إليهم.</string>
     <string name="settings_update_check_failed">تعذّر التحقق من التحديثات</string>
     <string name="settings_update_download_failed">تعذّر تنزيل التحديث</string>
     <string name="settings_update_install_failed">تعذّر تثبيت التحديث. إذا طلب Android ذلك، اسمح بالتثبيت من هذا التطبيق ثم حاول مرة أخرى.</string>

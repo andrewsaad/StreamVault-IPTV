@@ -1097,6 +1097,7 @@
     <string name="settings_backup_import_failed">De back-up kon niet worden geïmporteerd</string>
     <string name="settings_backup_select_section">Selecteer ten minste één onderdeel om te importeren</string>
     <string name="settings_backup_imported">Configuratie geïmporteerd: %1$s</string>
+    <string name="settings_backup_providers_imported_for_references">De providers zijn toch geïmporteerd, omdat de opgeslagen bibliotheek en de geschiedenis ernaar verwijzen.</string>
     <string name="settings_update_check_failed">Controleren op updates is mislukt</string>
     <string name="settings_update_download_failed">De update kon niet worden gedownload</string>
     <string name="settings_update_install_failed">De update kon niet worden geïnstalleerd. Als Android erom vraagt, sta dan installaties vanuit deze app toe en probeer het opnieuw.</string>

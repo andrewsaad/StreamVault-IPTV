@@ -556,7 +556,9 @@ data class BackupImportResult(
     val restoreJobId: String? = null,
     val pendingCount: Int = 0,
     val unresolvedCount: Int = 0,
-    val affectedProviders: List<BackupProviderReference> = emptyList()
+    val affectedProviders: List<BackupProviderReference> = emptyList(),
+    /** True when providers were restored although the plan excluded them, because saved-library and history references need them. */
+    val providersImportedForReferences: Boolean = false
 )
 
 interface BackupManager {

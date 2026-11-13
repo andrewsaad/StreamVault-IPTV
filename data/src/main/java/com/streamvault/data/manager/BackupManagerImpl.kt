@@ -1524,7 +1524,8 @@ class BackupManagerImpl @Inject constructor(
                     restoreJobId = queuedRestore?.jobId,
                     pendingCount = queuedRestore?.pendingCount ?: 0,
                     unresolvedCount = queuedRestore?.unresolvedCount ?: 0,
-                    affectedProviders = queuedRestore?.affectedProviders.orEmpty()
+                    affectedProviders = queuedRestore?.affectedProviders.orEmpty(),
+                    providersImportedForReferences = providersForcedByBackupReferences(backupData, plan)
                 )
             )
         } catch (cancelled: CancellationException) {
@@ -4957,8 +4958,7 @@ class BackupManagerImpl @Inject constructor(
         plan: BackupImportPlan,
         initialStoredProviders: List<Provider>
     ): RoomRestoreResult {
-        val importProviders = plan.importProviders ||
-            (backupData.version >= 14 && backupData.providerSnapshots != null)
+        val importProviders = plan.importProviders || providersForcedByBackupReferences(backupData, plan)
         val hasStremioAddonPayload = plan.importStremioAddons && backupData.stremioAddons != null
         if (!importProviders && !plan.importSavedLibrary && !plan.importPlaybackHistory && !hasStremioAddonPayload) {
             return RoomRestoreResult(
@@ -6018,6 +6018,13 @@ private data class RecordingUrlConflictKey(
     val startMs: Long,
     val streamUrl: String
 )
+
+/**
+ * A v14+ backup with provider snapshots always restores its providers, even when Providers is unticked,
+ * because saved-library and history references resolve against them. The result tells the user.
+ */
+internal fun providersForcedByBackupReferences(backupData: BackupData, plan: BackupImportPlan): Boolean =
+    !plan.importProviders && backupData.version >= 14 && backupData.providerSnapshots != null
 
 internal fun countScheduledRecordingConflicts(
     incoming: List<ScheduledRecordingBackup>,

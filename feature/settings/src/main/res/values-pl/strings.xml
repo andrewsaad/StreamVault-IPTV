@@ -1103,6 +1103,7 @@
     <string name="settings_backup_import_failed">Nie udało się zaimportować kopii zapasowej</string>
     <string name="settings_backup_select_section">Wybierz co najmniej jedną sekcję do zaimportowania</string>
     <string name="settings_backup_imported">Konfiguracja została zaimportowana: %1$s</string>
+    <string name="settings_backup_providers_imported_for_references">Dostawcy zostali mimo to zaimportowani, ponieważ zapisana biblioteka i historia się do nich odwołują.</string>
     <string name="settings_update_check_failed">Nie udało się sprawdzić aktualizacji</string>
     <string name="settings_update_download_failed">Nie udało się pobrać aktualizacji</string>
     <string name="settings_update_install_failed">Nie udało się zainstalować aktualizacji. Jeśli Android o to poprosi, zezwól na instalowanie z tej aplikacji i spróbuj ponownie.</string>

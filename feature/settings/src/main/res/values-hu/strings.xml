@@ -1097,6 +1097,7 @@
     <string name="settings_backup_import_failed">A biztonsági mentést nem sikerült importálni</string>
     <string name="settings_backup_select_section">Válasszon ki legalább egy importálandó szakaszt</string>
     <string name="settings_backup_imported">Konfiguráció importálva: %1$s</string>
+    <string name="settings_backup_providers_imported_for_references">A szolgáltatók mégis importálásra kerültek, mert a mentett könyvtár és az előzmények hivatkoznak rájuk.</string>
     <string name="settings_update_check_failed">A frissítések keresése nem sikerült</string>
     <string name="settings_update_download_failed">A frissítést nem sikerült letölteni</string>
     <string name="settings_update_install_failed">A frissítést nem sikerült telepíteni. Ha az Android kéri, engedélyezze a telepítést ebből az alkalmazásból, majd próbálja újra.</string>

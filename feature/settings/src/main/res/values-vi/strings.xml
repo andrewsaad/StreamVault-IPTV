@@ -1094,6 +1094,7 @@
     <string name="settings_backup_import_failed">Không thể nhập bản sao lưu</string>
     <string name="settings_backup_select_section">Chọn ít nhất một phần để nhập</string>
     <string name="settings_backup_imported">Đã nhập cấu hình: %1$s</string>
+    <string name="settings_backup_providers_imported_for_references">Các nhà cung cấp vẫn được nhập vì thư viện đã lưu và lịch sử tham chiếu đến họ.</string>
     <string name="settings_update_check_failed">Không thể kiểm tra bản cập nhật</string>
     <string name="settings_update_download_failed">Không thể tải bản cập nhật xuống</string>
     <string name="settings_update_install_failed">Không thể cài đặt bản cập nhật. Nếu Android yêu cầu, hãy cho phép cài đặt từ ứng dụng này rồi thử lại.</string>

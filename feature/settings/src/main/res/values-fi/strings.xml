@@ -1097,6 +1097,7 @@
     <string name="settings_backup_import_failed">Varmuuskopion tuonti epäonnistui</string>
     <string name="settings_backup_select_section">Valitse vähintään yksi tuotava osio</string>
     <string name="settings_backup_imported">Kokoonpano tuotu: %1$s</string>
+    <string name="settings_backup_providers_imported_for_references">Palveluntarjoajat tuotiin silti, koska tallennettu kirjasto ja historia viittaavat niihin.</string>
     <string name="settings_update_check_failed">Päivitysten tarkistus epäonnistui</string>
     <string name="settings_update_download_failed">Päivityksen lataaminen epäonnistui</string>
     <string name="settings_update_install_failed">Päivityksen asennus epäonnistui. Jos Android pyytää, salli asennukset tästä sovelluksesta ja yritä uudelleen.</string>

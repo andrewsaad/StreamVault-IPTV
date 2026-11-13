@@ -1100,6 +1100,7 @@
     <string name="settings_backup_import_failed">Copia de rezervă nu a putut fi importată</string>
     <string name="settings_backup_select_section">Selectați cel puțin o secțiune de importat</string>
     <string name="settings_backup_imported">Configurația a fost importată: %1$s</string>
+    <string name="settings_backup_providers_imported_for_references">Furnizorii au fost importați totuși, deoarece biblioteca salvată și istoricul fac referire la ei.</string>
     <string name="settings_update_check_failed">Verificarea actualizărilor a eșuat</string>
     <string name="settings_update_download_failed">Actualizarea nu a putut fi descărcată</string>
     <string name="settings_update_install_failed">Actualizarea nu a putut fi instalată. Dacă Android solicită, permiteți instalările din această aplicație și încercați din nou.</string>

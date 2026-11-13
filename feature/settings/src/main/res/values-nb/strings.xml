@@ -1097,6 +1097,7 @@
     <string name="settings_backup_import_failed">Kunne ikke importere sikkerhetskopien</string>
     <string name="settings_backup_select_section">Velg minst én del som skal importeres</string>
     <string name="settings_backup_imported">Konfigurasjonen er importert: %1$s</string>
+    <string name="settings_backup_providers_imported_for_references">Leverandørene ble importert likevel, fordi det lagrede biblioteket og historikken refererer til dem.</string>
     <string name="settings_update_check_failed">Kunne ikke se etter oppdateringer</string>
     <string name="settings_update_download_failed">Kunne ikke laste ned oppdateringen</string>
     <string name="settings_update_install_failed">Kunne ikke installere oppdateringen. Hvis Android ber om det, tillater du installasjoner fra denne appen og prøver igjen.</string>

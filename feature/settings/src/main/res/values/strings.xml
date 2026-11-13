@@ -1173,6 +1173,7 @@
     <string name="settings_backup_import_failed">Could not import the backup</string>
     <string name="settings_backup_select_section">Select at least one section to import</string>
     <string name="settings_backup_imported">Configuration imported: %1$s</string>
+    <string name="settings_backup_providers_imported_for_references">Providers were imported anyway because your saved library and history refer to them.</string>
     <string name="settings_update_check_failed">Could not check for updates</string>
     <string name="settings_update_download_failed">Could not download the update</string>
     <string name="settings_update_install_failed">Could not install the update. If Android asks, allow installs from this app and try again.</string>

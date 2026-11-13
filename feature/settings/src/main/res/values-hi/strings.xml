@@ -1095,6 +1095,7 @@
     <string name="settings_backup_import_failed">बैकअप इंपोर्ट नहीं किया जा सका</string>
     <string name="settings_backup_select_section">इंपोर्ट करने के लिए कम से कम एक सेक्शन चुनें</string>
     <string name="settings_backup_imported">कॉन्फ़िगरेशन इंपोर्ट किया गया: %1$s</string>
+    <string name="settings_backup_providers_imported_for_references">प्रदाता फिर भी आयात किए गए, क्योंकि सहेजी गई लाइब्रेरी और इतिहास उन्हीं का संदर्भ देते हैं।</string>
     <string name="settings_update_check_failed">अपडेट की जाँच नहीं हो सकी</string>
     <string name="settings_update_download_failed">अपडेट डाउनलोड नहीं किया जा सका</string>
     <string name="settings_update_install_failed">अपडेट इंस्टॉल नहीं किया जा सका। अगर Android पूछे, तो इस ऐप से इंस्टॉल करने की अनुमति दें और फिर कोशिश करें।</string>

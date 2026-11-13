@@ -1095,6 +1095,7 @@
     <string name="settings_backup_import_failed">Kopja rezervë nuk u importua dot</string>
     <string name="settings_backup_select_section">Zgjidhni të paktën një seksion për importim</string>
     <string name="settings_backup_imported">Konfigurimi u importua: %1$s</string>
+    <string name="settings_backup_providers_imported_for_references">Ofruesit u importuan megjithatë, sepse biblioteka e ruajtur dhe historiku i referohen atyre.</string>
     <string name="settings_update_check_failed">Kontrolli i përditësimeve dështoi</string>
     <string name="settings_update_download_failed">Përditësimi nuk u shkarkua dot</string>
     <string name="settings_update_install_failed">Përditësimi nuk u instalua dot. Nëse Android e kërkon, lejoni instalimet nga ky aplikacion dhe provoni përsëri.</string>

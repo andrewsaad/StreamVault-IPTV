@@ -1097,6 +1097,7 @@
     <string name="settings_backup_import_failed">Sikkerhedskopien kunne ikke importeres</string>
     <string name="settings_backup_select_section">Vælg mindst ét afsnit, der skal importeres</string>
     <string name="settings_backup_imported">Konfigurationen er importeret: %1$s</string>
+    <string name="settings_backup_providers_imported_for_references">Udbyderne blev alligevel importeret, fordi dit gemte bibliotek og din historik refererer til dem.</string>
     <string name="settings_update_check_failed">Kunne ikke søge efter opdateringer</string>
     <string name="settings_update_download_failed">Opdateringen kunne ikke downloades</string>
     <string name="settings_update_install_failed">Opdateringen kunne ikke installeres. Hvis Android beder om det, skal du tillade installationer fra denne app og prøve igen.</string>

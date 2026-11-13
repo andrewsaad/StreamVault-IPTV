@@ -1092,6 +1092,7 @@
     <string name="settings_backup_import_failed">ç„¡æ³•åŒ¯å…¥å‚™ä»½</string>
     <string name="settings_backup_select_section">請至少選取一個要匯入的部分</string>
     <string name="settings_backup_imported">設定已匯入：%1$s</string>
+    <string name="settings_backup_providers_imported_for_references">由於已儲存的媒體庫和記錄參照了供應商，因此仍然匯入了供應商。</string>
     <string name="settings_update_check_failed">ç„¡æ³•æª¢æŸ¥æ›´æ–°</string>
     <string name="settings_update_download_failed">ç„¡æ³•ä¸‹è¼‰æ›´æ–°</string>
     <string name="settings_update_install_failed">無法安裝更新。如果 Android 提示，請允許從此應用程式安裝，然後再試一次。</string>

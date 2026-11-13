@@ -1097,6 +1097,7 @@
     <string name="settings_backup_import_failed">Tidak dapat mengimpor cadangan</string>
     <string name="settings_backup_select_section">Pilih setidaknya satu bagian untuk diimpor</string>
     <string name="settings_backup_imported">Konfigurasi diimpor: %1$s</string>
+    <string name="settings_backup_providers_imported_for_references">Penyedia tetap diimpor karena pustaka tersimpan dan riwayat merujuk padanya.</string>
     <string name="settings_update_check_failed">Tidak dapat memeriksa pembaruan</string>
     <string name="settings_update_download_failed">Tidak dapat mengunduh pembaruan</string>
     <string name="settings_update_install_failed">Tidak dapat menginstal pembaruan. Jika Android memintanya, izinkan penginstalan dari aplikasi ini lalu coba lagi.</string>

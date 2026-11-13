@@ -1101,6 +1101,7 @@
     <string name="settings_backup_import_failed">Zálohu sa nepodarilo importovať</string>
     <string name="settings_backup_select_section">Vyberte aspoň jednu sekciu na import</string>
     <string name="settings_backup_imported">Konfigurácia bola importovaná: %1$s</string>
+    <string name="settings_backup_providers_imported_for_references">Poskytovatelia boli napriek tomu importovaní, pretože na nich odkazujú uložená knižnica a história.</string>
     <string name="settings_update_check_failed">Kontrola aktualizácií zlyhala</string>
     <string name="settings_update_download_failed">Aktualizáciu sa nepodarilo stiahnuť</string>
     <string name="settings_update_install_failed">Aktualizáciu sa nepodarilo nainštalovať. Ak o to Android požiada, povoľte inštalácie z tejto aplikácie a skúste to znova.</string>

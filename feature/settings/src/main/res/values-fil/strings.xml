@@ -1095,6 +1095,7 @@
     <string name="settings_backup_import_failed">Hindi na-import ang backup</string>
     <string name="settings_backup_select_section">Pumili ng hindi bababa sa isang seksyon na ii-import</string>
     <string name="settings_backup_imported">Na-import ang configuration: %1$s</string>
+    <string name="settings_backup_providers_imported_for_references">Na-import pa rin ang mga provider dahil tumutukoy sa kanila ang naka-save na library at history.</string>
     <string name="settings_update_check_failed">Hindi nakapag-check ng mga update</string>
     <string name="settings_update_download_failed">Hindi na-download ang update</string>
     <string name="settings_update_install_failed">Hindi na-install ang update. Kung hihingin ng Android, payagan ang mga pag-install mula sa app na ito at subukan ulit.</string>

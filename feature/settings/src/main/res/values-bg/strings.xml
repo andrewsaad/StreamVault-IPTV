@@ -1095,6 +1095,7 @@
     <string name="settings_backup_import_failed">Резервното копие не можа да бъде импортирано</string>
     <string name="settings_backup_select_section">Изберете поне един раздел за импортиране</string>
     <string name="settings_backup_imported">Конфигурацията е импортирана: %1$s</string>
+    <string name="settings_backup_providers_imported_for_references">Доставчиците бяха импортирани въпреки това, защото запазената библиотека и историята препращат към тях.</string>
     <string name="settings_update_check_failed">Проверката за актуализации не бе успешна</string>
     <string name="settings_update_download_failed">Актуализацията не можа да бъде изтеглена</string>
     <string name="settings_update_install_failed">Актуализацията не можа да бъде инсталирана. Ако Android поиска, разрешете инсталирането от това приложение и опитайте отново.</string>

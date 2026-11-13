@@ -1097,6 +1097,7 @@
     <string name="settings_backup_import_failed">Δεν ήταν δυνατή η εισαγωγή του αντιγράφου ασφαλείας</string>
     <string name="settings_backup_select_section">Επιλέξτε τουλάχιστον μία ενότητα για εισαγωγή</string>
     <string name="settings_backup_imported">Η διαμόρφωση εισήχθη: %1$s</string>
+    <string name="settings_backup_providers_imported_for_references">Οι πάροχοι εισήχθησαν παρ᾽ όλα αυτά, επειδή η αποθηκευμένη βιβλιοθήκη και το ιστορικό αναφέρονται σε αυτούς.</string>
     <string name="settings_update_check_failed">Ο έλεγχος για ενημερώσεις απέτυχε</string>
     <string name="settings_update_download_failed">Δεν ήταν δυνατή η λήψη της ενημέρωσης</string>
     <string name="settings_update_install_failed">Δεν ήταν δυνατή η εγκατάσταση της ενημέρωσης. Αν το ζητήσει το Android, επιτρέψτε τις εγκαταστάσεις από αυτήν την εφαρμογή και δοκιμάστε ξανά.</string>

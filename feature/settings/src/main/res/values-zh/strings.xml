@@ -1093,6 +1093,7 @@
     <string name="settings_backup_import_failed">无法导入备份</string>
     <string name="settings_backup_select_section">请至少选择一个要导入的部分</string>
     <string name="settings_backup_imported">配置已导入：%1$s</string>
+    <string name="settings_backup_providers_imported_for_references">由于已保存的媒体库和历史记录引用了提供商，因此仍然导入了提供商。</string>
     <string name="settings_update_check_failed">æ— æ³•æ£€æŸ¥æ›´æ–°</string>
     <string name="settings_update_download_failed">æ— æ³•ä¸‹è½½æ›´æ–°</string>
     <string name="settings_update_install_failed">无法安装更新。如果 Android 提示，请允许从此应用安装，然后重试。</string>

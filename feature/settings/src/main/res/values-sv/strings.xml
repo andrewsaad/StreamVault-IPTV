@@ -1097,6 +1097,7 @@
     <string name="settings_backup_import_failed">Det gick inte att importera säkerhetskopian</string>
     <string name="settings_backup_select_section">Välj minst ett avsnitt att importera</string>
     <string name="settings_backup_imported">Konfigurationen har importerats: %1$s</string>
+    <string name="settings_backup_providers_imported_for_references">Leverantörerna importerades ändå, eftersom det sparade biblioteket och historiken refererar till dem.</string>
     <string name="settings_update_check_failed">Det gick inte att söka efter uppdateringar</string>
     <string name="settings_update_download_failed">Det gick inte att hämta uppdateringen</string>
     <string name="settings_update_install_failed">Det gick inte att installera uppdateringen. Om Android frågar tillåter du installationer från den här appen och försöker igen.</string>

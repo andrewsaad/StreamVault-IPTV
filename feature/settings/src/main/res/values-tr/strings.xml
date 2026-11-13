@@ -1097,6 +1097,7 @@
     <string name="settings_backup_import_failed">Yedek içe aktarılamadı</string>
     <string name="settings_backup_select_section">İçe aktarmak için en az bir bölüm seçin</string>
     <string name="settings_backup_imported">Yapılandırma içe aktarıldı: %1$s</string>
+    <string name="settings_backup_providers_imported_for_references">Kayıtlı kitaplık ve geçmiş sağlayıcılara başvurduğu için sağlayıcılar yine de içe aktarıldı.</string>
     <string name="settings_update_check_failed">Güncellemeler denetlenemedi</string>
     <string name="settings_update_download_failed">Güncelleme indirilemedi</string>
     <string name="settings_update_install_failed">Güncelleme yüklenemedi. Android isterse bu uygulamadan yüklemeye izin verip tekrar deneyin.</string>

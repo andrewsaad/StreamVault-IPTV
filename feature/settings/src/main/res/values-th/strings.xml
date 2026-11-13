@@ -1092,6 +1092,7 @@
     <string name="settings_backup_import_failed">นำเข้าข้อมูลสำรองไม่สำเร็จ</string>
     <string name="settings_backup_select_section">เลือกอย่างน้อยหนึ่งส่วนเพื่อนำเข้า</string>
     <string name="settings_backup_imported">นำเข้าการกำหนดค่าแล้ว: %1$s</string>
+    <string name="settings_backup_providers_imported_for_references">นำเข้าผู้ให้บริการด้วย เนื่องจากคลังที่บันทึกไว้และประวัติอ้างอิงถึงผู้ให้บริการเหล่านั้น</string>
     <string name="settings_update_check_failed">ตรวจสอบการอัปเดตไม่สำเร็จ</string>
     <string name="settings_update_download_failed">ดาวน์โหลดการอัปเดตไม่สำเร็จ</string>
     <string name="settings_update_install_failed">ติดตั้งการอัปเดตไม่สำเร็จ หาก Android ถาม ให้อนุญาตการติดตั้งจากแอปนี้แล้วลองอีกครั้ง</string>

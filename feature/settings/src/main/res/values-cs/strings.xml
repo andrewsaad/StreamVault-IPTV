@@ -1103,6 +1103,7 @@
     <string name="settings_backup_import_failed">Zálohu se nepodařilo importovat</string>
     <string name="settings_backup_select_section">Vyberte alespoň jednu sekci k importu</string>
     <string name="settings_backup_imported">Konfigurace byla importována: %1$s</string>
+    <string name="settings_backup_providers_imported_for_references">Poskytovatelé byli přesto importováni, protože na ně odkazují uložená knihovna a historie.</string>
     <string name="settings_update_check_failed">Kontrola aktualizací se nezdařila</string>
     <string name="settings_update_download_failed">Aktualizaci se nepodařilo stáhnout</string>
     <string name="settings_update_install_failed">Aktualizaci se nepodařilo nainstalovat. Pokud o to Android požádá, povolte instalace z této aplikace a zkuste to znovu.</string>
