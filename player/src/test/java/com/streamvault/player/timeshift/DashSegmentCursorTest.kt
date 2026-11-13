@@ -42,6 +42,38 @@ class DashSegmentCursorTest {
         assertThat(cursor.poll(segments(0L..3L))).containsExactly(0L, 1L, 2L, 3L).inOrder()
     }
 
+    /** SegmentTimeline refs whose `$Time$` values are in [timescale] ticks, 2 s apart. */
+    private fun timeline(timescale: Long, firstSecond: Long, lastSecond: Long) =
+        (firstSecond..lastSecond step 2L).map { second ->
+            val t = second * timescale
+            DashMediaSegmentRef(uri = "seg-$t.m4s", durationMs = 2_000L, position = t, startMs = second * 1_000L)
+        }
+
+    @Test
+    fun `a timescale change between polls keeps capturing new segments`() {
+        val cursor = DashSegmentCursor()
+        assertThat(cursor.poll(timeline(timescale = 90_000L, firstSecond = 100L, lastSecond = 120L))).hasSize(11)
+
+        // The same stream now advertises $Time$ in milliseconds: raw values drop from about 10.8 million
+        // to about 120 thousand while the media time keeps going. Only the two new segments are taken.
+        assertThat(cursor.poll(timeline(timescale = 1_000L, firstSecond = 104L, lastSecond = 124L)))
+            .containsExactly(122_000L, 124_000L)
+            .inOrder()
+        assertThat(cursor.poll(timeline(timescale = 1_000L, firstSecond = 108L, lastSecond = 128L)))
+            .containsExactly(126_000L, 128_000L)
+            .inOrder()
+    }
+
+    @Test
+    fun `the same segment rounded to a different millisecond start is not taken twice`() {
+        val cursor = DashSegmentCursor()
+        cursor.poll(listOf(DashMediaSegmentRef("a.m4s", durationMs = 2_000L, position = 9_000_045L, startMs = 100_000L)))
+
+        assertThat(
+            cursor.poll(listOf(DashMediaSegmentRef("b.m4s", durationMs = 2_000L, position = 100_001L, startMs = 100_001L)))
+        ).isEmpty()
+    }
+
     @Test
     fun `an empty manifest changes nothing`() {
         val cursor = DashSegmentCursor()

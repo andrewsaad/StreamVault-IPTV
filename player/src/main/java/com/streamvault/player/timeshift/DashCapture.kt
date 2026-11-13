@@ -93,35 +93,45 @@ internal data class DashMediaSegmentRef(
  * Remembers the newest DASH media segment already taken, like the HLS lastProcessedSequence, so a
  * stale or lagging manifest cannot make the capture fetch older segments again and append them out
  * of order. It holds two numbers, so it stays bounded however long the session runs.
+ *
+ * The mark is the segment start in milliseconds, not the raw `$Time$`/`$Number$` [position]: raw
+ * `$Time$` values are in the representation's timescale, which can change between polls (90000 to
+ * 1000, say), and a raw mark would then sit far above every new segment and skip them all.
  */
 internal class DashSegmentCursor(private val restartGapMs: Long = DASH_RESTART_GAP_MS) {
-    private var lastPosition: Long? = null
-    private var lastStartMs = 0L
+    private var lastStartMs: Long? = null
+    private var lastDurationMs = 0L
 
     /**
-     * Call once per manifest, before [take]. When every advertised segment is far behind the mark
-     * (more than [restartGapMs]), the stream restarted or began a new period: the mark is cleared so
-     * the new segments are captured. A manifest only slightly behind is a lagging copy and is ignored.
+     * Call once per manifest, before [take]. When every advertised segment starts more than
+     * [restartGapMs] before the mark, the stream restarted or began a new period: the mark is
+     * cleared so the new segments are captured. A manifest only slightly behind is a lagging copy
+     * and is ignored.
      */
     fun onManifest(advertised: List<DashMediaSegmentRef>) {
-        val mark = lastPosition ?: return
-        val newest = advertised.maxByOrNull { it.position } ?: return
-        if (newest.position < mark && lastStartMs - newest.startMs > restartGapMs) {
-            lastPosition = null
+        val mark = lastStartMs ?: return
+        val newest = advertised.maxByOrNull { it.startMs } ?: return
+        if (mark - newest.startMs > restartGapMs) {
+            lastStartMs = null
         }
     }
 
-    /** True when [segment] is newer than every segment taken so far; the mark then moves to it. */
+    /**
+     * True when [segment] is newer than every segment taken so far; the mark then moves to it. A
+     * segment counts as newer when it starts more than half the last segment's duration past the
+     * mark, so the same segment re-advertised in another timescale (its millisecond start rounded
+     * one way or the other) is not taken twice.
+     */
     fun take(segment: DashMediaSegmentRef): Boolean {
-        val mark = lastPosition
-        if (mark != null && segment.position <= mark) return false
-        lastPosition = segment.position
+        val mark = lastStartMs
+        if (mark != null && segment.startMs <= mark + lastDurationMs / 2) return false
         lastStartMs = segment.startMs
+        lastDurationMs = segment.durationMs
         return true
     }
 
     companion object {
-        /** A manifest a minute or more behind what was captured is a restart, not a lagging copy. */
+        /** A manifest more than a minute behind what was captured is a restart, not a lagging copy. */
         const val DASH_RESTART_GAP_MS = 60_000L
     }
 }
