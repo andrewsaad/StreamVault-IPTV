@@ -114,6 +114,7 @@ class LivePreviewHandoffManager @Inject constructor() {
         source: PreviewHandoffSource = PreviewHandoffSource.HOME
     ) {
         pendingReverseReleaseJob?.cancel()
+        val previous = _reverseSessionFlow.value
         _reverseSessionFlow.value = LivePreviewHandoffSession(
             engine = engine,
             channelId = channel.id,
@@ -122,6 +123,10 @@ class LivePreviewHandoffManager @Inject constructor() {
             pendingFullscreen = false,
             source = source
         )
+        // An unclaimed earlier handoff would otherwise be overwritten and its engine leaked.
+        if (previous != null && previous.engine !== engine) {
+            previous.engine.release()
+        }
         pendingReverseReleaseJob = scope.launch {
             delay(PENDING_FULLSCREEN_TIMEOUT_MS)
             val stale = _reverseSessionFlow.value

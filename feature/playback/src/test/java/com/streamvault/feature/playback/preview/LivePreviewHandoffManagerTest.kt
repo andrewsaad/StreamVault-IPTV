@@ -189,6 +189,35 @@ class LivePreviewHandoffManagerTest {
     }
 
     @Test
+    fun `new reverse handoff releases the unclaimed previous engine only`() = runTest(testDispatcher) {
+        val manager = LivePreviewHandoffManager()
+        val first = mock<PlayerEngine>()
+        val second = mock<PlayerEngine>()
+        val channel = channel(id = 1L, providerId = 2L)
+        val streamInfo = StreamInfo(url = "https://example.com/live.m3u8", title = channel.name)
+
+        manager.beginReverseHandoff(channel, streamInfo, first, PreviewHandoffSource.HOME)
+        manager.beginReverseHandoff(channel, streamInfo, second, PreviewHandoffSource.GUIDE)
+
+        verify(first).release()
+        verify(second, never()).release()
+        assertThat(manager.reverseSessionFlow.value?.engine).isSameInstanceAs(second)
+    }
+
+    @Test
+    fun `re-registering the same engine as reverse handoff does not release it`() = runTest(testDispatcher) {
+        val manager = LivePreviewHandoffManager()
+        val engine = mock<PlayerEngine>()
+        val channel = channel(id = 1L, providerId = 2L)
+        val streamInfo = StreamInfo(url = "https://example.com/live.m3u8", title = channel.name)
+
+        manager.beginReverseHandoff(channel, streamInfo, engine, PreviewHandoffSource.HOME)
+        manager.beginReverseHandoff(channel, streamInfo, engine, PreviewHandoffSource.HOME)
+
+        verify(engine, never()).release()
+    }
+
+    @Test
     fun `consuming reverse handoff prevents engine release`() = runTest(testDispatcher) {
         val manager = LivePreviewHandoffManager()
         val engine = mock<PlayerEngine>()
