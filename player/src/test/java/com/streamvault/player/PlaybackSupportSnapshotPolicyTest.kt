@@ -18,9 +18,37 @@ class PlaybackSupportSnapshotPolicyTest {
 
     @Test
     fun `engine with a stream writes unless a low memory device is still starting`() {
-        assertThat(shouldWritePlaybackSupportSnapshot(true, false, true, false)).isTrue()
-        assertThat(shouldWritePlaybackSupportSnapshot(true, true, true, false)).isFalse()
-        assertThat(shouldWritePlaybackSupportSnapshot(true, true, true, true)).isTrue()
-        assertThat(shouldWritePlaybackSupportSnapshot(true, true, false, false)).isTrue()
+        assertThat(
+            shouldWritePlaybackSupportSnapshot(
+                hasStream = true,
+                isLowMemoryDevice = false,
+                isBuffering = true,
+                hasFirstFrame = false
+            )
+        ).isTrue()
+        assertThat(
+            shouldWritePlaybackSupportSnapshot(
+                hasStream = true,
+                isLowMemoryDevice = true,
+                isBuffering = true,
+                hasFirstFrame = false
+            )
+        ).isFalse()
+        assertThat(
+            shouldWritePlaybackSupportSnapshot(
+                hasStream = true,
+                isLowMemoryDevice = true,
+                isBuffering = true,
+                hasFirstFrame = true
+            )
+        ).isTrue()
+        assertThat(
+            shouldWritePlaybackSupportSnapshot(
+                hasStream = true,
+                isLowMemoryDevice = true,
+                isBuffering = false,
+                hasFirstFrame = false
+            )
+        ).isTrue()
     }
 }
