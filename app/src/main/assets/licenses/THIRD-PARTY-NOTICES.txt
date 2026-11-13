@@ -36,6 +36,12 @@ License text: FFmpeg-LGPL-2.1.txt and GPL-2.0.txt.
 Corresponding source: https://github.com/FFmpeg/FFmpeg/tree/ba69be84a1ceabfb39127831ad8da0fd7cb471f3
 The Media3 decoder README at the source revision above describes building the FFmpeg libraries and decoder AAR. Build provenance is recorded at https://github.com/Davidona/StreamVault-IPTV/blob/master/player/libs/media3-decoder-ffmpeg-1.11.0.properties.
 
+Surround AC-3 encoder library (libsvac3.so)
+Contains FFmpeg 7.1.1 libavcodec and libavutil, statically linked and configured with only the AC-3 encoder (no --enable-gpl, no --enable-nonfree).
+License target: GNU Lesser General Public License 2.1 or later.
+License text: FFmpeg-LGPL-2.1.txt and GPL-2.0.txt.
+Corresponding source: https://ffmpeg.org/releases/ffmpeg-7.1.1.tar.xz (SHA-256 733984395e0dbbe5c046abda2dc49a5544e7e0e1e2366bba849222ae9e3a03b1) and the JNI wrapper and build script at https://github.com/Davidona/StreamVault-IPTV/tree/master/surround-upmix/native.
+
 libtorrent4j 2.0.6-26
 License: MIT.
 License text: libtorrent4j-MIT.txt.

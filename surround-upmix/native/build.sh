@@ -6,6 +6,9 @@
 set -euo pipefail
 
 FFMPEG_VERSION=7.1.1
+# SHA-256 of https://ffmpeg.org/releases/ffmpeg-7.1.1.tar.xz, whose .asc signature verifies against the FFmpeg
+# release key FCF9 86EA 15E6 E293 A564 4F10 B432 2F04 D676 58D8. Change both lines together.
+FFMPEG_SHA256=733984395e0dbbe5c046abda2dc49a5544e7e0e1e2366bba849222ae9e3a03b1
 API=25  # = minSdk
 HERE="$(cd "$(dirname "$0")" && pwd)"
 WORK="${WORK:-$HOME/svac3-build}"
@@ -22,6 +25,11 @@ cd "$WORK"
 TARBALL="${FFMPEG_TARBALL:-$WORK/ffmpeg-$FFMPEG_VERSION.tar.xz}"
 if [ ! -d "ffmpeg-$FFMPEG_VERSION" ]; then
   [ -f "$TARBALL" ] || curl -fsSL -o "$TARBALL" "https://ffmpeg.org/releases/ffmpeg-$FFMPEG_VERSION.tar.xz"
+  # Never build from an unverified download: a wrong hash stops the build before anything is extracted.
+  if ! echo "$FFMPEG_SHA256  $TARBALL" | sha256sum -c --status -; then
+    echo "SHA-256 mismatch for $TARBALL (expected $FFMPEG_SHA256); refusing to build" >&2
+    exit 1
+  fi
   tar xf "$TARBALL"
 fi
 
