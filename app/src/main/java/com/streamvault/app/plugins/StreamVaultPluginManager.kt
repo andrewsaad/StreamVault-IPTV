@@ -318,6 +318,10 @@ class StreamVaultPluginManager @Inject constructor(
         }
 
         prefs.edit().putBoolean(enabledKey(plugin.owner), enabled).apply()
+        if (enabled) {
+            // Enabling is the user's trust decision: remember who signed the plugin they trusted.
+            pinCurrentSigner(plugin.owner.packageName)
+        }
         if (enabled && plugin.manifest.hasCapability(StreamVaultPluginContract.CAPABILITY_PROVIDER_M3U)) {
             syncPluginProvider(plugin, onProgress)?.let { return@mutation it }
         } else if (!enabled) {
@@ -1129,7 +1133,28 @@ class StreamVaultPluginManager @Inject constructor(
     }
 
     private fun isEnabled(plugin: InstalledStreamVaultPlugin): Boolean =
-        prefs.getBoolean(enabledKey(plugin.owner), false)
+        prefs.getBoolean(enabledKey(plugin.owner), false) && isSignerTrusted(plugin.owner.packageName)
+
+    /**
+     * An enabled plugin stays enabled only while its package is signed by the key the user enabled. A replacement
+     * app under the same package name is treated as disabled (its provider and settings are kept) until the user
+     * enables it again.
+     */
+    private fun isSignerTrusted(packageName: String): Boolean {
+        val pinned = PluginSignerPin.decode(prefs.getString(signerPinKey(packageName), null))
+        return when (PluginSignerPin.decide(pinned, PluginSignerPin.read(context, packageName))) {
+            PluginSignerDecision.TRUSTED -> true
+            PluginSignerDecision.PIN_CURRENT -> pinCurrentSigner(packageName)
+            PluginSignerDecision.UNTRUSTED -> false
+        }
+    }
+
+    private fun pinCurrentSigner(packageName: String): Boolean {
+        val signers = PluginSignerPin.read(context, packageName)?.current?.takeIf { it.isNotEmpty() } ?: return false
+        return prefs.edit().putString(signerPinKey(packageName), PluginSignerPin.encode(signers)).commit()
+    }
+
+    private fun signerPinKey(packageName: String): String = "$SIGNER_PIN_PREFIX$packageName"
 
     /** Legacy state is safe to migrate only when no installed service shares its manifest ID. */
     private fun migrateLegacyEnabledStates(plugins: List<InstalledStreamVaultPlugin>) {
@@ -1194,6 +1219,7 @@ class StreamVaultPluginManager @Inject constructor(
         const val PLAYBACK_HANDLER_TIMEOUT_MILLIS = 5_000L
         const val PLAYBACK_TOTAL_TIMEOUT_MILLIS = 5_000L
         const val PENDING_MUTATION_PREFIX = "pending."
+        const val SIGNER_PIN_PREFIX = "signer."
         const val MAX_PLUGIN_APK_BYTES = 256L * 1024 * 1024
     }
 }

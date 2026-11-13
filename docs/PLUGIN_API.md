@@ -39,6 +39,13 @@ Plugins can be installed from:
 - Any manual Android package install. StreamVault detects it after refreshing the
   Plugins screen.
 
+When the user enables a plugin, StreamVault records the SHA-256 of the plugin
+package's signing certificate. If the package is later replaced by an APK signed
+with a different key, the plugin is treated as disabled (its provider and
+settings are kept) until the user enables it again. Key rotation with APK
+Signature Scheme v3 is accepted when the rotated key's lineage includes the
+recorded certificate.
+
 ## Manifest
 
 StreamVault first asks the plugin service for its manifest. As a fallback, it
