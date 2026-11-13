@@ -161,9 +161,9 @@ internal fun parseDashManifest(
                 .let { resolveDashUrl(baseUrl, it) }
             DashMediaSegmentRef(
                 uri = uri,
-                durationMs = d * 1000L / ts,
+                durationMs = dashTicksToMs(d, ts),
                 position = t,
-                startMs = t * 1000L / ts
+                startMs = dashTicksToMs(t, ts)
             )
         }
     } else if (rep.segmentDuration > 0L) {
@@ -197,6 +197,14 @@ internal fun parseDashManifest(
         mediaSegments = mediaSegments
     )
 }
+
+/**
+ * Converts [ticks] of a [timescale] to milliseconds without overflowing. `ticks * 1000 / timescale`
+ * overflows a Long once ticks pass about 9.2e15, which an epoch-based `$Time$` at a 10 MHz
+ * timescale already does (about 1.7e16 today).
+ */
+internal fun dashTicksToMs(ticks: Long, timescale: Long): Long =
+    ticks / timescale * 1000L + ticks % timescale * 1000L / timescale
 
 private fun resolveDashUrl(baseUrl: String, value: String): String =
     runCatching { URI(baseUrl).resolve(value).toString() }.getOrDefault(value)

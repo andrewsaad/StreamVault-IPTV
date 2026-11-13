@@ -228,4 +228,6 @@ dependencies {
     testImplementation(libs.coroutines.test)
     testImplementation(libs.okhttp.mockwebserver)
     testImplementation(libs.robolectric)
+    // kxml2: JVM XmlPullParser implementation for the DASH manifest parser unit tests
+    testImplementation(libs.kxml2)
 }
