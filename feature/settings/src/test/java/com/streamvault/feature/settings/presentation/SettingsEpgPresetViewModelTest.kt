@@ -251,14 +251,14 @@ class SettingsEpgPresetViewModelTest {
         actions.updateEpgPresetAddress(
             scope = this,
             presetId = EpgPresetCatalog.BEIN,
-            sourceKey = "BEIN1",
+            sourceKey = "AE1",
             url = "  https://mirror.example/bein.xml ",
             onSuccess = { succeeded = true },
         )
         advanceUntilIdle()
 
         assertThat(manager.addressCalls)
-            .containsExactly(Triple(EpgPresetCatalog.BEIN, "BEIN1", "  https://mirror.example/bein.xml "))
+            .containsExactly(Triple(EpgPresetCatalog.BEIN, "AE1", "  https://mirror.example/bein.xml "))
         // Review nit 7: the manager imports only the edited file, so Settings must not refresh them all.
         assertThat(manager.refreshCalls).isEmpty()
         assertThat(succeeded).isTrue()
@@ -270,7 +270,7 @@ class SettingsEpgPresetViewModelTest {
         val actions = SettingsEpgActions(mock(), manager, MutableStateFlow(SettingsUiState()))
         var failed = false
 
-        actions.updateEpgPresetAddress(this, EpgPresetCatalog.BEIN, "BEIN1", "   ", onError = { failed = true })
+        actions.updateEpgPresetAddress(this, EpgPresetCatalog.BEIN, "AE1", "   ", onError = { failed = true })
         advanceUntilIdle()
 
         assertThat(manager.addressCalls).isEmpty()
@@ -284,7 +284,7 @@ class SettingsEpgPresetViewModelTest {
         val actions = SettingsEpgActions(mock(), manager, uiState)
         var failed = false
 
-        actions.updateEpgPresetAddress(this, EpgPresetCatalog.BEIN, "BEIN1", "http://x", onError = { failed = true })
+        actions.updateEpgPresetAddress(this, EpgPresetCatalog.BEIN, "AE1", "http://x", onError = { failed = true })
         advanceUntilIdle()
 
         assertThat(uiState.value.userMessage).isEqualTo("Address not allowed")

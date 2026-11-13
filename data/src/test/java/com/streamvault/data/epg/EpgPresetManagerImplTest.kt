@@ -434,7 +434,7 @@ class EpgPresetManagerImplTest {
 
     @Test
     fun `reconcile_releasesAnOwnedBein1RowTheCatalogNoLongerLists`() = runTest {
-        // BEIN1 labels Qatar local time as +0100, so its times run 2 hours late; the catalog dropped it.
+        // BEIN1 appears to label Qatar local time as +0100, so its times run 2 hours late; the catalog dropped it.
         manager.setEnabled(EpgPresetCatalog.BEIN, true)
         val old = repo.addSource("epgshare01 BEIN1", "https://epgshare01.online/epgshare01/epg_ripper_BEIN1.xml.gz").getOrNull()!!
         repo.assignSourceToProvider(1L, old.id, priority = 9)
