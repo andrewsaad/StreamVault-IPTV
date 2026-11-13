@@ -4,6 +4,7 @@ import androidx.room.Room
 import com.google.common.truth.Truth.assertThat
 import com.streamvault.data.local.entity.FavoriteEntity
 import com.streamvault.data.local.entity.ProviderEntity
+import com.streamvault.domain.model.ContentType
 import com.streamvault.domain.model.ProviderStatus
 import com.streamvault.domain.model.ProviderType
 import kotlinx.coroutines.flow.first
@@ -74,7 +75,7 @@ class FavoriteStaleCleanupDaoTest {
         )
         // No channel row exists for this content id, so the favorite is stale.
         database.favoriteDao().insert(
-            FavoriteEntity(providerId = providerId, contentId = 900L + providerId, contentType = "LIVE", position = 0)
+            FavoriteEntity(providerId = providerId, contentId = 900L + providerId, contentType = ContentType.LIVE, position = 0)
         )
     }
 

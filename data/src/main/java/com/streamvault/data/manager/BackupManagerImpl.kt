@@ -6019,13 +6019,6 @@ private data class RecordingUrlConflictKey(
     val streamUrl: String
 )
 
-/**
- * A v14+ backup with provider snapshots always restores its providers, even when Providers is unticked,
- * because saved-library and history references resolve against them. The result tells the user.
- */
-internal fun providersForcedByBackupReferences(backupData: BackupData, plan: BackupImportPlan): Boolean =
-    !plan.importProviders && backupData.version >= 14 && backupData.providerSnapshots != null
-
 internal fun countScheduledRecordingConflicts(
     incoming: List<ScheduledRecordingBackup>,
     providersByIdentity: Map<Triple<String, String, String>, Provider>,
@@ -6982,3 +6975,10 @@ private val SCHEDULED_RECORDING_LIST_TYPE: Type = object : TypeToken<List<Schedu
 private val CHANNEL_PREFERENCE_ENTITY_LIST_TYPE: Type = object : TypeToken<List<ChannelPreferenceEntity>>() {}.type
 private val PLAYBACK_QUALITY_PREFERENCE_ENTITY_LIST_TYPE: Type =
     object : TypeToken<List<PlaybackQualityPreferenceEntity>>() {}.type
+
+/**
+ * A v14+ backup with provider snapshots always restores its providers, even when Providers is unticked,
+ * because saved-library and history references resolve against them. The result tells the user.
+ */
+internal fun providersForcedByBackupReferences(backupData: BackupData, plan: BackupImportPlan): Boolean =
+    !plan.importProviders && backupData.version >= 14 && backupData.providerSnapshots != null
