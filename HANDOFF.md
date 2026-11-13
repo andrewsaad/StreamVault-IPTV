@@ -16,7 +16,7 @@ Findings go in the repo (Issues disabled on the fork); push to the fork only, no
 
 ## Blockers
 - PC memory: Windows kernel paged pool 5.7 GB made the harness stop about ten Gradle runs. Andrew is restarting the PC. After it, check `Pool Paged Bytes` (< 2 GB); if it climbs again look for a leaking driver.
-- The last three agent fixes (log sanitizer and messages 447cd81a/722328b2, W4 follow-up 496af634/40fd112b, 503 hardening 8ba13b8d/1fc4c892) have NEVER compiled. The full gate on this tip has not completed.
+- Gate on tip 108879da (2026-11-13, desktop): `:data` 2,233 tests 0 failed; `:feature:settings` and `:domain:test` BUILD SUCCESSFUL; `:app` tests 224 passed and compiled (2026-11-12, older tip). Not run on this tip: lint and `:app:assembleDebug` (step C hung at `:data:test` for 11 h and was killed). `:player` `IdleConnectionResetRecoveryTest` (resume offset 532,480 vs 1,000,000) also fails on fork `master` 68b2ca4a, so it is not from this branch.
 
 ## Next priorities, in order
 1. Restart the keep-awake loop for the game room TV (192.168.68.150:38189): scratchpad `keepalive_gameroom.ps1`, or send a wake key every 45 s. The in-app scan stalls when it sleeps.
@@ -27,8 +27,8 @@ Findings go in the repo (Issues disabled on the fork); push to the fork only, no
 6. Push `feat/channel-health` and update `feat/epg-presets` on the fork once the gate passes.
 
 ## Loose ends
-- In-app scan reached channel id 736 of 5,537 with 5 stored failures (two-failed-days rule: review suggestions after a second day). PC scan is off at 1,072 channels. Delete `secret.md` (gitignored, holds the provider login) when the scans are done.
+- In-app scan reached channel id 736 of 5,537 with 5 stored failures (two-failed-days rule: review suggestions after a second day). PC scan finished 2026-11-11 (5,534 channels: OK 3212, EMPTY 1543, UNCLEAR 747, DEAD 32). The 2026-11-12 re-probe is NOT usable: it rescanned all channels while Gradle ran on the desktop, 1,548 answers were network errors, 487 first-scan OK became EMPTY and 178 EMPTY became OK, so EMPTY looks like a provider artifact. Hide nothing from either scan; redo a clean re-probe on an idle desktop (one-account rule). Delete `secret.md` (gitignored, holds the provider login) when the scans are done.
 - Open tasks: #30, #33 (Fire TV), #31, #32, #38, #36 (deferred), #49-#54.
-- Fix the older Norwegian line `values-nb` `settings_auto_sync_explanation` (replacement character). Update FINDINGS.md statuses for W4/W33 after the gate.
+- Update FINDINGS.md statuses for W4/W33 after the gate.
 - Stale worktrees under `.claude/worktrees/` and `C:\dev\sv-*` are not cleaned up (needs Andrew's OK; some hold unmerged branches).
 - The Settings press route for SC-004 and the beIN preset timing (F13) are unmeasured; both need the manual-mappings risk resolved.
