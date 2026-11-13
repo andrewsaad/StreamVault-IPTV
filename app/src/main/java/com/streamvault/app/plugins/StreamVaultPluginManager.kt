@@ -363,15 +363,7 @@ class StreamVaultPluginManager @Inject constructor(
         val target = pluginApkFile("plugin-${System.currentTimeMillis()}.apk")
         runPluginCatching {
             target.parentFile?.mkdirs()
-            val request = Request.Builder().url(normalizedUrl).build()
-            okHttpClient.newCall(request).useCancellableResponse { response ->
-                if (!response.isSuccessful) error("HTTP ${response.code}")
-                val body = response.body ?: error("Empty response")
-                if (body.contentLength() > MAX_PLUGIN_APK_BYTES) error("Plugin APK exceeds size limit")
-                target.outputStream().use { output ->
-                    body.byteStream().use { input -> copyAtMost(input, output, MAX_PLUGIN_APK_BYTES) }
-                }
-            }
+            downloadPluginApk(okHttpClient, normalizedUrl, target, MAX_PLUGIN_APK_BYTES)
         }.onFailure { error ->
             target.delete()
             return@withContext Result.error("Could not download plugin APK", error)
@@ -1256,6 +1248,25 @@ internal fun isHttpsPluginUrl(value: String): Boolean =
         val parsed = URI(value)
         parsed.scheme.equals("https", ignoreCase = true) && !parsed.host.isNullOrBlank()
     }.getOrDefault(false)
+
+/**
+ * Downloads a plugin APK from an https [url] into [target]. The shared client follows redirects across schemes
+ * and the app allows cleartext, so this call refuses scheme-changing redirects: an https link that redirects to
+ * http fails instead of fetching code over cleartext.
+ */
+internal suspend fun downloadPluginApk(client: OkHttpClient, url: String, target: File, maxBytes: Long) {
+    val httpsOnlyClient = client.newBuilder().followSslRedirects(false).build()
+    val request = Request.Builder().url(url).build()
+    httpsOnlyClient.newCall(request).useCancellableResponse { response ->
+        if (!response.request.url.isHttps) throw IOException("Plugin download left https")
+        if (!response.isSuccessful) throw IOException("HTTP ${response.code}")
+        val body = response.body ?: throw IOException("Empty response")
+        if (body.contentLength() > maxBytes) throw IOException("Plugin APK exceeds size limit")
+        target.outputStream().use { output ->
+            body.byteStream().use { input -> copyAtMost(input, output, maxBytes) }
+        }
+    }
+}
 
 /** Copies [input] to [output], failing once more than [maxBytes] arrive, so a server cannot fill the device. */
 internal fun copyAtMost(input: InputStream, output: OutputStream, maxBytes: Long): Long {
