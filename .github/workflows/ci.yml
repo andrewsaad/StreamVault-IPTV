@@ -1,0 +1,51 @@
+name: Android CI
+
+# Runs the same unit-test and lint gate as the release workflow on every pull request, so a change is checked
+# before it merges rather than only when a release is cut. Uses pull_request (never pull_request_target): fork
+# PRs get a read-only token and no secrets.
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: gradle
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Test CI helper scripts
+        shell: bash
+        run: |
+          for test_script in tools/tests/*-test.sh; do
+            bash "$test_script"
+          done
+
+      - name: Run unit tests and lint
+        run: ./gradlew --console=plain testDebugUnitTest :app:lintDebug :data:lintDebug :player:lintDebug verifyLintBaseline
