@@ -292,4 +292,5 @@
     <string name="nav_extensions">Laajennukset</string>
     <string name="nav_sports">Urheilu</string>
     <string name="plugin_install_url_requires_https">Laajennusten latauslinkkien on alettava merkeillä https://</string>
+    <string name="plugin_enable_signer_unreadable">Laajennuksen allekirjoitusavainta ei voitu lukea, joten laajennusta ei otettu käyttöön</string>
 </resources>

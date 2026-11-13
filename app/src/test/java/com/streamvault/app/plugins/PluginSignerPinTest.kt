@@ -49,6 +49,25 @@ class PluginSignerPinTest {
     }
 
     @Test
+    fun `pinning saves the current signers only`() {
+        val saved = mutableListOf<String>()
+        val signers = PluginSigners(current = setOf(rotatedKey), past = setOf(pluginKey, rotatedKey))
+
+        assertThat(PluginSignerPin.pin(signers) { saved += it; true }).isTrue()
+        assertThat(saved).containsExactly(PluginSignerPin.encode(setOf(rotatedKey)))
+    }
+
+    @Test
+    fun `pinning fails when the signer is unreadable or the save fails`() {
+        val saved = mutableListOf<String>()
+
+        assertThat(PluginSignerPin.pin(null) { saved += it; true }).isFalse()
+        assertThat(PluginSignerPin.pin(PluginSigners(emptySet())) { saved += it; true }).isFalse()
+        assertThat(saved).isEmpty()
+        assertThat(PluginSignerPin.pin(PluginSigners(setOf(pluginKey))) { false }).isFalse()
+    }
+
+    @Test
     fun `pin round-trips through its stored form`() {
         val stored = PluginSignerPin.encode(setOf(rotatedKey, pluginKey))
 

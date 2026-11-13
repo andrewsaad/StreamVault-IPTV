@@ -292,4 +292,5 @@
     <string name="nav_extensions">הרחבות</string>
     <string name="nav_sports">ספורט</string>
     <string name="plugin_install_url_requires_https">קישורים להורדת תוספים חייבים להתחיל ב-https://</string>
+    <string name="plugin_enable_signer_unreadable">לא ניתן היה לקרוא את מפתח החתימה של התוסף, ולכן הוא לא הופעל</string>
 </resources>

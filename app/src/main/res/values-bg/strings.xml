@@ -348,4 +348,5 @@
     <string name="nav_extensions">Разширения</string>
     <string name="nav_sports">Спорт</string>
     <string name="plugin_install_url_requires_https">Връзките за изтегляне на добавки трябва да започват с https://</string>
+    <string name="plugin_enable_signer_unreadable">Ключът за подписване на добавката не можа да бъде прочетен, затова тя не беше включена</string>
 </resources>

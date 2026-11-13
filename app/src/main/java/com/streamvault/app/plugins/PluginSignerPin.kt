@@ -37,6 +37,15 @@ internal object PluginSignerPin {
         else -> PluginSignerDecision.UNTRUSTED
     }
 
+    /**
+     * Stores the current signers of [signers] through [save]. Returns false, without saving, when the signers could
+     * not be read, and false when [save] fails, so the caller never treats an unpinned plugin as trusted.
+     */
+    fun pin(signers: PluginSigners?, save: (String) -> Boolean): Boolean {
+        val current = signers?.current?.takeIf { it.isNotEmpty() } ?: return false
+        return save(encode(current))
+    }
+
     fun encode(digests: Set<String>): String = digests.sorted().joinToString(",")
 
     fun decode(value: String?): Set<String> =

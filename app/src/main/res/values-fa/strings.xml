@@ -348,4 +348,5 @@
     <string name="nav_extensions">افزونه‌ها</string>
     <string name="nav_sports">ورزش</string>
     <string name="plugin_install_url_requires_https">پیوندهای دانلود افزونه باید با https:// شروع شوند</string>
+    <string name="plugin_enable_signer_unreadable">کلید امضای افزونه خوانده نشد، بنابراین افزونه روشن نشد</string>
 </resources>

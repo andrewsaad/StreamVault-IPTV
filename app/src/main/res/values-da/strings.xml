@@ -292,4 +292,5 @@
     <string name="nav_extensions">Udvidelser</string>
     <string name="nav_sports">Sport</string>
     <string name="plugin_install_url_requires_https">Downloadlinks til plugins skal starte med https://</string>
+    <string name="plugin_enable_signer_unreadable">Pluginets signeringsnøgle kunne ikke læses, så pluginet blev ikke slået til</string>
 </resources>

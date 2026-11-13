@@ -294,4 +294,5 @@
     <string name="nav_extensions">التمديدات</string>
     <string name="nav_sports">الرياضة</string>
     <string name="plugin_install_url_requires_https">يجب أن تبدأ روابط تنزيل الإضافات بـ https://</string>
+    <string name="plugin_enable_signer_unreadable">تعذّرت قراءة مفتاح توقيع الإضافة، لذلك لم يتم تشغيلها</string>
 </resources>

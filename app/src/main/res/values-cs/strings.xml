@@ -292,4 +292,5 @@
     <string name="nav_extensions">Rozšíření</string>
     <string name="nav_sports">Sport</string>
     <string name="plugin_install_url_requires_https">Odkazy ke stažení pluginů musí začínat na https://</string>
+    <string name="plugin_enable_signer_unreadable">Podpisový klíč pluginu se nepodařilo načíst, proto nebyl zapnut</string>
 </resources>

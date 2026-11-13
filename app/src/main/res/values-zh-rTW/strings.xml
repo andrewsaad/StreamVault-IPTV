@@ -314,4 +314,5 @@
     <string name="nav_extensions">擴充功能</string>
     <string name="nav_sports">體育</string>
     <string name="plugin_install_url_requires_https">外掛程式下載連結必須以 https:// 開頭</string>
+    <string name="plugin_enable_signer_unreadable">無法讀取外掛程式的簽署金鑰，因此未啟用該外掛程式</string>
 </resources>

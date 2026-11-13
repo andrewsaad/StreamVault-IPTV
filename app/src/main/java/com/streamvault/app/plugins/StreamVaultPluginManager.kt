@@ -299,6 +299,14 @@ class StreamVaultPluginManager @Inject constructor(
         onProgress: (String) -> Unit = {}
     ): PluginActionResult = withContext(Dispatchers.IO) {
         pluginMutationMutex.withLock mutation@{
+        // Enabling is the user's trust decision: remember who signed the plugin they trusted. Without a pin the
+        // plugin would read as disabled right after a "success", so refuse before anything changes.
+        if (enabled && !pinCurrentSigner(plugin.owner.packageName)) {
+            return@mutation PluginActionResult(
+                success = false,
+                message = context.getString(R.string.plugin_enable_signer_unreadable)
+            )
+        }
         if (!recordPendingMutation(plugin.owner, enabled)) {
             return@mutation PluginActionResult(false, "Could not persist plugin operation checkpoint")
         }
@@ -318,10 +326,6 @@ class StreamVaultPluginManager @Inject constructor(
         }
 
         prefs.edit().putBoolean(enabledKey(plugin.owner), enabled).apply()
-        if (enabled) {
-            // Enabling is the user's trust decision: remember who signed the plugin they trusted.
-            pinCurrentSigner(plugin.owner.packageName)
-        }
         if (enabled && plugin.manifest.hasCapability(StreamVaultPluginContract.CAPABILITY_PROVIDER_M3U)) {
             syncPluginProvider(plugin, onProgress)?.let { return@mutation it }
         } else if (!enabled) {
@@ -1141,10 +1145,10 @@ class StreamVaultPluginManager @Inject constructor(
         }
     }
 
-    private fun pinCurrentSigner(packageName: String): Boolean {
-        val signers = PluginSignerPin.read(context, packageName)?.current?.takeIf { it.isNotEmpty() } ?: return false
-        return prefs.edit().putString(signerPinKey(packageName), PluginSignerPin.encode(signers)).commit()
-    }
+    private fun pinCurrentSigner(packageName: String): Boolean =
+        PluginSignerPin.pin(PluginSignerPin.read(context, packageName)) { encoded ->
+            prefs.edit().putString(signerPinKey(packageName), encoded).commit()
+        }
 
     private fun signerPinKey(packageName: String): String = "$SIGNER_PIN_PREFIX$packageName"
 

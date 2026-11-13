@@ -345,4 +345,5 @@
     <string name="nav_extensions">एक्सटेंशन</string>
     <string name="nav_sports">खेल</string>
     <string name="plugin_install_url_requires_https">प्लगइन डाउनलोड लिंक https:// से शुरू होने चाहिए</string>
+    <string name="plugin_enable_signer_unreadable">प्लगइन की साइनिंग कुंजी पढ़ी नहीं जा सकी, इसलिए प्लगइन चालू नहीं किया गया</string>
 </resources>

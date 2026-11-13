@@ -345,4 +345,5 @@
     <string name="nav_extensions">Rozšírenia</string>
     <string name="nav_sports">Šport</string>
     <string name="plugin_install_url_requires_https">Odkazy na stiahnutie doplnkov musia začínať na https://</string>
+    <string name="plugin_enable_signer_unreadable">Podpisový kľúč doplnku sa nepodarilo prečítať, preto nebol zapnutý</string>
 </resources>

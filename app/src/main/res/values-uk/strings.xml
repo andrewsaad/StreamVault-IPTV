@@ -292,4 +292,5 @@
     <string name="nav_extensions">Розширення</string>
     <string name="nav_sports">Спорт</string>
     <string name="plugin_install_url_requires_https">Посилання для завантаження плагінів мають починатися з https://</string>
+    <string name="plugin_enable_signer_unreadable">Не вдалося прочитати ключ підпису плагіна, тому його не ввімкнено</string>
 </resources>

@@ -345,4 +345,5 @@
     <string name="nav_extensions">Mga extension</string>
     <string name="nav_sports">Palakasan</string>
     <string name="plugin_install_url_requires_https">Dapat magsimula sa https:// ang mga link sa pag-download ng plugin</string>
+    <string name="plugin_enable_signer_unreadable">Hindi mabasa ang signing key ng plugin, kaya hindi ito na-on</string>
 </resources>

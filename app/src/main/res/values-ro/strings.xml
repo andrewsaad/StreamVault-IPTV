@@ -292,4 +292,5 @@
     <string name="nav_extensions">Extensii</string>
     <string name="nav_sports">Sport</string>
     <string name="plugin_install_url_requires_https">Linkurile de descărcare a pluginurilor trebuie să înceapă cu https://</string>
+    <string name="plugin_enable_signer_unreadable">Cheia de semnare a pluginului nu a putut fi citită, așa că pluginul nu a fost activat</string>
 </resources>

@@ -292,4 +292,5 @@
     <string name="nav_extensions">Extensiones</string>
     <string name="nav_sports">Deportes</string>
     <string name="plugin_install_url_requires_https">Los enlaces de descarga de complementos deben empezar por https://</string>
+    <string name="plugin_enable_signer_unreadable">No se pudo leer la clave de firma del complemento, así que no se activó</string>
 </resources>

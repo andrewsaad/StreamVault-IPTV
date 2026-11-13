@@ -344,4 +344,5 @@
     <string name="nav_extensions">Проширувања</string>
     <string name="nav_sports">Спорт</string>
     <string name="plugin_install_url_requires_https">Врските за преземање приклучоци мора да започнуваат со https://</string>
+    <string name="plugin_enable_signer_unreadable">Клучот за потпишување на приклучокот не можеше да се прочита, па приклучокот не е вклучен</string>
 </resources>

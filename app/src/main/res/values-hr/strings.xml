@@ -345,4 +345,5 @@
     <string name="nav_extensions">Proširenja</string>
     <string name="nav_sports">Sport</string>
     <string name="plugin_install_url_requires_https">Poveznice za preuzimanje dodataka moraju počinjati s https://</string>
+    <string name="plugin_enable_signer_unreadable">Ključ za potpisivanje dodatka nije bilo moguće pročitati pa dodatak nije uključen</string>
 </resources>

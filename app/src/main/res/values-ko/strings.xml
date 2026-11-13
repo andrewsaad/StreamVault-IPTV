@@ -292,4 +292,5 @@
     <string name="nav_extensions">확장 기능</string>
     <string name="nav_sports">스포츠</string>
     <string name="plugin_install_url_requires_https">플러그인 다운로드 링크는 https://로 시작해야 합니다</string>
+    <string name="plugin_enable_signer_unreadable">플러그인 서명 키를 읽을 수 없어 플러그인을 켜지 않았습니다</string>
 </resources>

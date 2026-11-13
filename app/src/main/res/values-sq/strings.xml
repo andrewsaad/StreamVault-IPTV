@@ -345,4 +345,5 @@
     <string name="nav_extensions">Zgjerimet</string>
     <string name="nav_sports">Sport</string>
     <string name="plugin_install_url_requires_https">Lidhjet e shkarkimit të shtojcave duhet të fillojnë me https://</string>
+    <string name="plugin_enable_signer_unreadable">Çelësi i nënshkrimit të shtojcës nuk mund të lexohej, prandaj shtojca nuk u aktivizua</string>
 </resources>
