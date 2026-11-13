@@ -33,6 +33,7 @@ import com.streamvault.domain.repository.LiveStreamProgramRequest
 import com.streamvault.domain.repository.ProviderRepository
 import com.streamvault.domain.usecase.GetCustomCategories
 import com.streamvault.domain.usecase.ScheduleRecording
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import javax.inject.Provider as InjectProvider
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -55,7 +56,9 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.atLeastOnce
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.doSuspendableAnswer
 import org.mockito.kotlin.whenever
+import org.mockito.kotlin.wheneverBlocking
 import org.mockito.kotlin.argThat
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -240,6 +243,33 @@ class EpgViewModelTest {
         waitForUiState { viewModel.uiState.value.programsByChannel["61"].orEmpty().isNotEmpty() }
         assertThat(viewModel.uiState.value.channelsWithSchedule).isEqualTo(61)
         assertThat(viewModel.uiState.value.failedScheduleCount).isEqualTo(0)
+    }
+
+    @Test
+    fun `guide stops paging instead of rethrowing when the in-flight prefetch fails`() = runTest {
+        val provider = Provider(id = 1L, name = "Provider", type = ProviderType.XTREAM_CODES, serverUrl = "https://provider.example.com")
+        val channels = (1L..61L).map { Channel(id = it, name = "Channel $it", providerId = provider.id, streamId = it, epgChannelId = "epg.$it") }
+        configureGuide(provider, channels.take(EpgViewModel.MAX_CHANNELS))
+        whenever(providerRepository.getProvider(provider.id)).thenReturn(provider)
+        whenever(preferencesRepository.getEmptyGuideKeys(provider.id)).thenReturn(emptyMap())
+        whenever(providerRepository.getProgramsForLiveStreams(eq(provider.id), any(), any())).thenReturn(emptyMap())
+        val prefetchGate = CompletableDeferred<Unit>()
+        wheneverBlocking {
+            channelRepository.getChannelsWithoutErrorsPageOffset(provider.id, ChannelRepository.ALL_CHANNELS_ID, EpgViewModel.MAX_CHANNELS, EpgViewModel.MAX_CHANNELS)
+        }.doSuspendableAnswer {
+            prefetchGate.await()
+            throw IllegalStateException("prefetch failed")
+        }
+        val viewModel = createViewModel()
+        waitForUiState { viewModel.uiState.value.channels.size == EpgViewModel.MAX_CHANNELS }
+        assertThat(viewModel.uiState.value.hasMoreChannels).isTrue()
+
+        viewModel.requestMoreChannels()
+        testDispatcher.scheduler.advanceUntilIdle()
+        prefetchGate.complete(Unit)
+        waitForUiState { !viewModel.uiState.value.hasMoreChannels }
+
+        assertThat(viewModel.uiState.value.channels.size).isEqualTo(EpgViewModel.MAX_CHANNELS)
     }
 
     @Test

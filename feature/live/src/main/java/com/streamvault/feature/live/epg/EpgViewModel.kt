@@ -38,6 +38,7 @@ import com.streamvault.domain.usecase.ScheduleRecording
 import com.streamvault.domain.usecase.ScheduleRecordingCommand
 import com.streamvault.data.preferences.PreferencesRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -604,10 +605,16 @@ class EpgViewModel @Inject constructor(
             }
             return
         }
-        if (deferred.isCancelled) return
         prefetchJob = null
         loadMoreJob = viewModelScope.launch {
-            val page = deferred.await() ?: run {
+            // A prefetch that failed (before or after this call) must end paging, not rethrow into viewModelScope.
+            val page = try {
+                deferred.await()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                null
+            } ?: run {
                 baseGuideSnapshot.update { it?.copy(hasMoreChannels = false) }
                 return@launch
             }
