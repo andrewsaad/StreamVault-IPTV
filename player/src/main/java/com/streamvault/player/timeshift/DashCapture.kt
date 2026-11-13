@@ -10,7 +10,8 @@ import kotlinx.coroutines.sync.withLock
  * The DASH capture's bookkeeping, kept free of Android and HTTP so tests run the same code the
  * session does: which advertised segments to fetch, the buffered segments, and pruning to the
  * duration limit and, for the memory backend, the byte limit (oldest media segments first). Init
- * segments are stored with no duration and are never pruned. A stream restart drops everything
+ * segments are stored with no duration; one is kept while any media segment after it still needs
+ * it, and dropped once the next init follows it directly. A stream restart drops everything
  * buffered, so old and new timelines are never mixed in one rewind window.
  */
 internal class DashCaptureBuffer<T : Any>(
@@ -23,13 +24,12 @@ internal class DashCaptureBuffer<T : Any>(
     private val segments = ArrayDeque<T>()
     private val mutex = Mutex()
     /**
-     * Init segment URLs already downloaded. Media segments are not tracked here ([cursor] covers
-     * them), so this grows by one entry per distinct init URL, normally one per representation or
-     * period. It is not bounded: a server that changes the init URL on every poll adds an entry and
-     * a pinned init segment (never pruned) each time, for the life of the session. A URL is added
-     * only after its download succeeds, so a failed init download is retried on the next poll.
+     * URL of the init segment newest in the buffer, which every media segment captured from now on
+     * plays against. A manifest with a different init URL (even one seen before) fetches that init
+     * again, so media never follows a stale init. Set only after the download succeeds, so a failed
+     * init download is retried on the next poll.
      */
-    private val seenInitUrls = linkedSetOf<String>()
+    private var currentInitUrl: String? = null
     private val cursor = DashSegmentCursor()
     private var runningDurationMs = 0L
 
@@ -52,15 +52,18 @@ internal class DashCaptureBuffer<T : Any>(
                 segments.clear()
                 runningDurationMs = 0L
             }
-            seenInitUrls.clear()
+            currentInitUrl = null
             onWindow(0L)
         }
 
-        // Download each init segment once (identified by URL).
-        if (initUrl != null && initUrl !in seenInitUrls) {
+        // Download the init segment whenever its URL changes.
+        if (initUrl != null && initUrl != currentInitUrl) {
             val init = fetch(initUrl, 0L, true)
-            seenInitUrls += initUrl
-            mutex.withLock { segments += init }
+            currentInitUrl = initUrl
+            mutex.withLock {
+                segments += init
+                pruneOrphanInitsLocked()
+            }
         }
 
         for (segment in advertised) {
@@ -83,9 +86,24 @@ internal class DashCaptureBuffer<T : Any>(
                     canPrune = { isDashMediaSegment(durationOf(it)) },
                     onRemoved = onRemoved
                 )
+                pruneOrphanInitsLocked()
                 runningDurationMs
             }
             onWindow(windowDurationMs)
+        }
+    }
+
+    /**
+     * Drops each init segment directly followed by another init: no media segment plays against it
+     * any more (its media were pruned, or none was captured before the init URL changed). The last
+     * init is kept even with nothing after it, since new media will follow it. Hold [mutex].
+     */
+    private fun pruneOrphanInitsLocked() {
+        var index = 0
+        while (index < segments.size - 1) {
+            val isInit = !isDashMediaSegment(durationOf(segments[index]))
+            val nextIsInit = !isDashMediaSegment(durationOf(segments[index + 1]))
+            if (isInit && nextIsInit) onRemoved(segments.removeAt(index)) else index++
         }
     }
 

@@ -87,4 +87,41 @@ class DashCaptureBufferTest {
             .containsExactlyElementsIn(listOf("init.mp4") + (1L..3L).map { "seg-$it.m4s" })
             .inOrder()
     }
+
+    @Test
+    fun `media after a switch back to an earlier init URL plays against that init again`() = runTest {
+        val harness = Harness()
+        harness.poll(1L..2L, initUrl = "init-a.mp4")
+        harness.poll(3L..4L, initUrl = "init-b.mp4")
+        harness.poll(5L..6L, initUrl = "init-a.mp4")
+
+        assertThat(harness.buffered()).containsExactly(
+            "init-a.mp4", "seg-1.m4s", "seg-2.m4s",
+            "init-b.mp4", "seg-3.m4s", "seg-4.m4s",
+            "init-a.mp4", "seg-5.m4s", "seg-6.m4s"
+        ).inOrder()
+    }
+
+    @Test
+    fun `an init whose media were all pruned is dropped`() = runTest {
+        // 10 s window: five 2 s segments.
+        val harness = Harness(maxDurationMs = 10_000L)
+        harness.poll(1L..3L, initUrl = "init-a.mp4")
+        harness.poll(4L..10L, initUrl = "init-b.mp4")
+
+        assertThat(harness.buffered())
+            .containsExactlyElementsIn(listOf("init-b.mp4") + (6L..10L).map { "seg-$it.m4s" })
+            .inOrder()
+        assertThat(harness.removed).contains("init-a.mp4")
+    }
+
+    @Test
+    fun `an init replaced before any media followed it is dropped`() = runTest {
+        val harness = Harness()
+        harness.poll(LongRange.EMPTY, initUrl = "init-a.mp4")
+        harness.poll(1L..2L, initUrl = "init-b.mp4")
+
+        assertThat(harness.buffered()).containsExactly("init-b.mp4", "seg-1.m4s", "seg-2.m4s").inOrder()
+        assertThat(harness.removed).containsExactly("init-a.mp4")
+    }
 }
