@@ -49,8 +49,10 @@ class ChannelHealthScanWorker(appContext: Context, params: WorkerParameters) : C
             ?: ChannelHealthScanScope.ALL
         val scanner = EntryPointAccessors.fromApplication(applicationContext, Entry::class.java).channelHealthScanner()
         // A plain background job is stopped after about 10 minutes and then held back for most of an hour,
-        // so a scan that takes hours only ever advanced in short bursts. A foreground job is not cut off.
-        val foreground = promoteToForeground(scanned = 0, total = 0)
+        // so a scan that takes hours only ever advanced in short bursts. A foreground job is not cut off by that
+        // limit, though Android 15 still caps data-sync services at about 6 hours a day, and a start made while
+        // the app is in the background can be refused (the scan then falls back to a plain job).
+        val foreground = promoteToForeground(providerId, scanned = 0, total = 0)
         return coroutineScope {
             val progress = if (foreground) launch { keepNotificationCurrent(scanner, providerId) } else null
             try {
@@ -66,9 +68,9 @@ class ChannelHealthScanWorker(appContext: Context, params: WorkerParameters) : C
     }
 
     /** False when Android refuses a foreground start; the scan then still runs as an ordinary job. */
-    private suspend fun promoteToForeground(scanned: Int, total: Int): Boolean =
+    private suspend fun promoteToForeground(providerId: Long, scanned: Int, total: Int): Boolean =
         try {
-            setForeground(ChannelScanNotification.foregroundInfo(applicationContext, id, scanned, total))
+            setForeground(ChannelScanNotification.foregroundInfo(applicationContext, id, providerId, scanned, total))
             true
         } catch (cancelled: CancellationException) {
             throw cancelled
@@ -81,14 +83,21 @@ class ChannelHealthScanWorker(appContext: Context, params: WorkerParameters) : C
     private suspend fun keepNotificationCurrent(scanner: ChannelHealthScanner, providerId: Long) {
         var lastRefreshAt: Long? = null
         var shown = 0 to 0
-        scanner.observeState(providerId).collect { state ->
-            val now = SystemClock.elapsedRealtime()
-            val current = state.scanned to state.total
-            if (state.running && ChannelScanNotification.shouldRefresh(lastRefreshAt, now, current != shown)) {
-                lastRefreshAt = now
-                shown = current
-                promoteToForeground(current.first, current.second)
+        try {
+            scanner.observeState(providerId).collect { state ->
+                val now = SystemClock.elapsedRealtime()
+                val current = state.scanned to state.total
+                if (state.running && ChannelScanNotification.shouldRefresh(lastRefreshAt, now, current != shown)) {
+                    lastRefreshAt = now
+                    shown = current
+                    promoteToForeground(providerId, current.first, current.second)
+                }
             }
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (error: Exception) {
+            // A broken progress display must never abort the scan itself; class name only.
+            Log.w(ChannelHealthScanner.TAG, "Scan notification updates stopped (${error.javaClass.simpleName})")
         }
     }
 

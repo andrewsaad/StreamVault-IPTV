@@ -24,6 +24,12 @@ class ChannelScanNotificationTest {
         assertThat(ChannelScanNotification.shouldRefresh(10_000L, 10_000L + gap, progressChanged = true)).isTrue()
     }
 
+    @Test
+    fun `each provider gets its own notification id`() {
+        assertThat(ChannelScanNotification.notificationId(1L)).isNotEqualTo(ChannelScanNotification.notificationId(2L))
+        assertThat(ChannelScanNotification.notificationId(7L)).isEqualTo(ChannelScanNotification.notificationId(7L))
+    }
+
     private val keys = listOf(
         "channel_scan_notification_channel",
         "channel_scan_notification_title",
