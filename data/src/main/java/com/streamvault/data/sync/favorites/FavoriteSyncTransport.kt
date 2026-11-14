@@ -135,11 +135,17 @@ class HttpFavoriteSyncTransport(
                 .build()
         }
 
-        fun defaultClient(): OkHttpClient = OkHttpClient.Builder()
-            .connectTimeout(10, TimeUnit.SECONDS)
-            .readTimeout(10, TimeUnit.SECONDS)
-            .writeTimeout(10, TimeUnit.SECONDS)
-            .callTimeout(20, TimeUnit.SECONDS)
-            .build()
+        // One client for every sync session so they share a connection pool and dispatcher threads
+        // instead of leaving a new idle pool behind per session.
+        private val sharedClient: OkHttpClient by lazy {
+            OkHttpClient.Builder()
+                .connectTimeout(10, TimeUnit.SECONDS)
+                .readTimeout(10, TimeUnit.SECONDS)
+                .writeTimeout(10, TimeUnit.SECONDS)
+                .callTimeout(20, TimeUnit.SECONDS)
+                .build()
+        }
+
+        fun defaultClient(): OkHttpClient = sharedClient
     }
 }

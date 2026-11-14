@@ -37,6 +37,12 @@ class HttpFavoriteSyncTransportTest {
     }
 
     @Test
+    fun `every sync session shares one default http client`() {
+        assertThat(HttpFavoriteSyncTransport.defaultClient())
+            .isSameInstanceAs(HttpFavoriteSyncTransport.defaultClient())
+    }
+
+    @Test
     fun `fetch sends the bearer token and returns body and quoted etag`() = runTest {
         server.enqueue(MockResponse().setResponseCode(200).setHeader("ETag", "\"abc\"").setBody(Buffer().write(byteArrayOf(1, 2, 3))))
 
