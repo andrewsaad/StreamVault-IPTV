@@ -76,7 +76,7 @@ class ChannelHealthScanWorker(appContext: Context, params: WorkerParameters) : C
             throw cancelled
         } catch (error: Exception) {
             // Class name only; nothing that could carry the login is logged.
-            Log.w(ChannelHealthScanner.TAG, "Foreground scan not started (${error.javaClass.simpleName})")
+            Log.w(LOG_TAG, "Foreground scan not started (${error.javaClass.simpleName})")
             false
         }
 
@@ -97,11 +97,13 @@ class ChannelHealthScanWorker(appContext: Context, params: WorkerParameters) : C
             throw cancelled
         } catch (error: Exception) {
             // A broken progress display must never abort the scan itself; class name only.
-            Log.w(ChannelHealthScanner.TAG, "Scan notification updates stopped (${error.javaClass.simpleName})")
+            Log.w(LOG_TAG, "Scan notification updates stopped (${error.javaClass.simpleName})")
         }
     }
 
     internal companion object {
+        /** Same tag as the scanner, so one logcat filter shows the whole scan story. */
+        const val LOG_TAG = "ChannelHealthScanner"
         const val KEY_PROVIDER_ID = "provider_id"
         const val KEY_FILTER_CATEGORIES = "filter_categories"
         const val KEY_CATEGORY_IDS = "category_ids"
