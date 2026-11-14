@@ -343,4 +343,5 @@
     <string name="torrent_storage_check_failed">Не може да се провери достапниот простор. Репродукцијата на торент не може безбедно да продолжи.</string>
     <string name="nav_extensions">Проширувања</string>
     <string name="nav_sports">Спорт</string>
+    <string name="app_update_download_notification_description">Се презема најновото ажурирање на StreamVault</string>
 </resources>

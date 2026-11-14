@@ -291,4 +291,5 @@
     <string name="torrent_storage_check_failed">De beschikbare opslagruimte kon niet worden gecontroleerd. De torrentweergave kan niet veilig doorgaan.</string>
     <string name="nav_extensions">Extensies</string>
     <string name="nav_sports">Sport</string>
+    <string name="app_update_download_notification_description">Nieuwste StreamVault-update wordt gedownload</string>
 </resources>

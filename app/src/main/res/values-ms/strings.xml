@@ -345,4 +345,5 @@
 
     <string name="nav_extensions">Sambungan</string>
     <string name="nav_sports">Sukan</string>
+    <string name="app_update_download_notification_description">Memuat turun kemas kini StreamVault terkini</string>
 </resources>

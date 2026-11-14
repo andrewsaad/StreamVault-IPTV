@@ -291,4 +291,5 @@
     <string name="torrent_storage_check_failed">No se pudo comprobar el espacio disponible. La reproducción del torrent no puede continuar de forma segura.</string>
     <string name="nav_extensions">Extensiones</string>
     <string name="nav_sports">Deportes</string>
+    <string name="app_update_download_notification_description">Descargando la última actualización de StreamVault</string>
 </resources>

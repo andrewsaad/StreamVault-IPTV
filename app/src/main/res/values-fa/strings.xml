@@ -347,4 +347,5 @@
     <string name="torrent_storage_check_failed">بررسی فضای ذخیره‌سازی ممکن نشد و پخش تورنت نمی‌تواند با اطمینان ادامه یابد.</string>
     <string name="nav_extensions">افزونه‌ها</string>
     <string name="nav_sports">ورزش</string>
+    <string name="app_update_download_notification_description">در حال دانلود آخرین به‌روزرسانی StreamVault</string>
 </resources>

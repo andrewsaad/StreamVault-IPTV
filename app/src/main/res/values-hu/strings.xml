@@ -291,4 +291,5 @@
     <string name="torrent_storage_check_failed">A szabad tárhely nem ellenőrizhető. A torrent lejátszása nem folytatható biztonságosan.</string>
     <string name="nav_extensions">Kiterjesztések</string>
     <string name="nav_sports">Sport</string>
+    <string name="app_update_download_notification_description">A legújabb StreamVault-frissítés letöltése</string>
 </resources>

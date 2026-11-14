@@ -291,4 +291,5 @@
     <string name="torrent_storage_check_failed">Tilgjengelig lagringsplass kunne ikke kontrolleres. Torrentavspillingen kan ikke fortsette trygt.</string>
     <string name="nav_extensions">Utvidelser</string>
     <string name="nav_sports">Sport</string>
+    <string name="app_update_download_notification_description">Laster ned den nyeste StreamVault-oppdateringen</string>
 </resources>

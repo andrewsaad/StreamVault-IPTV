@@ -344,4 +344,5 @@
     <string name="torrent_storage_check_failed">Nuk mund të kontrollohej hapësira e disponueshme. Luajtja e torrentit nuk mund të vazhdojë në mënyrë të sigurt.</string>
     <string name="nav_extensions">Zgjerimet</string>
     <string name="nav_sports">Sport</string>
+    <string name="app_update_download_notification_description">Po shkarkohet përditësimi më i ri i StreamVault</string>
 </resources>

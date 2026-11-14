@@ -291,4 +291,5 @@
     <string name="torrent_storage_check_failed">Не удалось проверить доступное место. Воспроизведение торрента нельзя безопасно продолжить.</string>
     <string name="nav_extensions">Расширения</string>
     <string name="nav_sports">Спорт</string>
+    <string name="app_update_download_notification_description">Загрузка последнего обновления StreamVault</string>
 </resources>

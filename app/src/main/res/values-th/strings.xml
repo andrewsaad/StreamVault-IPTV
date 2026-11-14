@@ -344,4 +344,5 @@
     <string name="torrent_storage_check_failed">ไม่สามารถตรวจสอบพื้นที่จัดเก็บที่พร้อมใช้งานได้ จึงไม่สามารถเล่นทอร์เรนต์ต่อได้อย่างปลอดภัย</string>
     <string name="nav_extensions">ส่วนขยาย</string>
     <string name="nav_sports">กีฬา</string>
+    <string name="app_update_download_notification_description">กำลังดาวน์โหลดอัปเดต StreamVault ล่าสุด</string>
 </resources>

@@ -291,4 +291,5 @@
     <string name="torrent_storage_check_failed">Penyimpanan yang tersedia tidak dapat diperiksa. Pemutaran torrent tidak dapat dilanjutkan dengan aman.</string>
     <string name="nav_extensions">Ekstensi</string>
     <string name="nav_sports">Olahraga</string>
+    <string name="app_update_download_notification_description">Mengunduh pembaruan StreamVault terbaru</string>
 </resources>
