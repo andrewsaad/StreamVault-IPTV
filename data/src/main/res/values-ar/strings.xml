@@ -2,7 +2,7 @@
 <resources>
     <string name="channel_scan_notification_channel">فحص القنوات</string>
     <string name="channel_scan_notification_title">جارٍ فحص القنوات</string>
-    <string name="channel_scan_notification_progress" formatted="true">تم فحص %1$d من %2$d قناة</string>
+    <string name="channel_scan_notification_progress" formatted="true">القنوات التي تم فحصها: %1$d / %2$d</string>
     <string name="channel_scan_notification_preparing">جارٍ تحضير فحص القنوات</string>
     <string name="channel_scan_notification_stop">إيقاف</string>
 </resources>

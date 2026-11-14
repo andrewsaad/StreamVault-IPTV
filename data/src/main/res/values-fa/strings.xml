@@ -2,7 +2,7 @@
 <resources>
     <string name="channel_scan_notification_channel">بررسی کانال‌ها</string>
     <string name="channel_scan_notification_title">در حال بررسی کانال‌ها</string>
-    <string name="channel_scan_notification_progress" formatted="true">%1$d از %2$d کانال بررسی شد</string>
+    <string name="channel_scan_notification_progress" formatted="true">کانال‌های بررسی‌شده: %1$d / %2$d</string>
     <string name="channel_scan_notification_preparing">در حال آماده‌سازی بررسی کانال‌ها</string>
     <string name="channel_scan_notification_stop">توقف</string>
 </resources>

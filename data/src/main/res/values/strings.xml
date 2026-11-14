@@ -2,7 +2,7 @@
 <resources>
     <string name="channel_scan_notification_channel">Channel scan</string>
     <string name="channel_scan_notification_title">Scanning channels</string>
-    <string name="channel_scan_notification_progress" formatted="true">%1$d of %2$d channels checked</string>
+    <string name="channel_scan_notification_progress" formatted="true">Channels checked: %1$d / %2$d</string>
     <string name="channel_scan_notification_preparing">Preparing the channel scan</string>
     <string name="channel_scan_notification_stop">Stop</string>
 </resources>

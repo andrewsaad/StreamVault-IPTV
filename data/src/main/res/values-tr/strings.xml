@@ -2,7 +2,7 @@
 <resources>
     <string name="channel_scan_notification_channel">Kanal taraması</string>
     <string name="channel_scan_notification_title">Kanallar taranıyor</string>
-    <string name="channel_scan_notification_progress" formatted="true">%2$d kanaldan %1$d tanesi kontrol edildi</string>
+    <string name="channel_scan_notification_progress" formatted="true">Kontrol edilen kanallar: %1$d / %2$d</string>
     <string name="channel_scan_notification_preparing">Kanal taraması hazırlanıyor</string>
     <string name="channel_scan_notification_stop">Durdur</string>
 </resources>

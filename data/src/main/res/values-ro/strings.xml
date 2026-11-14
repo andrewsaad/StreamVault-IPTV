@@ -2,7 +2,7 @@
 <resources>
     <string name="channel_scan_notification_channel">Scanarea canalelor</string>
     <string name="channel_scan_notification_title">Se scanează canalele</string>
-    <string name="channel_scan_notification_progress" formatted="true">%1$d din %2$d canale verificate</string>
+    <string name="channel_scan_notification_progress" formatted="true">Canale verificate: %1$d / %2$d</string>
     <string name="channel_scan_notification_preparing">Se pregătește scanarea canalelor</string>
     <string name="channel_scan_notification_stop">Oprește</string>
 </resources>

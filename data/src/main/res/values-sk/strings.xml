@@ -2,7 +2,7 @@
 <resources>
     <string name="channel_scan_notification_channel">Kontrola kanálov</string>
     <string name="channel_scan_notification_title">Kontrola kanálov</string>
-    <string name="channel_scan_notification_progress" formatted="true">Skontrolovaných %1$d z %2$d kanálov</string>
+    <string name="channel_scan_notification_progress" formatted="true">Skontrolované kanály: %1$d / %2$d</string>
     <string name="channel_scan_notification_preparing">Príprava kontroly kanálov</string>
     <string name="channel_scan_notification_stop">Zastaviť</string>
 </resources>

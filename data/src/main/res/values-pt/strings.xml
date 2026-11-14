@@ -2,7 +2,7 @@
 <resources>
     <string name="channel_scan_notification_channel">Verificação de canais</string>
     <string name="channel_scan_notification_title">A verificar canais</string>
-    <string name="channel_scan_notification_progress" formatted="true">%1$d de %2$d canais verificados</string>
+    <string name="channel_scan_notification_progress" formatted="true">Canais verificados: %1$d / %2$d</string>
     <string name="channel_scan_notification_preparing">A preparar a verificação de canais</string>
     <string name="channel_scan_notification_stop">Parar</string>
 </resources>

@@ -2,7 +2,7 @@
 <resources>
     <string name="channel_scan_notification_channel">Imbasan saluran</string>
     <string name="channel_scan_notification_title">Mengimbas saluran</string>
-    <string name="channel_scan_notification_progress" formatted="true">%1$d daripada %2$d saluran diperiksa</string>
+    <string name="channel_scan_notification_progress" formatted="true">Saluran diperiksa: %1$d / %2$d</string>
     <string name="channel_scan_notification_preparing">Menyediakan imbasan saluran</string>
     <string name="channel_scan_notification_stop">Henti</string>
 </resources>

@@ -2,7 +2,7 @@
 <resources>
     <string name="channel_scan_notification_channel">Quét kênh</string>
     <string name="channel_scan_notification_title">Đang quét kênh</string>
-    <string name="channel_scan_notification_progress" formatted="true">Đã kiểm tra %1$d/%2$d kênh</string>
+    <string name="channel_scan_notification_progress" formatted="true">Kênh đã kiểm tra: %1$d / %2$d</string>
     <string name="channel_scan_notification_preparing">Đang chuẩn bị quét kênh</string>
     <string name="channel_scan_notification_stop">Dừng</string>
 </resources>

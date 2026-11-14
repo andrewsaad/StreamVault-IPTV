@@ -2,7 +2,7 @@
 <resources>
     <string name="channel_scan_notification_channel">チャンネルスキャン</string>
     <string name="channel_scan_notification_title">チャンネルをスキャン中</string>
-    <string name="channel_scan_notification_progress" formatted="true">%2$d 件中 %1$d 件のチャンネルを確認済み</string>
+    <string name="channel_scan_notification_progress" formatted="true">確認したチャンネル: %1$d / %2$d</string>
     <string name="channel_scan_notification_preparing">チャンネルスキャンを準備中</string>
     <string name="channel_scan_notification_stop">停止</string>
 </resources>

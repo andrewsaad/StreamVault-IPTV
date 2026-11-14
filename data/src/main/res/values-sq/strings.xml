@@ -2,7 +2,7 @@
 <resources>
     <string name="channel_scan_notification_channel">Skanimi i kanaleve</string>
     <string name="channel_scan_notification_title">Po skanohen kanalet</string>
-    <string name="channel_scan_notification_progress" formatted="true">U kontrolluan %1$d nga %2$d kanale</string>
+    <string name="channel_scan_notification_progress" formatted="true">Kanale të kontrolluara: %1$d / %2$d</string>
     <string name="channel_scan_notification_preparing">Po përgatitet skanimi i kanaleve</string>
     <string name="channel_scan_notification_stop">Ndalo</string>
 </resources>

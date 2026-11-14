@@ -2,7 +2,7 @@
 <resources>
     <string name="channel_scan_notification_channel">Kanalscanning</string>
     <string name="channel_scan_notification_title">Scanner kanaler</string>
-    <string name="channel_scan_notification_progress" formatted="true">%1$d af %2$d kanaler tjekket</string>
+    <string name="channel_scan_notification_progress" formatted="true">Kanaler tjekket: %1$d / %2$d</string>
     <string name="channel_scan_notification_preparing">Forbereder kanalscanning</string>
     <string name="channel_scan_notification_stop">Stop</string>
 </resources>

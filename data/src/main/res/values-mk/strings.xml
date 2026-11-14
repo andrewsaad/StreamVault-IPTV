@@ -2,7 +2,7 @@
 <resources>
     <string name="channel_scan_notification_channel">Скенирање на канали</string>
     <string name="channel_scan_notification_title">Се скенираат канали</string>
-    <string name="channel_scan_notification_progress" formatted="true">Проверени се %1$d од %2$d канали</string>
+    <string name="channel_scan_notification_progress" formatted="true">Проверени канали: %1$d / %2$d</string>
     <string name="channel_scan_notification_preparing">Се подготвува скенирањето на каналите</string>
     <string name="channel_scan_notification_stop">Стоп</string>
 </resources>

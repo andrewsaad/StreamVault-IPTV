@@ -2,7 +2,7 @@
 <resources>
     <string name="channel_scan_notification_channel">Kanavien tarkistus</string>
     <string name="channel_scan_notification_title">Tarkistetaan kanavia</string>
-    <string name="channel_scan_notification_progress" formatted="true">%1$d/%2$d kanavaa tarkistettu</string>
+    <string name="channel_scan_notification_progress" formatted="true">Tarkistetut kanavat: %1$d / %2$d</string>
     <string name="channel_scan_notification_preparing">Valmistellaan kanavien tarkistusta</string>
     <string name="channel_scan_notification_stop">Pysäytä</string>
 </resources>
