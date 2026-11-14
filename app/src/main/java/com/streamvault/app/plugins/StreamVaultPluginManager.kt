@@ -14,6 +14,7 @@ import android.os.Environment
 import android.provider.Settings
 import androidx.core.content.FileProvider
 import androidx.core.content.ContextCompat
+import androidx.core.content.edit
 import com.streamvault.app.BuildConfig
 import com.streamvault.app.R
 import com.streamvault.torrent.TorrentPlaybackService
@@ -1189,18 +1190,15 @@ class StreamVaultPluginManager @Inject constructor(
     private fun clearPendingMutationsForMissingComponents(
         installedComponents: Set<StreamVaultPluginComponent>
     ) {
-        val editor = prefs.edit()
-        prefs.all.keys.asSequence()
+        val staleKeys = prefs.all.keys.asSequence()
             .filter { it.startsWith(PENDING_MUTATION_PREFIX) }
-            .forEach { key ->
+            .filter { key ->
                 val identity = key.removePrefix(PENDING_MUTATION_PREFIX).split('|', limit = 3)
-                if (identity.size < 2 ||
+                identity.size < 2 ||
                     StreamVaultPluginComponent(identity[0], identity[1]) !in installedComponents
-                ) {
-                    editor.remove(key)
-                }
             }
-        editor.apply()
+            .toList()
+        prefs.edit { staleKeys.forEach { remove(it) } }
     }
 
     private fun legacyEnabledKey(pluginId: String): String = "enabled.$pluginId"
