@@ -85,6 +85,74 @@ class DashManifestParserTest {
     }
 
     @Test
+    fun `a timeline at adaptation set level is inherited by its representations`() {
+        val mpd = """
+            <MPD type="dynamic">
+              <Period>
+                <AdaptationSet contentType="audio">
+                  <SegmentTemplate timescale="48000" media="audio-${'$'}Time${'$'}.m4s">
+                    <SegmentTimeline>
+                      <S t="0" d="96000" r="9"/>
+                    </SegmentTimeline>
+                  </SegmentTemplate>
+                  <Representation id="a1" bandwidth="128000"/>
+                </AdaptationSet>
+                <AdaptationSet contentType="video">
+                  <SegmentTemplate timescale="90000" initialization="init-${'$'}RepresentationID${'$'}.mp4" media="${'$'}RepresentationID${'$'}-${'$'}Time${'$'}.m4s">
+                    <SegmentTimeline>
+                      <S t="900000" d="180000" r="1"/>
+                      <S d="180000"/>
+                    </SegmentTimeline>
+                  </SegmentTemplate>
+                  <Representation id="low" bandwidth="500000"/>
+                  <Representation id="mid" bandwidth="1000000"/>
+                  <Representation id="high" bandwidth="3000000"/>
+                </AdaptationSet>
+              </Period>
+            </MPD>
+        """.trimIndent()
+
+        val parsed = parseDashManifest("https://cdn.example/live/manifest.mpd", mpd, depthMs = 60_000L)
+
+        assertThat(parsed.mediaSegments.map { it.uri }).containsExactly(
+            "https://cdn.example/live/mid-900000.m4s",
+            "https://cdn.example/live/mid-1080000.m4s",
+            "https://cdn.example/live/mid-1260000.m4s"
+        ).inOrder()
+        assertThat(parsed.mediaSegments.map { it.durationMs }).containsExactly(2_000L, 2_000L, 2_000L)
+        assertThat(parsed.initSegmentUrl).isEqualTo("https://cdn.example/live/init-mid.mp4")
+    }
+
+    @Test
+    fun `a representation timeline overrides the adaptation set timeline`() {
+        val mpd = """
+            <MPD type="dynamic">
+              <Period>
+                <AdaptationSet contentType="video">
+                  <SegmentTemplate timescale="1000" media="as-${'$'}Time${'$'}.m4s">
+                    <SegmentTimeline>
+                      <S t="0" d="2000" r="4"/>
+                    </SegmentTimeline>
+                  </SegmentTemplate>
+                  <Representation id="v1" bandwidth="1000000">
+                    <SegmentTemplate timescale="1000" media="rep-${'$'}Time${'$'}.m4s">
+                      <SegmentTimeline>
+                        <S t="10000" d="4000"/>
+                      </SegmentTimeline>
+                    </SegmentTemplate>
+                  </Representation>
+                </AdaptationSet>
+              </Period>
+            </MPD>
+        """.trimIndent()
+
+        val parsed = parseDashManifest("https://cdn.example/live/manifest.mpd", mpd, depthMs = 60_000L)
+
+        assertThat(parsed.mediaSegments.map { it.uri }).containsExactly("https://cdn.example/live/rep-10000.m4s")
+        assertThat(parsed.mediaSegments.single().durationMs).isEqualTo(4_000L)
+    }
+
+    @Test
     fun `fixed duration segments carry their number as position and start in milliseconds`() {
         val mpd = """
             <MPD type="dynamic" availabilityStartTime="2024-01-01T00:00:00Z">

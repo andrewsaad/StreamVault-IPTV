@@ -45,10 +45,23 @@ internal fun parseDashManifest(
 
     // Collect all Representations from the first video AdaptationSet.
     // Structure: MPD > Period > AdaptationSet (contentType=video) > Representation
-    data class RepresentationInfo(val id: String, val bandwidth: Int, val initTemplate: String, val mediaTemplate: String, val timescale: Long, val segmentDuration: Long, val startNumber: Long)
+    data class RepresentationInfo(
+        val id: String,
+        val bandwidth: Int,
+        val initTemplate: String,
+        val mediaTemplate: String,
+        val timescale: Long,
+        val segmentDuration: Long,
+        val startNumber: Long,
+        val timeline: List<Pair<Long, Long>>  // (t, d) pairs
+    )
     val representations = mutableListOf<RepresentationInfo>()
-    val timelineSegments = mutableListOf<Pair<Long, Long>>()  // (t, d) pairs
+    // A SegmentTimeline can sit in a SegmentTemplate at Period, AdaptationSet or Representation level;
+    // a Representation without its own inherits the nearest outer one.
+    var periodTimelineSegments = mutableListOf<Pair<Long, Long>>()
+    var adaptationSetTimelineSegments = mutableListOf<Pair<Long, Long>>()
 
+    var inAdaptationSet = false
     var inVideoAdaptationSet = false
     var inRepresentation = false
     var inSegmentTimeline = false
@@ -72,10 +85,13 @@ internal fun parseDashManifest(
                     val ast = xpp.getAttributeValue(null, "availabilityStartTime")
                     if (ast != null) availabilityStartTimeMs = parseIso8601ToMs(ast)
                 }
+                "Period" -> periodTimelineSegments = mutableListOf()
                 "AdaptationSet" -> {
                     val contentType = xpp.getAttributeValue(null, "contentType")
                         ?: xpp.getAttributeValue(null, "mimeType") ?: ""
+                    inAdaptationSet = true
                     inVideoAdaptationSet = contentType.contains("video", ignoreCase = true)
+                    adaptationSetTimelineSegments = mutableListOf()
                 }
                 "Representation" -> if (inVideoAdaptationSet) {
                     inRepresentation = true
@@ -104,13 +120,18 @@ internal fun parseDashManifest(
                 }
                 "SegmentTimeline" -> inSegmentTimeline = true
                 "S" -> if (inSegmentTimeline) {
+                    val target = when {
+                        inRepresentation -> currentTimelineSegments
+                        inAdaptationSet -> adaptationSetTimelineSegments
+                        else -> periodTimelineSegments
+                    }
                     val t = xpp.getAttributeValue(null, "t")?.toLongOrNull()
-                        ?: (currentTimelineSegments.lastOrNull()?.let { it.first + it.second } ?: 0L)
+                        ?: (target.lastOrNull()?.let { it.first + it.second } ?: 0L)
                     val d = xpp.getAttributeValue(null, "d")?.toLongOrNull() ?: 0L
                     val r = xpp.getAttributeValue(null, "r")?.toIntOrNull() ?: 0
                     var tCurrent = t
                     repeat(r + 1) {
-                        currentTimelineSegments += tCurrent to d
+                        target += tCurrent to d
                         tCurrent += d
                     }
                 }
@@ -124,15 +145,16 @@ internal fun parseDashManifest(
                         mediaTemplate = currentMediaTemplate,
                         timescale = currentTimescale,
                         segmentDuration = currentSegDuration,
-                        startNumber = currentStartNumber
+                        startNumber = currentStartNumber,
+                        timeline = currentTimelineSegments.ifEmpty { adaptationSetTimelineSegments.ifEmpty { periodTimelineSegments } }
+                            .toList()
                     )
-                    if (currentTimelineSegments.isNotEmpty()) {
-                        timelineSegments.clear()
-                        timelineSegments += currentTimelineSegments
-                    }
                     inRepresentation = false
                 }
-                "AdaptationSet" -> inVideoAdaptationSet = false
+                "AdaptationSet" -> {
+                    inAdaptationSet = false
+                    inVideoAdaptationSet = false
+                }
                 "SegmentTimeline" -> inSegmentTimeline = false
             }
         }
@@ -149,9 +171,9 @@ internal fun parseDashManifest(
         ?.let { resolveDashUrl(baseUrl, it) }
 
     val ts = rep.timescale.takeIf { it > 0L } ?: 1L
-    val mediaSegments: List<DashMediaSegmentRef> = if (timelineSegments.isNotEmpty()) {
+    val mediaSegments: List<DashMediaSegmentRef> = if (rep.timeline.isNotEmpty()) {
         // SegmentTimeline mode: each (t, d) pair is one segment.
-        timelineSegments.mapIndexed { index, (t, d) ->
+        rep.timeline.mapIndexed { index, (t, d) ->
             val number = rep.startNumber + index
             val uri = rep.mediaTemplate
                 .replace("\$RepresentationID\$", rep.id)
