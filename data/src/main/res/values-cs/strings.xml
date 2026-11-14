@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="channel_scan_notification_channel">Kontrola kanálů</string>
+    <string name="channel_scan_notification_title">Kontrola kanálů</string>
+    <string name="channel_scan_notification_progress" formatted="true">Zkontrolováno %1$d z %2$d kanálů</string>
+    <string name="channel_scan_notification_preparing">Příprava kontroly kanálů</string>
+    <string name="channel_scan_notification_stop">Zastavit</string>
+</resources>

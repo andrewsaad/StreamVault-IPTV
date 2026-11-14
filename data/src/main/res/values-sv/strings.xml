@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="channel_scan_notification_channel">Kanalsökning</string>
+    <string name="channel_scan_notification_title">Söker igenom kanaler</string>
+    <string name="channel_scan_notification_progress" formatted="true">%1$d av %2$d kanaler kontrollerade</string>
+    <string name="channel_scan_notification_preparing">Förbereder kanalsökning</string>
+    <string name="channel_scan_notification_stop">Stoppa</string>
+</resources>

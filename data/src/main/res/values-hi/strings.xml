@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="channel_scan_notification_channel">चैनल स्कैन</string>
+    <string name="channel_scan_notification_title">चैनल स्कैन हो रहे हैं</string>
+    <string name="channel_scan_notification_progress" formatted="true">%2$d में से %1$d चैनल जाँचे गए</string>
+    <string name="channel_scan_notification_preparing">चैनल स्कैन की तैयारी हो रही है</string>
+    <string name="channel_scan_notification_stop">रोकें</string>
+</resources>

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="channel_scan_notification_channel">การสแกนช่อง</string>
+    <string name="channel_scan_notification_title">กำลังสแกนช่อง</string>
+    <string name="channel_scan_notification_progress" formatted="true">ตรวจสอบแล้ว %1$d จาก %2$d ช่อง</string>
+    <string name="channel_scan_notification_preparing">กำลังเตรียมการสแกนช่อง</string>
+    <string name="channel_scan_notification_stop">หยุด</string>
+</resources>

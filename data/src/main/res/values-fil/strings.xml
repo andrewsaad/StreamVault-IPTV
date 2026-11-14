@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="channel_scan_notification_channel">Pag-scan ng channel</string>
+    <string name="channel_scan_notification_title">Sine-scan ang mga channel</string>
+    <string name="channel_scan_notification_progress" formatted="true">%1$d sa %2$d channel ang nasuri</string>
+    <string name="channel_scan_notification_preparing">Inihahanda ang pag-scan ng channel</string>
+    <string name="channel_scan_notification_stop">Ihinto</string>
+</resources>

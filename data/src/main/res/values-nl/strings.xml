@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="channel_scan_notification_channel">Kanaalscan</string>
+    <string name="channel_scan_notification_title">Kanalen scannen</string>
+    <string name="channel_scan_notification_progress" formatted="true">%1$d van %2$d kanalen gecontroleerd</string>
+    <string name="channel_scan_notification_preparing">Kanaalscan voorbereiden</string>
+    <string name="channel_scan_notification_stop">Stoppen</string>
+</resources>

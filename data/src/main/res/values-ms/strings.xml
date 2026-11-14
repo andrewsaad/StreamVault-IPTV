@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="channel_scan_notification_channel">Imbasan saluran</string>
+    <string name="channel_scan_notification_title">Mengimbas saluran</string>
+    <string name="channel_scan_notification_progress" formatted="true">%1$d daripada %2$d saluran diperiksa</string>
+    <string name="channel_scan_notification_preparing">Menyediakan imbasan saluran</string>
+    <string name="channel_scan_notification_stop">Henti</string>
+</resources>

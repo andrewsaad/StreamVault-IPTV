@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="channel_scan_notification_channel">Análisis de canales</string>
+    <string name="channel_scan_notification_title">Analizando canales</string>
+    <string name="channel_scan_notification_progress" formatted="true">%1$d de %2$d canales comprobados</string>
+    <string name="channel_scan_notification_preparing">Preparando el análisis de canales</string>
+    <string name="channel_scan_notification_stop">Detener</string>
+</resources>

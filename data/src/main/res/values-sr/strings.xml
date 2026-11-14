@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="channel_scan_notification_channel">Скенирање канала</string>
+    <string name="channel_scan_notification_title">Скенирање канала</string>
+    <string name="channel_scan_notification_progress" formatted="true">Проверено %1$d од %2$d канала</string>
+    <string name="channel_scan_notification_preparing">Припрема скенирања канала</string>
+    <string name="channel_scan_notification_stop">Заустави</string>
+</resources>

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="channel_scan_notification_channel">Kanalprüfung</string>
+    <string name="channel_scan_notification_title">Kanäle werden geprüft</string>
+    <string name="channel_scan_notification_progress" formatted="true">%1$d von %2$d Kanälen geprüft</string>
+    <string name="channel_scan_notification_preparing">Kanalprüfung wird vorbereitet</string>
+    <string name="channel_scan_notification_stop">Stopp</string>
+</resources>

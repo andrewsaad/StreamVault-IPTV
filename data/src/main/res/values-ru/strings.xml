@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="channel_scan_notification_channel">Проверка каналов</string>
+    <string name="channel_scan_notification_title">Проверка каналов</string>
+    <string name="channel_scan_notification_progress" formatted="true">Проверено каналов: %1$d из %2$d</string>
+    <string name="channel_scan_notification_preparing">Подготовка проверки каналов</string>
+    <string name="channel_scan_notification_stop">Остановить</string>
+</resources>
