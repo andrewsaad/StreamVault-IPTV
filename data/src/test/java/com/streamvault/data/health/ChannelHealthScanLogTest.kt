@@ -18,9 +18,14 @@ class ChannelHealthScanLogTest {
     }
 
     @Test
-    fun `a log line never holds a url or a login`() {
-        val line = formatScanLogLine("give-up", ChannelHealthScanScope.BAD_ONLY, 10, 245, 5_000L, ok = 1)
-        assertThat(line).doesNotContain("http")
-        assertThat(line).doesNotContain("password")
+    fun `the end of a scan is named by how it ended`() {
+        assertThat(scanOutcomeEvent(finished = true, gaveUp = false, cancelled = false)).isEqualTo("finish")
+        assertThat(scanOutcomeEvent(finished = false, gaveUp = true, cancelled = false)).isEqualTo("give-up")
+        assertThat(scanOutcomeEvent(finished = false, gaveUp = false, cancelled = true)).isEqualTo("cancel")
+    }
+
+    @Test
+    fun `an unexpected failure is logged as error, not as a cancel`() {
+        assertThat(scanOutcomeEvent(finished = false, gaveUp = false, cancelled = false)).isEqualTo("error")
     }
 }

@@ -79,6 +79,14 @@ internal fun formatScanLogLine(
     append(" elapsedSec=").append(elapsedMs / 1_000L)
 }
 
+/** The event a scan ends with in the log: an unexpected failure is "error", never mistaken for a user cancel. */
+internal fun scanOutcomeEvent(finished: Boolean, gaveUp: Boolean, cancelled: Boolean): String = when {
+    finished -> "finish"
+    gaveUp -> "give-up"
+    cancelled -> "cancel"
+    else -> "error"
+}
+
 internal data class ChannelHealthTimings(
     val pauseBetweenChannelsMs: Long = 6_000L,
     val backoffMs: Long = 5L * 60_000L,
@@ -259,10 +267,11 @@ class ChannelHealthScanner internal constructor(
         }
         setState(providerId) { ChannelHealthScanState(running = true, total = total, scanned = scanned) }
         val beganAt = results.now()
-        fun logScan(event: String) =
-            Log.i(TAG, formatScanLogLine(event, scope, scanned, total, results.now() - beganAt, mainOk + retryOk))
+        // The ok count only covers what this run saw, so the start line leaves it out.
+        fun logScan(event: String, ok: Int? = null) =
+            Log.i(TAG, formatScanLogLine(event, scope, scanned, total, results.now() - beganAt, ok))
         logScan(if (resume != null) "resume" else "start")
-        var outcomeEvent = "cancel"
+        var cancelled = false
         try {
             var account = readAccount(providerId, config, previous = null)
             if (!account.allowsHls) {
@@ -377,11 +386,11 @@ class ChannelHealthScanner internal constructor(
             }
             finished = true
             return true
-        } catch (cancelled: CancellationException) {
-            throw cancelled
+        } catch (stopped: CancellationException) {
+            cancelled = true
+            throw stopped
         } finally {
-            outcomeEvent = if (finished) "finish" else if (gaveUp) "give-up" else outcomeEvent
-            logScan(outcomeEvent)
+            logScan(scanOutcomeEvent(finished, gaveUp, cancelled), mainOk + retryOk)
             withContext(NonCancellable) {
                 // A scan that gave up saw a provider in trouble, so its 5xx answers are never stored.
                 // Refused channels stay in the streak so the saved resume state still marks them (see [ChannelRefusal]).
