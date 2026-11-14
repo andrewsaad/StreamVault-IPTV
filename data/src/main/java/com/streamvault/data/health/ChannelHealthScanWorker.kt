@@ -1,6 +1,8 @@
 package com.streamvault.data.health
 
 import android.content.Context
+import android.os.SystemClock
+import android.util.Log
 import androidx.work.Constraints
 import androidx.work.CoroutineWorker
 import androidx.work.ExistingWorkPolicy
@@ -18,6 +20,9 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
@@ -43,10 +48,47 @@ class ChannelHealthScanWorker(appContext: Context, params: WorkerParameters) : C
             ?.let { name -> ChannelHealthScanScope.entries.firstOrNull { it.name == name } }
             ?: ChannelHealthScanScope.ALL
         val scanner = EntryPointAccessors.fromApplication(applicationContext, Entry::class.java).channelHealthScanner()
-        return if (scanner.run(providerId, categoryIds, inputData.getLong(KEY_STARTED_AT, 0L), scope)) {
-            Result.success()
-        } else {
-            Result.failure()
+        // A plain background job is stopped after about 10 minutes and then held back for most of an hour,
+        // so a scan that takes hours only ever advanced in short bursts. A foreground job is not cut off.
+        val foreground = promoteToForeground(scanned = 0, total = 0)
+        return coroutineScope {
+            val progress = if (foreground) launch { keepNotificationCurrent(scanner, providerId) } else null
+            try {
+                if (scanner.run(providerId, categoryIds, inputData.getLong(KEY_STARTED_AT, 0L), scope)) {
+                    Result.success()
+                } else {
+                    Result.failure()
+                }
+            } finally {
+                progress?.cancel()
+            }
+        }
+    }
+
+    /** False when Android refuses a foreground start; the scan then still runs as an ordinary job. */
+    private suspend fun promoteToForeground(scanned: Int, total: Int): Boolean =
+        try {
+            setForeground(ChannelScanNotification.foregroundInfo(applicationContext, id, scanned, total))
+            true
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (error: Exception) {
+            // Class name only; nothing that could carry the login is logged.
+            Log.w(ChannelHealthScanner.TAG, "Foreground scan not started (${error.javaClass.simpleName})")
+            false
+        }
+
+    private suspend fun keepNotificationCurrent(scanner: ChannelHealthScanner, providerId: Long) {
+        var lastRefreshAt: Long? = null
+        var shown = 0 to 0
+        scanner.observeState(providerId).collect { state ->
+            val now = SystemClock.elapsedRealtime()
+            val current = state.scanned to state.total
+            if (state.running && ChannelScanNotification.shouldRefresh(lastRefreshAt, now, current != shown)) {
+                lastRefreshAt = now
+                shown = current
+                promoteToForeground(current.first, current.second)
+            }
         }
     }
 
