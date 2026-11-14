@@ -60,6 +60,25 @@ internal fun selectsChannel(scope: ChannelHealthScanScope, channelId: Long, docu
         ChannelHealthScanScope.BAD_ONLY -> channelId in document.records
     }
 
+/**
+ * One log line for a scan event. Only the event name, the scope and counts go in: never a server address,
+ * login or stream URL, so the lines are safe to keep and share.
+ */
+internal fun formatScanLogLine(
+    event: String,
+    scope: ChannelHealthScanScope,
+    scanned: Int,
+    total: Int,
+    elapsedMs: Long,
+    ok: Int? = null,
+): String = buildString {
+    append("scan ").append(event)
+    append(" scope=").append(scope.name)
+    append(" scanned=").append(scanned).append('/').append(total)
+    if (ok != null) append(" ok=").append(ok)
+    append(" elapsedSec=").append(elapsedMs / 1_000L)
+}
+
 internal data class ChannelHealthTimings(
     val pauseBetweenChannelsMs: Long = 6_000L,
     val backoffMs: Long = 5L * 60_000L,
@@ -239,6 +258,11 @@ class ChannelHealthScanner internal constructor(
             saved = point
         }
         setState(providerId) { ChannelHealthScanState(running = true, total = total, scanned = scanned) }
+        val beganAt = results.now()
+        fun logScan(event: String) =
+            Log.i(TAG, formatScanLogLine(event, scope, scanned, total, results.now() - beganAt, mainOk + retryOk))
+        logScan(if (resume != null) "resume" else "start")
+        var outcomeEvent = "cancel"
         try {
             var account = readAccount(providerId, config, previous = null)
             if (!account.allowsHls) {
@@ -356,6 +380,8 @@ class ChannelHealthScanner internal constructor(
         } catch (cancelled: CancellationException) {
             throw cancelled
         } finally {
+            outcomeEvent = if (finished) "finish" else if (gaveUp) "give-up" else outcomeEvent
+            logScan(outcomeEvent)
             withContext(NonCancellable) {
                 // A scan that gave up saw a provider in trouble, so its 5xx answers are never stored.
                 // Refused channels stay in the streak so the saved resume state still marks them (see [ChannelRefusal]).
@@ -369,6 +395,7 @@ class ChannelHealthScanner internal constructor(
     }
 
     private suspend fun backOff(providerId: Long) {
+        Log.i(TAG, "scan backoff waitSec=${timings.backoffMs / 1_000L}")
         setState(providerId) { it.copy(paused = ChannelHealthPauseReason.PROVIDER_BACKOFF) }
         delay(timings.backoffMs)
         setState(providerId) { it.copy(paused = null) }
