@@ -79,6 +79,10 @@ data class ChannelCleanupUiState(
         group.rows.isNotEmpty() && selectedIds.containsAll(group.channelIds)
 }
 
+/** A scan that is running or waiting to resume needs the screen awake, or an idle TV freezes it. */
+internal fun shouldKeepScreenOn(scan: ChannelCleanupScanUi): Boolean =
+    scan is ChannelCleanupScanUi.Running || scan is ChannelCleanupScanUi.Paused
+
 internal fun mapChannelCleanupScan(state: ChannelHealthScanState): ChannelCleanupScanUi {
     val paused = state.paused
     return when {
