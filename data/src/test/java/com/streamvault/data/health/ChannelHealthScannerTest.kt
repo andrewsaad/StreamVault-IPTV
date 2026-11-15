@@ -218,7 +218,20 @@ class ChannelHealthScannerTest {
         val state = scanner.observeState(TEST_PROVIDER_ID).first()
         assertThat(state.paused).isNull()
         assertThat(state.scanned).isAtLeast(4)
+        verify(probe).probe("$TEST_SERVER/live/$TEST_USERNAME/$TEST_PASSWORD/109.m3u8", emptyMap())
         job.cancel()
+    }
+
+    @Test
+    fun `a scan through a dead stretch finishes instead of giving up`() = runTest {
+        givenControlChannelAndDeadBlock(ok)
+
+        val finished = scanner.run(TEST_PROVIDER_ID, null, 0L, ChannelHealthScanScope.NEW_ONLY)
+
+        assertThat(finished).isTrue()
+        val state = scanner.observeState(TEST_PROVIDER_ID).first()
+        assertThat(state.gaveUp).isFalse()
+        assertThat(state.lastFinishedAt).isEqualTo(clock.nowMillis)
     }
 
     @Test

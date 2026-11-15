@@ -284,18 +284,23 @@ class ChannelHealthScanner internal constructor(
             streamId = streamId,
             containerExtension = "m3u8",
         )
-        // A channel that is known to play still playing means a run of failures is the failing channels' own
-        // doing (a dead stretch of the list), not the provider's. No known channel: the run is treated as the provider's.
-        suspend fun controlPlays(): Boolean {
-            val control = controlStreamId ?: return false
-            delay(timings.pauseBetweenChannelsMs)
-            return probe.probe(liveUrl(control), headers).status == ChannelHealthStatus.OK
-        }
         try {
             var account = readAccount(providerId, config, previous = null)
             if (!account.allowsHls) {
                 gaveUp = true
                 return false
+            }
+            // A channel that is known to play still playing means a run of failures is the failing channels' own
+            // doing (a dead stretch of the list), not the provider's. No known channel: the run is treated as the
+            // provider's. Null when the wait for a free connection ran out (the scan then gives up).
+            suspend fun controlPlays(): Boolean? {
+                val control = controlStreamId ?: return false
+                delay(timings.pauseBetweenChannelsMs)
+                account = waitForFreeConnection(providerId, config, account) ?: return null
+                val played = probe.probe(liveUrl(control), headers).status == ChannelHealthStatus.OK
+                // A control that stopped playing is no use as a witness for the rest of the scan.
+                if (!played) controlStreamId = null
+                return played
             }
             var unclearInARow = 0
             var backoffsInARow = 0
@@ -351,15 +356,26 @@ class ChannelHealthScanner internal constructor(
                         if (status == ChannelHealthStatus.UNCLEAR) unclearInARow++ else unclearInARow = 0
                     }
                     if (pending.size >= timings.flushEvery) flush()
-                    // Only in the main pass: the retry pass has its own rules for refused channels (see [shouldStoreRefusals]).
-                    if (!retrying && (streak.size >= timings.massFailureStreak ||
-                            unclearInARow >= timings.unclearInARowBeforeBackoff) && controlPlays()
+                    // The retry pass keeps its own rules for channels the provider refused with a 5xx (see
+                    // [shouldStoreRefusals]); a stretch without such refusals (403, timeouts) may use the control check.
+                    val controlOk = if ((streak.size >= timings.massFailureStreak ||
+                            unclearInARow >= timings.unclearInARowBeforeBackoff) &&
+                        (!retrying || streak.none { it.channelId in refused })
                     ) {
+                        controlPlays() ?: run {
+                            gaveUp = true
+                            return false
+                        }
+                    } else {
+                        false
+                    }
+                    if (controlOk) {
                         // The provider answers for a channel that works, so these were the channels' own failures.
                         // Nothing UNCLEAR is stored; the retry pass asks again. No backoff, and the streak is let go.
                         pending += settled(streak)
                         streak.clear()
                         unclearInARow = 0
+                        backoffsInARow = 0
                         if (scanned < total) delay(timings.pauseBetweenChannelsMs)
                     } else if (streak.size >= timings.massFailureStreak) {
                         // Everything failing at once points at the provider or the account, not the channels.
