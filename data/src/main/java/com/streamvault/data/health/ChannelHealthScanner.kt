@@ -1,5 +1,6 @@
 package com.streamvault.data.health
 
+import android.content.Context
 import android.util.Log
 import com.streamvault.data.local.dao.ChannelDao
 import com.streamvault.data.remote.http.USER_AGENT_HEADER
@@ -14,6 +15,8 @@ import com.streamvault.domain.model.ChannelHealthStatus
 import com.streamvault.domain.model.XtreamConfig
 import com.streamvault.domain.repository.ProviderSnapshotRepository
 import com.streamvault.domain.sync.AutomaticSyncActivity
+import dagger.hilt.android.qualifiers.ApplicationContext
+import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CancellationException
@@ -126,6 +129,7 @@ class ChannelHealthScanner internal constructor(
     private val probe: ChannelHealthProbe,
     private val results: ChannelHealthResults,
     private val timings: ChannelHealthTimings,
+    private val scanLog: ScanLogSink = ScanLogSink.None,
 ) {
     @Inject
     internal constructor(
@@ -134,7 +138,16 @@ class ChannelHealthScanner internal constructor(
         xtreamApi: XtreamApiService,
         probe: ChannelHealthProbe,
         results: ChannelHealthResults,
-    ) : this(snapshots, channelDao, xtreamApi, probe, results, ChannelHealthTimings())
+        @ApplicationContext context: Context,
+    ) : this(
+        snapshots,
+        channelDao,
+        xtreamApi,
+        probe,
+        results,
+        ChannelHealthTimings(),
+        ScanLogFile(File(context.filesDir, ScanLogFile.FILE_NAME), results::now),
+    )
 
     private val runtime = MutableStateFlow<Map<Long, ChannelHealthScanState>>(emptyMap())
 
@@ -273,9 +286,17 @@ class ChannelHealthScanner internal constructor(
         val beganAt = results.now()
         // The ok count only covers what this run saw, so the start line leaves it out.
         fun logScan(event: String, ok: Int? = null) =
-            Log.i(TAG, formatScanLogLine(event, scope, scanned, total, results.now() - beganAt, ok))
+            note(formatScanLogLine(event, scope, scanned, total, results.now() - beganAt, ok))
+        // The last few answers, by HTTP code or exception class, to explain a backoff or a give-up.
+        val recent = ArrayDeque<String>()
+        fun recentSummary() = recent.groupingBy { it }.eachCount().entries.joinToString(",") { "${it.key}x${it.value}" }
         logScan(if (resume != null) "resume" else "start")
         var cancelled = false
+        var controlNote = "none"
+        fun giveUp(reason: String) {
+            gaveUp = true
+            note("scan give-up-reason=$reason scanned=$scanned/$total recent=${recentSummary()} control=$controlNote")
+        }
         fun liveUrl(streamId: Long) = XtreamUrlFactory.buildPlaybackUrl(
             serverUrl = config.serverUrl,
             username = config.username,
@@ -287,17 +308,25 @@ class ChannelHealthScanner internal constructor(
         try {
             var account = readAccount(providerId, config, previous = null)
             if (!account.allowsHls) {
-                gaveUp = true
+                giveUp("no-hls")
                 return false
             }
             // A channel that is known to play still playing means a run of failures is the failing channels' own
             // doing (a dead stretch of the list), not the provider's. No known channel: the run is treated as the
             // provider's. Null when the wait for a free connection ran out (the scan then gives up).
             suspend fun controlPlays(): Boolean? {
-                val control = controlStreamId ?: return false
+                val control = controlStreamId ?: run {
+                    controlNote = "none"
+                    return false
+                }
                 delay(timings.pauseBetweenChannelsMs)
-                account = waitForFreeConnection(providerId, config, account) ?: return null
-                val played = probe.probe(liveUrl(control), headers).status == ChannelHealthStatus.OK
+                account = waitForFreeConnection(providerId, config, account) ?: run {
+                    controlNote = "no-connection"
+                    return null
+                }
+                val answer = probe.probe(liveUrl(control), headers)
+                val played = answer.status == ChannelHealthStatus.OK
+                controlNote = if (played) "played" else "failed:${answer.detail ?: answer.status.name}"
                 // A control that stopped playing is no use as a witness for the rest of the scan.
                 if (!played) controlStreamId = null
                 return played
@@ -313,12 +342,14 @@ class ChannelHealthScanner internal constructor(
                         continue
                     }
                     account = waitForFreeConnection(providerId, config, account) ?: run {
-                        gaveUp = true
+                        giveUp("no-free-connection")
                         return false
                     }
                     val url = liveUrl(channel.streamId)
                     val result = probe.probe(url, headers)
                     val status = result.status
+                    recent.addLast(result.detail ?: status.name)
+                    if (recent.size > RECENT_ANSWERS) recent.removeFirst()
                     val outcome = ChannelProbeOutcome(channel.id, status, results.now())
                     if (retrying) {
                         retryAfterId = channel.id
@@ -343,6 +374,7 @@ class ChannelHealthScanner internal constructor(
                     }
                     scanned++
                     setState(providerId) { it.copy(scanned = scanned) }
+                    if (scanned % PROGRESS_EVERY == 0) logScan("progress", mainOk + retryOk)
                     if (status == ChannelHealthStatus.OK) {
                         // A good answer shows the failures before it were the channels' own, so keep them.
                         pending += settled(streak)
@@ -363,7 +395,7 @@ class ChannelHealthScanner internal constructor(
                         (!retrying || streak.none { it.channelId in refused })
                     ) {
                         controlPlays() ?: run {
-                            gaveUp = true
+                            giveUp("no-free-connection")
                             return false
                         }
                     } else {
@@ -384,19 +416,19 @@ class ChannelHealthScanner internal constructor(
                         if (retrying) retryAttempts -= streak.size
                         streak.clear()
                         if (++backoffsInARow >= timings.maxBackoffsInARow) {
-                            gaveUp = true
+                            giveUp("backoffs-streak")
                             return false
                         }
-                        backOff(providerId)
+                        backOff(providerId, "streak recent=${recentSummary()} control=$controlNote")
                         unclearInARow = 0
                         account = readAccount(providerId, config, previous = account)
                     } else if (unclearInARow >= timings.unclearInARowBeforeBackoff) {
                         flush()
                         if (++backoffsInARow >= timings.maxBackoffsInARow) {
-                            gaveUp = true
+                            giveUp("backoffs-unclear")
                             return false
                         }
-                        backOff(providerId)
+                        backOff(providerId, "unclear recent=${recentSummary()} control=$controlNote")
                         unclearInARow = 0
                         account = readAccount(providerId, config, previous = account)
                     } else if (scanned < total) {
@@ -409,7 +441,7 @@ class ChannelHealthScanner internal constructor(
                 pending += settled(streak)
                 streak.clear()
                 flush()
-                backOff(providerId)
+                backOff(providerId, "before-retry-pass")
                 account = readAccount(providerId, config, previous = account)
                 retrying = true
                 retryAfterId = 0L
@@ -442,8 +474,8 @@ class ChannelHealthScanner internal constructor(
         }
     }
 
-    private suspend fun backOff(providerId: Long) {
-        Log.i(TAG, "scan backoff waitSec=${timings.backoffMs / 1_000L}")
+    private suspend fun backOff(providerId: Long, reason: String) {
+        note("scan backoff waitSec=${timings.backoffMs / 1_000L} trigger=$reason")
         setState(providerId) { it.copy(paused = ChannelHealthPauseReason.PROVIDER_BACKOFF) }
         delay(timings.backoffMs)
         setState(providerId) { it.copy(paused = null) }
@@ -496,6 +528,12 @@ class ChannelHealthScanner internal constructor(
             previous ?: AccountLimits(maxConnections = 1, activeConnections = 0)
         }
 
+    /** One line to logcat and to the scan log file. Never carries the login or a url. */
+    private fun note(line: String) {
+        Log.i(TAG, line)
+        scanLog.write(line)
+    }
+
     private fun requestHeaders(providerId: Long, config: XtreamConfig): Map<String, String> {
         val profile = buildGenericProviderRequestProfile("provider:$providerId/health", config.httpUserAgent, config.httpHeaders)
         return buildMap {
@@ -513,5 +551,11 @@ class ChannelHealthScanner internal constructor(
 
         /** Most UNCLEAR channels remembered for the retry pass, to keep the stored document small. */
         const val MAX_RETRY_CHANNELS = 1_000
+
+        /** Answers kept for the backoff and give-up lines. */
+        const val RECENT_ANSWERS = 10
+
+        /** A progress line in the scan log every this many channels. */
+        const val PROGRESS_EVERY = 50
     }
 }

@@ -1086,4 +1086,72 @@ class ChannelHealthScannerTest {
         verifyNoInteractions(probe)
         assertThat(scanner.observeState(TEST_PROVIDER_ID).first().gaveUp).isFalse()
     }
+
+    private fun scannerLoggingTo(lines: MutableList<String>) = ChannelHealthScanner(
+        snapshots = snapshots,
+        channelDao = channelDao,
+        xtreamApi = xtreamApi,
+        probe = probe,
+        results = results,
+        timings = ChannelHealthTimings(),
+        scanLog = ScanLogSink { lines += it },
+    )
+
+    @Test
+    fun `a backoff is logged with what the provider answered and what the control channel did`() = runTest {
+        givenControlChannelAndDeadBlock(ChannelProbeResult(ChannelHealthStatus.UNCLEAR, detail = "http503"))
+        whenever(probe.probe(any(), any())).doAnswer {
+            if (it.getArgument<String>(0).endsWith("/109.m3u8")) {
+                ChannelProbeResult(ChannelHealthStatus.UNCLEAR, detail = "http503")
+            } else {
+                ChannelProbeResult(ChannelHealthStatus.UNCLEAR, detail = "http403")
+            }
+        }
+        val lines = mutableListOf<String>()
+        val job = backgroundScope.launch {
+            scannerLoggingTo(lines).run(TEST_PROVIDER_ID, null, 0L, ChannelHealthScanScope.NEW_ONLY)
+        }
+
+        advanceTimeBy(18_000L)
+        runCurrent()
+
+        val backoff = lines.single { it.startsWith("scan backoff") }
+        assertThat(backoff).contains("trigger=unclear")
+        assertThat(backoff).contains("http403x3")
+        assertThat(backoff).contains("control=failed:http503")
+        job.cancel()
+    }
+
+    @Test
+    fun `a scan that gives up logs the reason`() = runTest {
+        givenChannels(*(1L..14L).map { channelEntity(it) }.toTypedArray())
+        givenAccount("1", "0")
+        whenever(probe.probe(any(), any()))
+            .thenReturn(ChannelProbeResult(ChannelHealthStatus.UNCLEAR, detail = "http403"))
+        val lines = mutableListOf<String>()
+
+        val finished = scannerLoggingTo(lines).run(TEST_PROVIDER_ID, null, 0L)
+
+        assertThat(finished).isFalse()
+        assertThat(lines.count { it.startsWith("scan backoff") }).isEqualTo(2)
+        assertThat(lines.single { it.startsWith("scan give-up-reason=") }).contains("backoffs-unclear")
+        assertThat(lines.last()).startsWith("scan give-up scope=")
+    }
+
+    @Test
+    fun `the scan log never holds the login or the server`() = runTest {
+        givenChannels(*(1L..60L).map { channelEntity(it) }.toTypedArray())
+        givenAccount("1", "0")
+        givenProbe(ChannelHealthStatus.OK)
+        val lines = mutableListOf<String>()
+
+        scannerLoggingTo(lines).run(TEST_PROVIDER_ID, null, 0L)
+
+        assertThat(lines.any { it.startsWith("scan progress") }).isTrue()
+        val everything = lines.joinToString("
+")
+        assertThat(everything).doesNotContain(TEST_USERNAME)
+        assertThat(everything).doesNotContain(TEST_PASSWORD)
+        assertThat(everything).doesNotContain(TEST_SERVER)
+    }
 }
