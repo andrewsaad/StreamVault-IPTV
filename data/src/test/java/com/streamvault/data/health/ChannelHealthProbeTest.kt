@@ -112,12 +112,13 @@ class ChannelHealthProbeTest {
 
         val result = runBlocking { probe.probe(url) }
 
-        assertThat(result).isEqualTo(ChannelProbeResult(ChannelHealthStatus.UNCLEAR, serverError = false))
+        assertThat(result.copy(detail = null)).isEqualTo(ChannelProbeResult(ChannelHealthStatus.UNCLEAR, serverError = false))
+        assertThat(result.detail).isNotEmpty()
     }
 
     @Test
     fun `an address that cannot be parsed is UNCLEAR`() {
-        assertThat(runBlocking { probe.probe("not an address") })
+        assertThat(runBlocking { probe.probe("not an address") }.copy(detail = null))
             .isEqualTo(ChannelProbeResult(ChannelHealthStatus.UNCLEAR, serverError = false))
     }
 
@@ -173,6 +174,6 @@ class ChannelHealthProbeTest {
         server.enqueue(MockResponse().setResponseCode(502))
 
         assertThat(runBlocking { probe.probe(playlistUrl()) })
-            .isEqualTo(ChannelProbeResult(ChannelHealthStatus.UNCLEAR, serverError = true))
+            .isEqualTo(ChannelProbeResult(ChannelHealthStatus.UNCLEAR, serverError = true, detail = "http502"))
     }
 }

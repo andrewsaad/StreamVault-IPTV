@@ -16,7 +16,12 @@ import okhttp3.logging.HttpLoggingInterceptor
  * provider (not a timeout, IO error, 401/403 or a bad segment), so a scan can tell a provider that
  * keeps refusing a channel from one that was merely unreachable. Never holds the url.
  */
-internal data class ChannelProbeResult(val status: ChannelHealthStatus, val serverError: Boolean = false)
+internal data class ChannelProbeResult(
+    val status: ChannelHealthStatus,
+    val serverError: Boolean = false,
+    /** Short reason for the scan log, such as "http403" or an exception class name; never the url. */
+    val detail: String? = null,
+)
 
 /**
  * Checks one live channel the way the player would start it: the HLS playlist, then the first
@@ -38,9 +43,9 @@ internal class ChannelHealthProbe @Inject constructor(client: OkHttpClient) {
             classify(playlistUrl, headers)
         } catch (cancelled: CancellationException) {
             throw cancelled
-        } catch (_: Exception) {
-            // IO errors, timeouts and unparsable urls say nothing about the channel.
-            ChannelProbeResult(ChannelHealthStatus.UNCLEAR)
+        } catch (error: Exception) {
+            // IO errors, timeouts and unparsable urls say nothing about the channel. Class name only: a message can carry the url.
+            ChannelProbeResult(ChannelHealthStatus.UNCLEAR, detail = error.javaClass.simpleName)
         }
 
     private suspend fun classify(playlistUrl: String, headers: Map<String, String>): ChannelProbeResult {
@@ -98,8 +103,8 @@ internal class ChannelHealthProbe @Inject constructor(client: OkHttpClient) {
     private fun resultForHttpCode(code: Int): ChannelProbeResult? = when (code) {
         in 200..299 -> null
         // 401 and 403 are not a verdict: Xtream answers 403 for a reached connection limit, an expired account or a blocked address.
-        404, 410 -> ChannelProbeResult(ChannelHealthStatus.DEAD)
-        else -> ChannelProbeResult(ChannelHealthStatus.UNCLEAR, serverError = code in 500..599)
+        404, 410 -> ChannelProbeResult(ChannelHealthStatus.DEAD, detail = "http$code")
+        else -> ChannelProbeResult(ChannelHealthStatus.UNCLEAR, serverError = code in 500..599, detail = "http$code")
     }
 
     private fun readText(body: ResponseBody?, maxBytes: Long): String {
