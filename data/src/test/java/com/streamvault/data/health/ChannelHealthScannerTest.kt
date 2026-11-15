@@ -1151,6 +1151,27 @@ class ChannelHealthScannerTest {
         val everything = lines.joinToString("\n")
         assertThat(everything).doesNotContain(TEST_USERNAME)
         assertThat(everything).doesNotContain(TEST_PASSWORD)
-        assertThat(everything).doesNotContain(TEST_SERVER)
+        assertThat(everything).doesNotContain("provider.test")
+    }
+
+    @Test
+    fun `a failing scan's log never holds the login or the server either, and names the provider`() = runTest {
+        givenChannels(*(1L..14L).map { channelEntity(it) }.toTypedArray())
+        givenAccount("1", "0")
+        whenever(probe.probe(any(), any()))
+            .thenReturn(ChannelProbeResult(ChannelHealthStatus.UNCLEAR, detail = "IOException"))
+        val lines = mutableListOf<String>()
+
+        scannerLoggingTo(lines).run(TEST_PROVIDER_ID, null, 0L)
+
+        assertThat(lines.any { it.startsWith("scan backoff") }).isTrue()
+        assertThat(lines.any { it.startsWith("scan give-up-reason=") }).isTrue()
+        val everything = lines.joinToString("\n")
+        assertThat(everything).doesNotContain(TEST_USERNAME)
+        assertThat(everything).doesNotContain(TEST_PASSWORD)
+        assertThat(everything).doesNotContain("provider.test")
+        assertThat(everything).contains("IOExceptionx")
+        assertThat(lines).isNotEmpty()
+        assertThat(lines.all { it.endsWith(" provider=$TEST_PROVIDER_ID") }).isTrue()
     }
 }

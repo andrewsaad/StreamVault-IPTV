@@ -45,7 +45,7 @@ internal class ChannelHealthProbe @Inject constructor(client: OkHttpClient) {
             throw cancelled
         } catch (error: Exception) {
             // IO errors, timeouts and unparsable urls say nothing about the channel. Class name only: a message can carry the url.
-            ChannelProbeResult(ChannelHealthStatus.UNCLEAR, detail = error.javaClass.simpleName)
+            ChannelProbeResult(ChannelHealthStatus.UNCLEAR, detail = error.javaClass.simpleName.ifEmpty { "Exception" })
         }
 
     private suspend fun classify(playlistUrl: String, headers: Map<String, String>): ChannelProbeResult {

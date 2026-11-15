@@ -286,7 +286,7 @@ class ChannelHealthScanner internal constructor(
         val beganAt = results.now()
         // The ok count only covers what this run saw, so the start line leaves it out.
         fun logScan(event: String, ok: Int? = null) =
-            note(formatScanLogLine(event, scope, scanned, total, results.now() - beganAt, ok))
+            note(providerId, formatScanLogLine(event, scope, scanned, total, results.now() - beganAt, ok))
         // The last few answers, by HTTP code or exception class, to explain a backoff or a give-up.
         val recent = ArrayDeque<String>()
         fun recentSummary() = recent.groupingBy { it }.eachCount().entries.joinToString(",") { "${it.key}x${it.value}" }
@@ -295,7 +295,7 @@ class ChannelHealthScanner internal constructor(
         var controlNote = "none"
         fun giveUp(reason: String) {
             gaveUp = true
-            note("scan give-up-reason=$reason scanned=$scanned/$total recent=${recentSummary()} control=$controlNote")
+            note(providerId, "scan give-up-reason=$reason scanned=$scanned/$total recent=${recentSummary()} control=$controlNote")
         }
         fun liveUrl(streamId: Long) = XtreamUrlFactory.buildPlaybackUrl(
             serverUrl = config.serverUrl,
@@ -475,7 +475,7 @@ class ChannelHealthScanner internal constructor(
     }
 
     private suspend fun backOff(providerId: Long, reason: String) {
-        note("scan backoff waitSec=${timings.backoffMs / 1_000L} trigger=$reason")
+        note(providerId, "scan backoff waitSec=${timings.backoffMs / 1_000L} trigger=$reason")
         setState(providerId) { it.copy(paused = ChannelHealthPauseReason.PROVIDER_BACKOFF) }
         delay(timings.backoffMs)
         setState(providerId) { it.copy(paused = null) }
@@ -529,9 +529,9 @@ class ChannelHealthScanner internal constructor(
         }
 
     /** One line to logcat and to the scan log file. Never carries the login or a url. */
-    private fun note(line: String) {
+    private fun note(providerId: Long, line: String) {
         Log.i(TAG, line)
-        scanLog.write(line)
+        scanLog.write("$line provider=$providerId")
     }
 
     private fun requestHeaders(providerId: Long, config: XtreamConfig): Map<String, String> {
