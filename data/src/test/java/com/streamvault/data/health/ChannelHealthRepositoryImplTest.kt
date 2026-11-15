@@ -38,6 +38,7 @@ class ChannelHealthRepositoryImplTest {
         xtreamApi = xtreamApi,
         probe = mock<ChannelHealthProbe>(),
         results = results,
+        timings = ChannelHealthTimings(),
     )
     // Whether WorkManager still has the provider's scan work queued, blocked or running.
     private val workActive = MutableStateFlow(false)

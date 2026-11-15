@@ -1148,8 +1148,7 @@ class ChannelHealthScannerTest {
         scannerLoggingTo(lines).run(TEST_PROVIDER_ID, null, 0L)
 
         assertThat(lines.any { it.startsWith("scan progress") }).isTrue()
-        val everything = lines.joinToString("
-")
+        val everything = lines.joinToString("\n")
         assertThat(everything).doesNotContain(TEST_USERNAME)
         assertThat(everything).doesNotContain(TEST_PASSWORD)
         assertThat(everything).doesNotContain(TEST_SERVER)
