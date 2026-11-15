@@ -21,8 +21,6 @@ import dagger.hilt.components.SingletonComponent
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
@@ -52,19 +50,13 @@ class ChannelHealthScanWorker(appContext: Context, params: WorkerParameters) : C
         // so a scan that takes hours only ever advanced in short bursts. A foreground job is not cut off by that
         // limit, though Android 15 still caps data-sync services at about 6 hours a day, and a start made while
         // the app is in the background can be refused (the scan then falls back to a plain job).
-        val foreground = promoteToForeground(providerId, scanned = 0, total = 0)
-        return coroutineScope {
-            val progress = if (foreground) launch { keepNotificationCurrent(scanner, providerId) } else null
-            try {
-                if (scanner.run(providerId, categoryIds, inputData.getLong(KEY_STARTED_AT, 0L), scope)) {
-                    Result.success()
-                } else {
-                    Result.failure()
-                }
-            } finally {
-                progress?.cancel()
-            }
-        }
+        val succeeded = runScanWithProgress(
+            promote = { scanned, total -> promoteToForeground(providerId, scanned, total) },
+            states = scanner.observeState(providerId),
+            now = SystemClock::elapsedRealtime,
+            scan = { scanner.run(providerId, categoryIds, inputData.getLong(KEY_STARTED_AT, 0L), scope) },
+        )
+        return if (succeeded) Result.success() else Result.failure()
     }
 
     /** False when Android refuses a foreground start; the scan then still runs as an ordinary job. */
@@ -79,27 +71,6 @@ class ChannelHealthScanWorker(appContext: Context, params: WorkerParameters) : C
             Log.w(LOG_TAG, "Foreground scan not started (${error.javaClass.simpleName})")
             false
         }
-
-    private suspend fun keepNotificationCurrent(scanner: ChannelHealthScanner, providerId: Long) {
-        var lastRefreshAt: Long? = null
-        var shown = 0 to 0
-        try {
-            scanner.observeState(providerId).collect { state ->
-                val now = SystemClock.elapsedRealtime()
-                val current = state.scanned to state.total
-                if (state.running && ChannelScanNotification.shouldRefresh(lastRefreshAt, now, current != shown)) {
-                    lastRefreshAt = now
-                    shown = current
-                    promoteToForeground(providerId, current.first, current.second)
-                }
-            }
-        } catch (cancelled: CancellationException) {
-            throw cancelled
-        } catch (error: Exception) {
-            // A broken progress display must never abort the scan itself; class name only.
-            Log.w(LOG_TAG, "Scan notification updates stopped (${error.javaClass.simpleName})")
-        }
-    }
 
     internal companion object {
         /** Same tag as the scanner, so one logcat filter shows the whole scan story. */
