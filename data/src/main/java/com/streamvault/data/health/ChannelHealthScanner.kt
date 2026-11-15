@@ -184,10 +184,14 @@ class ChannelHealthScanner internal constructor(
             return false
         }
         val document = results.read(providerId)
-        val channels = channelDao.getByProviderSync(providerId)
+        val providerChannels = channelDao.getByProviderSync(providerId)
+        val channels = providerChannels
             .filter { it.streamId > 0L && (categoryIds == null || it.categoryId in categoryIds) }
             .filter { selectsChannel(scope, it.id, document) }
             .sortedBy { it.id }
+        // A channel that played in an earlier scan; asked about when a run of failures could be the provider's.
+        var controlStreamId: Long? = providerChannels
+            .firstOrNull { it.streamId > 0L && it.id in document.knownIds && it.id !in document.records }?.streamId
         val resume = document.resume?.takeIf { it.startedAt == startedAt }
         val headers = requestHeaders(providerId, config)
         val pending = ArrayList<ChannelProbeOutcome>()
@@ -272,6 +276,21 @@ class ChannelHealthScanner internal constructor(
             Log.i(TAG, formatScanLogLine(event, scope, scanned, total, results.now() - beganAt, ok))
         logScan(if (resume != null) "resume" else "start")
         var cancelled = false
+        fun liveUrl(streamId: Long) = XtreamUrlFactory.buildPlaybackUrl(
+            serverUrl = config.serverUrl,
+            username = config.username,
+            password = config.password,
+            kind = XtreamStreamKind.LIVE,
+            streamId = streamId,
+            containerExtension = "m3u8",
+        )
+        // A channel that is known to play still playing means a run of failures is the failing channels' own
+        // doing (a dead stretch of the list), not the provider's. No known channel: the run is treated as the provider's.
+        suspend fun controlPlays(): Boolean {
+            val control = controlStreamId ?: return false
+            delay(timings.pauseBetweenChannelsMs)
+            return probe.probe(liveUrl(control), headers).status == ChannelHealthStatus.OK
+        }
         try {
             var account = readAccount(providerId, config, previous = null)
             if (!account.allowsHls) {
@@ -292,14 +311,7 @@ class ChannelHealthScanner internal constructor(
                         gaveUp = true
                         return false
                     }
-                    val url = XtreamUrlFactory.buildPlaybackUrl(
-                        serverUrl = config.serverUrl,
-                        username = config.username,
-                        password = config.password,
-                        kind = XtreamStreamKind.LIVE,
-                        streamId = channel.streamId,
-                        containerExtension = "m3u8",
-                    )
+                    val url = liveUrl(channel.streamId)
                     val result = probe.probe(url, headers)
                     val status = result.status
                     val outcome = ChannelProbeOutcome(channel.id, status, results.now())
@@ -333,12 +345,22 @@ class ChannelHealthScanner internal constructor(
                         streak.clear()
                         unclearInARow = 0
                         backoffsInARow = 0
+                        controlStreamId = channel.streamId
                     } else {
                         streak += outcome
                         if (status == ChannelHealthStatus.UNCLEAR) unclearInARow++ else unclearInARow = 0
                     }
                     if (pending.size >= timings.flushEvery) flush()
-                    if (streak.size >= timings.massFailureStreak) {
+                    if ((streak.size >= timings.massFailureStreak ||
+                            unclearInARow >= timings.unclearInARowBeforeBackoff) && controlPlays()
+                    ) {
+                        // The provider answers for a channel that works, so these were the channels' own failures.
+                        // Nothing UNCLEAR is stored; the retry pass asks again. No backoff, and the streak is let go.
+                        pending += settled(streak)
+                        streak.clear()
+                        unclearInARow = 0
+                        if (scanned < total) delay(timings.pauseBetweenChannelsMs)
+                    } else if (streak.size >= timings.massFailureStreak) {
                         // Everything failing at once points at the provider or the account, not the channels.
                         streak.forEach { refused.remove(it.channelId) }
                         // The storm's attempts are not evidence about the provider's health either way.

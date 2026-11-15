@@ -8,6 +8,7 @@ import com.streamvault.data.remote.dto.XtreamServerInfo
 import com.streamvault.data.remote.dto.XtreamUserInfo
 import com.streamvault.data.remote.xtream.XtreamApiService
 import com.streamvault.domain.model.ChannelHealthPauseReason
+import com.streamvault.domain.model.ChannelHealthScanScope
 import com.streamvault.domain.model.ChannelHealthScanState
 import com.streamvault.domain.model.ChannelHealthStatus
 import com.streamvault.domain.repository.ProviderSnapshotRepository
@@ -188,6 +189,49 @@ class ChannelHealthScannerTest {
         advanceTimeBy(5L * 60_000L)
         runCurrent()
         assertThat(scanner.observeState(TEST_PROVIDER_ID).first().paused).isNull()
+        job.cancel()
+    }
+
+    private suspend fun givenControlChannelAndDeadBlock(controlAnswer: ChannelProbeResult) {
+        givenChannels(channelEntity(99L), *(1L..6L).map { channelEntity(it) }.toTypedArray())
+        givenAccount("1", "0")
+        // Channel 99 played in an earlier scan, so it is known and a new-channels scan does not queue it.
+        results.record(
+            TEST_PROVIDER_ID,
+            listOf(ChannelProbeOutcome(99L, ChannelHealthStatus.OK, clock.nowMillis)),
+        )
+        whenever(probe.probe(any(), any())).doAnswer {
+            if (it.getArgument<String>(0).endsWith("/109.m3u8")) controlAnswer else unclear
+        }
+    }
+
+    @Test
+    fun `a dead stretch is not a provider problem when a channel known to play still plays`() = runTest {
+        givenControlChannelAndDeadBlock(ok)
+        val job = backgroundScope.launch {
+            scanner.run(TEST_PROVIDER_ID, null, 0L, ChannelHealthScanScope.NEW_ONLY)
+        }
+
+        // Probes at 0 s, 6 s and 12 s, the control channel at 18 s, then the scan carries on at 24 s.
+        advanceTimeBy(30_000L)
+        runCurrent()
+        val state = scanner.observeState(TEST_PROVIDER_ID).first()
+        assertThat(state.paused).isNull()
+        assertThat(state.scanned).isAtLeast(4)
+        job.cancel()
+    }
+
+    @Test
+    fun `a dead stretch still backs the scan off when the channel known to play fails too`() = runTest {
+        givenControlChannelAndDeadBlock(unclear)
+        val job = backgroundScope.launch {
+            scanner.run(TEST_PROVIDER_ID, null, 0L, ChannelHealthScanScope.NEW_ONLY)
+        }
+
+        advanceTimeBy(18_000L)
+        runCurrent()
+        assertThat(scanner.observeState(TEST_PROVIDER_ID).first().paused)
+            .isEqualTo(ChannelHealthPauseReason.PROVIDER_BACKOFF)
         job.cancel()
     }
 
