@@ -351,7 +351,8 @@ class ChannelHealthScanner internal constructor(
                         if (status == ChannelHealthStatus.UNCLEAR) unclearInARow++ else unclearInARow = 0
                     }
                     if (pending.size >= timings.flushEvery) flush()
-                    if ((streak.size >= timings.massFailureStreak ||
+                    // Only in the main pass: the retry pass has its own rules for refused channels (see [shouldStoreRefusals]).
+                    if (!retrying && (streak.size >= timings.massFailureStreak ||
                             unclearInARow >= timings.unclearInARowBeforeBackoff) && controlPlays()
                     ) {
                         // The provider answers for a channel that works, so these were the channels' own failures.
