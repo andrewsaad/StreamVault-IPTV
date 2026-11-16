@@ -105,7 +105,7 @@ internal data class ChannelHealthTimings(
     val maxBackoffsInARow: Int = 3,
     /** Wait while the device has no network; does not count as a backoff. */
     val networkWaitMs: Long = 60_000L,
-    /** Total wait for the network (since the last OK answer) before the scan gives up. */
+    /** Total wait for the network (since the last answer that was not a network failure) before the scan gives up. */
     val maxNetworkWaitMs: Long = 6L * 60L * 60_000L,
     val flushEvery: Int = 20,
 )
@@ -366,6 +366,11 @@ class ChannelHealthScanner internal constructor(
                         delay(timings.networkWaitMs)
                         setState(providerId) { it.copy(paused = null) }
                         currentCoroutineContext().ensureActive()
+                        // Playback may have started during the wait; do not take its only connection.
+                        account = waitForFreeConnection(providerId, config, account) ?: run {
+                            giveUp("no-free-connection")
+                            return false
+                        }
                         result = probe.probe(url, headers)
                     }
                     val status = result.status
