@@ -103,6 +103,10 @@ internal data class ChannelHealthTimings(
     val massFailureStreak: Int = 10,
     /** Backoffs in a row with no OK answer in between before the scan gives up. */
     val maxBackoffsInARow: Int = 3,
+    /** Wait while the device has no network; does not count as a backoff. */
+    val networkWaitMs: Long = 60_000L,
+    /** Total wait for the network (since the last OK answer) before the scan gives up. */
+    val maxNetworkWaitMs: Long = 6L * 60L * 60_000L,
     val flushEvery: Int = 20,
 )
 
@@ -293,6 +297,9 @@ class ChannelHealthScanner internal constructor(
         logScan(if (resume != null) "resume" else "start")
         var cancelled = false
         var controlNote = "none"
+        /** The last answers were all the device failing to reach any host (DNS, no route, refused connect). */
+        fun networkDown() = recent.size >= NETWORK_DOWN_ANSWERS &&
+            recent.takeLast(NETWORK_DOWN_ANSWERS).all { it in NETWORK_DOWN_DETAILS }
         fun giveUp(reason: String) {
             gaveUp = true
             note(providerId, "scan give-up-reason=$reason scanned=$scanned/$total recent=${recentSummary()} control=$controlNote")
@@ -333,6 +340,7 @@ class ChannelHealthScanner internal constructor(
             }
             var unclearInARow = 0
             var backoffsInARow = 0
+            var networkWaitedMs = 0L
             while (true) {
                 for (channel in queue) {
                     currentCoroutineContext().ensureActive()
@@ -382,6 +390,7 @@ class ChannelHealthScanner internal constructor(
                         streak.clear()
                         unclearInARow = 0
                         backoffsInARow = 0
+                        networkWaitedMs = 0L
                         controlStreamId = channel.streamId
                     } else {
                         streak += outcome
@@ -390,6 +399,25 @@ class ChannelHealthScanner internal constructor(
                     if (pending.size >= timings.flushEvery) flush()
                     // The retry pass keeps its own rules for channels the provider refused with a 5xx (see
                     // [shouldStoreRefusals]); a stretch without such refusals (403, timeouts) may use the control check.
+                    // The device itself is offline (DNS or connect failures): that says nothing about the provider or
+                    // the channels, so neither the control check nor a backoff counts. Wait and carry on.
+                    if ((streak.size >= timings.massFailureStreak || unclearInARow >= timings.unclearInARowBeforeBackoff) &&
+                        networkDown()
+                    ) {
+                        networkWaitedMs += timings.networkWaitMs
+                        if (networkWaitedMs > timings.maxNetworkWaitMs) {
+                            giveUp("network-down")
+                            return false
+                        }
+                        note(providerId, "scan network-wait waitSec=${timings.networkWaitMs / 1_000L} recent=${recentSummary()}")
+                        streak.clear()
+                        unclearInARow = 0
+                        recent.clear()
+                        setState(providerId) { it.copy(paused = ChannelHealthPauseReason.PROVIDER_BACKOFF) }
+                        delay(timings.networkWaitMs)
+                        setState(providerId) { it.copy(paused = null) }
+                        continue
+                    }
                     val controlOk = if ((streak.size >= timings.massFailureStreak ||
                             unclearInARow >= timings.unclearInARowBeforeBackoff) &&
                         (!retrying || streak.none { it.channelId in refused })
@@ -554,6 +582,8 @@ class ChannelHealthScanner internal constructor(
 
         /** Answers kept for the backoff and give-up lines. */
         const val RECENT_ANSWERS = 10
+        const val NETWORK_DOWN_ANSWERS = 3
+        val NETWORK_DOWN_DETAILS = setOf("UnknownHostException", "NoRouteToHostException", "ConnectException")
 
         /** A progress line in the scan log every this many channels. */
         const val PROGRESS_EVERY = 50

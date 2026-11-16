@@ -1087,15 +1087,69 @@ class ChannelHealthScannerTest {
         assertThat(scanner.observeState(TEST_PROVIDER_ID).first().gaveUp).isFalse()
     }
 
-    private fun scannerLoggingTo(lines: MutableList<String>) = ChannelHealthScanner(
-        snapshots = snapshots,
-        channelDao = channelDao,
-        xtreamApi = xtreamApi,
-        probe = probe,
-        results = results,
-        timings = ChannelHealthTimings(),
-        scanLog = ScanLogSink { lines += it },
-    )
+    private fun scannerLoggingTo(lines: MutableList<String>, timings: ChannelHealthTimings = ChannelHealthTimings()) =
+        ChannelHealthScanner(
+            snapshots = snapshots,
+            channelDao = channelDao,
+            xtreamApi = xtreamApi,
+            probe = probe,
+            results = results,
+            timings = timings,
+            scanLog = ScanLogSink { lines += it },
+        )
+
+    @Test
+    fun `an outage of the device's network waits without using up the backoffs and the scan finishes`() = runTest {
+        givenChannels(*(1L..14L).map { channelEntity(it) }.toTypedArray())
+        givenAccount("1", "0")
+        var calls = 0
+        whenever(probe.probe(any(), any())).doAnswer {
+            if (++calls <= 9) {
+                ChannelProbeResult(ChannelHealthStatus.UNCLEAR, detail = "UnknownHostException")
+            } else {
+                ChannelProbeResult(ChannelHealthStatus.OK)
+            }
+        }
+        val lines = mutableListOf<String>()
+
+        val finished = scannerLoggingTo(lines).run(TEST_PROVIDER_ID, null, 0L)
+
+        assertThat(finished).isTrue()
+        assertThat(lines.count { it.startsWith("scan network-wait") }).isEqualTo(3)
+        assertThat(lines.none { it.contains("trigger=unclear") || it.contains("trigger=streak") }).isTrue()
+        assertThat(lines.none { it.startsWith("scan give-up") }).isTrue()
+        assertThat(scanner.observeState(TEST_PROVIDER_ID).first().gaveUp).isFalse()
+    }
+
+    @Test
+    fun `an outage that outlasts the network wait gives up with its own reason`() = runTest {
+        givenChannels(*(1L..30L).map { channelEntity(it) }.toTypedArray())
+        givenAccount("1", "0")
+        whenever(probe.probe(any(), any()))
+            .thenReturn(ChannelProbeResult(ChannelHealthStatus.UNCLEAR, detail = "UnknownHostException"))
+        val lines = mutableListOf<String>()
+        val timings = ChannelHealthTimings(networkWaitMs = 60_000L, maxNetworkWaitMs = 120_000L)
+
+        val finished = scannerLoggingTo(lines, timings).run(TEST_PROVIDER_ID, null, 0L)
+
+        assertThat(finished).isFalse()
+        assertThat(lines.single { it.startsWith("scan give-up-reason=") }).contains("network-down")
+        assertThat(lines.none { it.startsWith("scan backoff") }).isTrue()
+    }
+
+    @Test
+    fun `refused or timed out answers are still the provider's and back off as before`() = runTest {
+        givenChannels(*(1L..14L).map { channelEntity(it) }.toTypedArray())
+        givenAccount("1", "0")
+        whenever(probe.probe(any(), any()))
+            .thenReturn(ChannelProbeResult(ChannelHealthStatus.UNCLEAR, detail = "SocketTimeoutException"))
+        val lines = mutableListOf<String>()
+
+        assertThat(scannerLoggingTo(lines).run(TEST_PROVIDER_ID, null, 0L)).isFalse()
+
+        assertThat(lines.none { it.startsWith("scan network-wait") }).isTrue()
+        assertThat(lines.single { it.startsWith("scan give-up-reason=") }).contains("backoffs-unclear")
+    }
 
     @Test
     fun `a backoff is logged with what the provider answered and what the control channel did`() = runTest {
