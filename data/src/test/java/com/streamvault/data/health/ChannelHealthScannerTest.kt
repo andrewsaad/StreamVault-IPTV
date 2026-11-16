@@ -1115,7 +1115,9 @@ class ChannelHealthScannerTest {
         val finished = scannerLoggingTo(lines).run(TEST_PROVIDER_ID, null, 0L)
 
         assertThat(finished).isTrue()
-        assertThat(lines.count { it.startsWith("scan network-wait") }).isEqualTo(3)
+        // Every offline answer waits and asks the same channel again, so none is skipped: 14 channels + 9 repeats.
+        assertThat(lines.count { it.startsWith("scan network-wait") }).isEqualTo(9)
+        verify(probe, times(23)).probe(any(), any())
         assertThat(lines.none { it.contains("trigger=unclear") || it.contains("trigger=streak") }).isTrue()
         assertThat(lines.none { it.startsWith("scan give-up") }).isTrue()
         assertThat(scanner.observeState(TEST_PROVIDER_ID).first().gaveUp).isFalse()
@@ -1138,11 +1140,11 @@ class ChannelHealthScannerTest {
     }
 
     @Test
-    fun `refused or timed out answers are still the provider's and back off as before`() = runTest {
+    fun `refused connections and timeouts are still the provider's and back off as before`() = runTest {
         givenChannels(*(1L..14L).map { channelEntity(it) }.toTypedArray())
         givenAccount("1", "0")
         whenever(probe.probe(any(), any()))
-            .thenReturn(ChannelProbeResult(ChannelHealthStatus.UNCLEAR, detail = "SocketTimeoutException"))
+            .thenReturn(ChannelProbeResult(ChannelHealthStatus.UNCLEAR, detail = "ConnectException"))
         val lines = mutableListOf<String>()
 
         assertThat(scannerLoggingTo(lines).run(TEST_PROVIDER_ID, null, 0L)).isFalse()
